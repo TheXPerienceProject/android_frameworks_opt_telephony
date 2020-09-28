@@ -2845,11 +2845,13 @@ public class GsmCdmaPhone extends Phone {
                  keep the end of the version.
                 */
                 String version = (String)ar.result;
-                int length = version.length();
-                final int MAX_VERSION_LEN = SystemProperties.PROP_VALUE_MAX/2;
-                TelephonyManager.from(mContext).setBasebandVersionForPhone(getPhoneId(),
-                        length <= MAX_VERSION_LEN ? version
-                            : version.substring(length - MAX_VERSION_LEN, length));
+                if (version != null) {
+                    int length = version.length();
+                    final int MAX_VERSION_LEN = SystemProperties.PROP_VALUE_MAX/2;
+                    TelephonyManager.from(mContext).setBasebandVersionForPhone(getPhoneId(),
+                            length <= MAX_VERSION_LEN ? version
+                                : version.substring(length - MAX_VERSION_LEN, length));
+                }
             break;
 
             case EVENT_GET_IMEI_DONE:
