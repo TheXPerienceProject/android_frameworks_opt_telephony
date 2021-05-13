@@ -165,7 +165,7 @@ public class GsmCdmaPhone extends Phone {
     private String mMeid;
     // string to define how the carrier specifies its own ota sp number
     private String mCarrierOtaSpNumSchema;
-    private Boolean mUiccApplicationsEnabled = null;
+    protected Boolean mUiccApplicationsEnabled = null;
     // keeps track of when we have triggered an emergency call due to the ril.test.emergencynumber
     // param being set and we should generate a simulated exit from the modem upon exit of ECbM.
     private boolean mIsTestingEmergencyCallbackMode = false;
@@ -1207,13 +1207,12 @@ public class GsmCdmaPhone extends Phone {
             return false;
         }
 
-        Phone imsPhone = mImsPhone;
-        if (imsPhone != null
-                && imsPhone.getServiceState().getState() == ServiceState.STATE_IN_SERVICE) {
-            return imsPhone.handleInCallMmiCommands(dialString);
-        }
-
         if (!isInCall()) {
+            Phone imsPhone = mImsPhone;
+            if (imsPhone != null
+                    && imsPhone.getServiceState().getState() == ServiceState.STATE_IN_SERVICE) {
+                return imsPhone.handleInCallMmiCommands(dialString);
+            }
             return false;
         }
 
