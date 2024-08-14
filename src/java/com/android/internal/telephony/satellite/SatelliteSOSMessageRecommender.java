@@ -16,6 +16,7 @@
 
 package com.android.internal.telephony.satellite;
 
+import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP;
 import static android.telephony.ServiceState.STATE_EMERGENCY_ONLY;
 import static android.telephony.ServiceState.STATE_IN_SERVICE;
 import static android.telephony.ServiceState.STATE_OUT_OF_SERVICE;
@@ -29,6 +30,7 @@ import static com.android.internal.telephony.satellite.SatelliteController.INVAL
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
+import android.app.ActivityOptions;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
@@ -44,6 +46,7 @@ import android.os.SystemProperties;
 import android.provider.DeviceConfig;
 import android.telecom.Connection;
 import android.telephony.AccessNetworkConstants;
+import android.telephony.CellIdentity;
 import android.telephony.DropBoxManagerLoggerBackend;
 import android.telephony.NetworkRegistrationInfo;
 import android.telephony.PersistentLogger;
@@ -465,11 +468,13 @@ public class SatelliteSOSMessageRecommender extends Handler {
         return false;
     }
 
-    private boolean isSatellitePlmn(int subId, @NonNull ServiceState serviceState) {
+    /** Check whether device is connected to satellite PLMN */
+    @VisibleForTesting(visibility = VisibleForTesting.Visibility.PRIVATE)
+    public boolean isSatellitePlmn(int subId, @NonNull ServiceState serviceState) {
         List<String> satellitePlmnList =
                 mSatelliteController.getSatellitePlmnsForCarrier(subId);
         if (satellitePlmnList.isEmpty()) {
-            logv("isSatellitePlmn: satellitePlmnList is empty");
+            plogd("isSatellitePlmn: satellitePlmnList is empty");
             return false;
         }
 
@@ -477,19 +482,23 @@ public class SatelliteSOSMessageRecommender extends Handler {
                 serviceState.getNetworkRegistrationInfoListForTransportType(
                         AccessNetworkConstants.TRANSPORT_TYPE_WWAN)) {
             String registeredPlmn = nri.getRegisteredPlmn();
-            String mccmnc = nri.getCellIdentity().getMccString()
-                    + nri.getCellIdentity().getMncString();
+            if (TextUtils.isEmpty(registeredPlmn)) {
+                plogd("isSatellitePlmn: registeredPlmn is empty");
+                continue;
+            }
+
+            String mccmnc = getMccMnc(nri);
             for (String satellitePlmn : satellitePlmnList) {
                 if (TextUtils.equals(satellitePlmn, registeredPlmn)
                         || TextUtils.equals(satellitePlmn, mccmnc)) {
-                    logv("isSatellitePlmn: return true, satellitePlmn:" + satellitePlmn
+                    plogd("isSatellitePlmn: return true, satellitePlmn:" + satellitePlmn
                             + " registeredPlmn:" + registeredPlmn + " mccmnc:" + mccmnc);
                     return true;
                 }
             }
         }
 
-        logv("isSatellitePlmn: return false");
+        plogd("isSatellitePlmn: return false");
         return false;
     }
 
@@ -700,10 +709,15 @@ public class SatelliteSOSMessageRecommender extends Handler {
             intent = new Intent(Intent.ACTION_SENDTO, uri);
         } else {
             intent = new Intent(action);
+            intent.addFlags(FLAG_ACTIVITY_CLEAR_TOP);
         }
+        Bundle activityOptions = ActivityOptions.makeBasic()
+                .setPendingIntentBackgroundActivityStartMode(
+                        ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+                .toBundle();
         intent.setComponent(new ComponentName(packageName, className));
         return PendingIntent.getActivity(mContext, 0, intent,
-                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
+                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE, activityOptions);
     }
 
     private boolean isEmergencyCallToSatelliteHandoverTypeT911Enforced() {
@@ -827,6 +841,24 @@ public class SatelliteSOSMessageRecommender extends Handler {
         } catch (RuntimeException e) {
             return false;
         }
+    }
+
+    @Nullable
+    private String getMccMnc(@NonNull NetworkRegistrationInfo nri) {
+        CellIdentity cellIdentity = nri.getCellIdentity();
+        if (cellIdentity == null) {
+            plogd("getMccMnc: cellIdentity is null");
+            return null;
+        }
+
+        String mcc = cellIdentity.getMccString();
+        String mnc = cellIdentity.getMncString();
+        if (mcc == null || mnc == null) {
+            plogd("getMccMnc: mcc or mnc is null. mcc=" + mcc + " mnc=" + mnc);
+            return null;
+        }
+
+        return mcc + mnc;
     }
 
     private void plogd(@NonNull String log) {

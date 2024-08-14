@@ -3147,7 +3147,16 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
         if (call.getConnectionsCount() == 0) {
             throw new CallStateException("no connections");
         }
+        ImsCall imsCall = conn.getImsCall();
         boolean rejectCall = false;
+
+        if (mFeatureFlags.preventHangupDuringCallMerge()) {
+            if (imsCall.isCallSessionMergePending()) {
+                if (DBG) log("hangup call failed during call merge");
+
+                throw new CallStateException("can not hangup during call merge");
+            }
+        }
 
         String logResult = "(undefined)";
         if (call == mRingingCall) {
@@ -3184,7 +3193,6 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
             call.onHangupLocal();
         }
         mImsCallInfoTracker.updateImsCallStatus(conn);
-        ImsCall imsCall = conn.getImsCall();
 
         try {
             if (imsCall != null) {
@@ -5461,7 +5469,7 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
             }
             case EVENT_SUPP_SERVICE_INDICATION: {
                 ar = (AsyncResult) msg.obj;
-                ImsPhoneMmiCode mmiCode = new ImsPhoneMmiCode(mPhone);
+                ImsPhoneMmiCode mmiCode = new ImsPhoneMmiCode(mPhone, mFeatureFlags);
                 try {
                     mmiCode.setIsSsInfo(true);
                     mmiCode.processImsSsData(ar);

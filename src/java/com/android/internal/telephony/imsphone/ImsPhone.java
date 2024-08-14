@@ -1089,8 +1089,8 @@ public class ImsPhone extends ImsPhoneBase {
 
         // Only look at the Network portion for mmi
         String networkPortion = PhoneNumberUtils.extractNetworkPortionAlt(newDialString);
-        ImsPhoneMmiCode mmi =
-                ImsPhoneMmiCode.newFromDialString(networkPortion, this, wrappedCallback);
+        ImsPhoneMmiCode mmi =  ImsPhoneMmiCode.newFromDialString(networkPortion, this,
+                wrappedCallback, mFeatureFlags);
         UserHandle currentUserHandle = UserHandle.of(ActivityManager.getCurrentUser());
         if (DBG) logd("dialInternal: dialing w/ mmi '" + mmi + "'...");
 
@@ -1524,12 +1524,13 @@ public class ImsPhone extends ImsPhoneBase {
     }
 
     @Override
-    public void sendUssdResponse(String ussdMessge) {
+    public void sendUssdResponse(String ussdMessage) {
         logd("sendUssdResponse");
-        ImsPhoneMmiCode mmi = ImsPhoneMmiCode.newFromUssdUserInput(ussdMessge, this);
+        ImsPhoneMmiCode mmi = ImsPhoneMmiCode.newFromUssdUserInput(ussdMessage, this,
+                mFeatureFlags);
         mPendingMMIs.add(mmi);
         mMmiRegistrants.notifyRegistrants(new AsyncResult(null, mmi, null));
-        mmi.sendUssd(ussdMessge);
+        mmi.sendUssd(ussdMessage);
     }
 
     public void sendUSSD(String ussdString, Message response) {
@@ -1659,14 +1660,12 @@ public class ImsPhone extends ImsPhoneBase {
                 // also, discard if there is no message to present
                 ImsPhoneMmiCode mmi;
                 mmi = ImsPhoneMmiCode.newNetworkInitiatedUssd(ussdMessage,
-                        isUssdRequest,
-                        this);
+                        isUssdRequest, this, mFeatureFlags);
                 onNetworkInitiatedUssd(mmi);
         } else if (isUssdError) {
             ImsPhoneMmiCode mmi;
             mmi = ImsPhoneMmiCode.newNetworkInitiatedUssd(ussdMessage,
-                    true,
-                    this);
+                    true, this, mFeatureFlags);
             mmi.onUssdFinishedError();
         }
     }
