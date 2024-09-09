@@ -1121,6 +1121,7 @@ public class GsmCdmaPhone extends Phone {
 
     @Override
     public GsmCdmaCall getForegroundCall() {
+        if (!hasCalling()) return null;
         return mCT.mForegroundCall;
     }
 
@@ -1397,6 +1398,8 @@ public class GsmCdmaPhone extends Phone {
 
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
     public boolean isInCall() {
+        if (!hasCalling()) return false;
+
         GsmCdmaCall.State foregroundCallState = getForegroundCall().getState();
         GsmCdmaCall.State backgroundCallState = getBackgroundCall().getState();
         GsmCdmaCall.State ringingCallState = getRingingCall().getState();
@@ -5414,5 +5417,14 @@ public class GsmCdmaPhone extends Phone {
                 || mFeatureFlags.enableModemCipherTransparencyUnsolEvents()) {
             mSafetySource.refresh(mContext, refreshBroadcastId);
         }
+    }
+
+    /**
+     * @return The sms dispatchers controller
+     */
+    @Override
+    @Nullable
+    public SmsDispatchersController getSmsDispatchersController() {
+        return mIccSmsInterfaceManager.mDispatchersController;
     }
 }

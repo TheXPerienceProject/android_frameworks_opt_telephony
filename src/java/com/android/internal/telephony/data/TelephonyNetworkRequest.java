@@ -24,6 +24,7 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.NetworkSpecifier;
 import android.os.SystemClock;
+import android.provider.Telephony;
 import android.telephony.Annotation.ConnectivityTransport;
 import android.telephony.Annotation.NetCapability;
 import android.telephony.data.ApnSetting;
@@ -353,6 +354,19 @@ public class TelephonyNetworkRequest {
                 apnTypes.remove((Integer) ApnSetting.TYPE_DEFAULT);
             }
 
+            // Even there is a check for anomaly report on MMSC for built-in APNs, it won't exclude
+            // such invalid MMS profile for MMS network request, which will bring up some redundant
+            // retry on APN switching. Considering platform should make sure those things work fine,
+            // we don't need to touch them, however, as to user edit, to minimize the impact of the
+            // user-edited APN that MMS type is added by mistake, exclude such APNs that don't have
+            // MMSC address configured.
+            if (apnTypes.contains(ApnSetting.TYPE_MMS)
+                    && dataProfile.getApnSetting().getEditedStatus()
+                    == Telephony.Carriers.USER_EDITED
+                    && dataProfile.getApnSetting().getMmsc() == null) {
+                return false;
+            }
+
             return apnTypes.stream().allMatch(dataProfile.getApnSetting()::canHandleType);
         }
         return false;
@@ -385,13 +399,39 @@ public class TelephonyNetworkRequest {
      * if there is no APN type capabilities in this network request.
      */
     @NetCapability
-    public int getApnTypeNetworkCapability() {
+    public int getHighestPriorityApnTypeNetworkCapability() {
         if (!hasAttribute(CAPABILITY_ATTRIBUTE_APN_SETTING)) return -1;
         return Arrays.stream(getCapabilities()).boxed()
                 .filter(cap -> DataUtils.networkCapabilityToApnType(cap) != ApnSetting.TYPE_NONE)
                 .max(Comparator.comparingInt(mDataConfigManager::getNetworkCapabilityPriority))
                 .orElse(-1);
     }
+
+    /**
+     * A parent set of {@link #getHighestPriorityApnTypeNetworkCapability()}.
+     * Get the network capability from the network request that can lead to data setup. If there are
+     * multiple capabilities, the highest priority one will be returned.
+     *
+     * @return The highest priority traffic descriptor type network capability from this network
+     * request. -1 if there is no traffic descriptor type capabilities in this network request.
+     */
+    @NetCapability
+    public int getHighestPrioritySupportedNetworkCapability() {
+        return Arrays.stream(getCapabilities()).boxed()
+                .filter(CAPABILITY_ATTRIBUTE_MAP::containsKey)
+                .max(Comparator.comparingInt(mDataConfigManager::getNetworkCapabilityPriority))
+                .orElse(-1);
+    }
+
+    /**
+     * @return Get all the network capabilities that can lead to data setup.
+     */
+    @NonNull
+    @NetCapability
+    public static List<Integer> getAllSupportedNetworkCapabilities() {
+        return CAPABILITY_ATTRIBUTE_MAP.keySet().stream().toList();
+    }
+
     /**
      * @return The native network request.
      */
