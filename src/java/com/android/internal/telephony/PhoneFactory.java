@@ -47,6 +47,7 @@ import com.android.internal.telephony.data.CellularNetworkValidator;
 import com.android.internal.telephony.data.PhoneSwitcher;
 import com.android.internal.telephony.data.SatelliteNetworkFactory;
 import com.android.internal.telephony.data.TelephonyNetworkFactory;
+import com.android.internal.telephony.data.TelephonyNetworkProvider;
 import com.android.internal.telephony.euicc.EuiccCardController;
 import com.android.internal.telephony.euicc.EuiccController;
 import com.android.internal.telephony.flags.FeatureFlags;
@@ -103,6 +104,7 @@ public class PhoneFactory {
     static private PhoneSwitcher sPhoneSwitcher;
     static private TelephonyNetworkFactory[] sTelephonyNetworkFactories;
     static private SatelliteNetworkFactory[] sSatelliteNetworkFactories;
+    private static TelephonyNetworkProvider sTelephonyNetworkProvider;
     static private NotificationChannelController sNotificationChannelController;
     static private CellularNetworkValidator sCellularNetworkValidator;
 
@@ -312,11 +314,17 @@ public class PhoneFactory {
 
                 sNotificationChannelController = new NotificationChannelController(context);
 
-                for (int i = 0; i < numPhones; i++) {
-                    sTelephonyNetworkFactories[i] = TelephonyComponentFactory.getInstance().inject(
+                if (featureFlags.supportNetworkProvider()) {
+                    // Create the TelephonyNetworkProvider instance, which is a singleton.
+                    sTelephonyNetworkProvider = new TelephonyNetworkProvider(Looper.myLooper(),
+                            context, featureFlags);
+                } else {
+                    for (int i = 0; i < numPhones; i++) {
+                        sTelephonyNetworkFactories[i] = TelephonyComponentFactory.getInstance().inject(
                             TelephonyNetworkFactory.class.getName())
                             .makeTelephonyNetworkFactory(Looper.myLooper(),
                             sPhones[i], sPhoneSwitcher, featureFlags);
+                    }
                 }
 
                 if (featureFlags.satelliteInternet()) {
@@ -354,9 +362,9 @@ public class PhoneFactory {
 
             sPhones = copyOf(sPhones, activeModemCount);
             sCommandsInterfaces = copyOf(sCommandsInterfaces, activeModemCount);
-            sTelephonyNetworkFactories = copyOf(sTelephonyNetworkFactories, activeModemCount);
-            if (sFeatureFlags.satelliteInternet()) {
-                sSatelliteNetworkFactories = copyOf(sSatelliteNetworkFactories, activeModemCount);
+
+            if (!sFeatureFlags.supportNetworkProvider()) {
+                sTelephonyNetworkFactories = copyOf(sTelephonyNetworkFactories, activeModemCount);
             }
 
             int cdmaSubscription = CdmaSubscriptionSourceManager.getDefault(context);
@@ -371,10 +379,6 @@ public class PhoneFactory {
                         PackageManager.FEATURE_TELEPHONY_IMS)) {
                     sPhones[i].createImsPhone();
                 }
-                sTelephonyNetworkFactories[i] = TelephonyComponentFactory.getInstance().inject(
-                        TelephonyNetworkFactory.class.getName())
-                        .makeTelephonyNetworkFactory(Looper.myLooper(), sPhones[i],
-                        sPhoneSwitcher, sFeatureFlags);
                 if (sFeatureFlags.satelliteInternet()) {
                     sSatelliteNetworkFactories[i] = TelephonyComponentFactory.getInstance()
                             .inject(TelephonyNetworkFactory.class.getName())
@@ -446,6 +450,10 @@ public class PhoneFactory {
             }
             return sPhones;
         }
+    }
+
+    public static TelephonyNetworkProvider getNetworkProvider() {
+        return sTelephonyNetworkProvider;
     }
 
     /**
@@ -634,15 +642,21 @@ public class PhoneFactory {
             pw.flush();
             pw.println("++++++++++++++++++++++++++++++++");
 
-            sTelephonyNetworkFactories[i].dump(fd, pw, args);
-            if (sFeatureFlags.satelliteInternet()) {
-                sSatelliteNetworkFactories[i].dump(fd, pw, args);
+            if (!sFeatureFlags.supportNetworkProvider()) {
+                sTelephonyNetworkFactories[i].dump(fd, pw, args);
             }
 
             pw.flush();
             pw.decreaseIndent();
             pw.println("++++++++++++++++++++++++++++++++");
         }
+
+        pw.increaseIndent();
+        if (sFeatureFlags.supportNetworkProvider()) {
+            sTelephonyNetworkProvider.dump(fd, pw, args);
+        }
+        pw.decreaseIndent();
+        pw.println("++++++++++++++++++++++++++++++++");
 
         pw.println("UiccController:");
         pw.increaseIndent();

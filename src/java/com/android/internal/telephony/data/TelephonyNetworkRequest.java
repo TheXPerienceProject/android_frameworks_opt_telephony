@@ -138,10 +138,6 @@ public class TelephonyNetworkRequest {
                 CAPABILITY_ATTRIBUTE_APN_SETTING | CAPABILITY_ATTRIBUTE_TRAFFIC_DESCRIPTOR_DNN)
     );
 
-    /** The phone instance. */
-    @NonNull
-    private final Phone mPhone;
-
     /**
      * Native network request from the clients. See {@link NetworkRequest};
      */
@@ -165,8 +161,8 @@ public class TelephonyNetworkRequest {
     /**
      * Data config manager for retrieving data config.
      */
-    @NonNull
-    private final DataConfigManager mDataConfigManager;
+    @Nullable
+    private DataConfigManager mDataConfigManager;
 
     /**
      * The attached data network. Note that the data network could be in any state. {@code null}
@@ -206,7 +202,19 @@ public class TelephonyNetworkRequest {
      */
     public TelephonyNetworkRequest(@NonNull NetworkRequest request, @NonNull Phone phone,
                                    @NonNull FeatureFlags featureFlags) {
-        mPhone = phone;
+        this(request, featureFlags);
+        mDataConfigManager = phone.getDataNetworkController().getDataConfigManager();
+        updatePriority();
+    }
+
+    /**
+     * Constructor
+     *
+     * @param request The native network request from the clients.
+     * @param featureFlags The feature flag
+     */
+    public TelephonyNetworkRequest(@NonNull NetworkRequest request,
+                                   @NonNull FeatureFlags featureFlags) {
         mNativeNetworkRequest = request;
         mFeatureFlags = featureFlags;
 
@@ -223,7 +231,15 @@ public class TelephonyNetworkRequest {
         // to satisfy it.
         mState = REQUEST_STATE_UNSATISFIED;
         mCreatedTimeMillis = SystemClock.elapsedRealtime();
-        mDataConfigManager = phone.getDataNetworkController().getDataConfigManager();
+    }
+
+    /**
+     * Update the associated data config manager.
+     *
+     * @param dataConfigManager Data config manager
+     */
+    public void updateDataConfig(@NonNull DataConfigManager dataConfigManager) {
+        mDataConfigManager = dataConfigManager;
         updatePriority();
     }
 
@@ -316,13 +332,15 @@ public class TelephonyNetworkRequest {
                 if (mNativeNetworkRequest.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
                         && !mNativeNetworkRequest.hasTransport(
                                 NetworkCapabilities.TRANSPORT_SATELLITE)) {
-                    if (Arrays.stream(getCapabilities()).noneMatch(mDataConfigManager
-                            .getForcedCellularTransportCapabilities()::contains)) {
-                        // If the request is explicitly for the cellular, then the data profile
-                        // needs to support cellular.
-                        if (!dataProfile.getApnSetting().isForInfrastructure(
-                                ApnSetting.INFRASTRUCTURE_CELLULAR)) {
-                            return false;
+                    if (mDataConfigManager != null) {
+                        if (Arrays.stream(getCapabilities()).noneMatch(mDataConfigManager
+                                .getForcedCellularTransportCapabilities()::contains)) {
+                            // If the request is explicitly for the cellular, then the data profile
+                            // needs to support cellular.
+                            if (!dataProfile.getApnSetting().isForInfrastructure(
+                                    ApnSetting.INFRASTRUCTURE_CELLULAR)) {
+                                return false;
+                            }
                         }
                     }
                 } else if (mNativeNetworkRequest.hasTransport(
@@ -385,10 +403,12 @@ public class TelephonyNetworkRequest {
      * Update the priority from data config manager.
      */
     public void updatePriority() {
-        mPriority = Arrays.stream(mNativeNetworkRequest.getCapabilities())
-                .map(mDataConfigManager::getNetworkCapabilityPriority)
-                .max()
-                .orElse(0);
+        if (mDataConfigManager != null) {
+            mPriority = Arrays.stream(mNativeNetworkRequest.getCapabilities())
+                    .map(mDataConfigManager::getNetworkCapabilityPriority)
+                    .max()
+                    .orElse(0);
+        }
     }
 
     /**
@@ -401,6 +421,7 @@ public class TelephonyNetworkRequest {
     @NetCapability
     public int getHighestPriorityApnTypeNetworkCapability() {
         if (!hasAttribute(CAPABILITY_ATTRIBUTE_APN_SETTING)) return -1;
+        if (mDataConfigManager == null) return -1;
         return Arrays.stream(getCapabilities()).boxed()
                 .filter(cap -> DataUtils.networkCapabilityToApnType(cap) != ApnSetting.TYPE_NONE)
                 .max(Comparator.comparingInt(mDataConfigManager::getNetworkCapabilityPriority))
@@ -417,6 +438,7 @@ public class TelephonyNetworkRequest {
      */
     @NetCapability
     public int getHighestPrioritySupportedNetworkCapability() {
+        if (mDataConfigManager == null) return -1;
         return Arrays.stream(getCapabilities()).boxed()
                 .filter(CAPABILITY_ATTRIBUTE_MAP::containsKey)
                 .max(Comparator.comparingInt(mDataConfigManager::getNetworkCapabilityPriority))
@@ -480,7 +502,7 @@ public class TelephonyNetworkRequest {
      *
      * @param evaluation The data evaluation result.
      */
-    public void setEvaluation(@NonNull DataEvaluation evaluation) {
+    public void setEvaluation(@Nullable DataEvaluation evaluation) {
         mEvaluation = evaluation;
     }
 
@@ -498,14 +520,6 @@ public class TelephonyNetworkRequest {
             if (ids.length > 0) return ids[0];
         }
         return 0;
-    }
-
-    /**
-     * @return {@code true} if this network request can result in bringing up a metered network.
-     */
-    public boolean isMeteredRequest() {
-        return mDataConfigManager.isAnyMeteredCapability(
-                getCapabilities(), mPhone.getServiceState().getDataRoaming());
     }
 
     /**
@@ -561,7 +575,7 @@ public class TelephonyNetworkRequest {
         return "[" + mNativeNetworkRequest + ", mPriority=" + mPriority
                 + ", state=" + requestStateToString(mState)
                 + ", mAttachedDataNetwork=" + (mAttachedDataNetwork != null
-                ? mAttachedDataNetwork.name() : null) + ", isMetered=" + isMeteredRequest()
+                ? mAttachedDataNetwork.name() : null)
                 + ", created time=" + DataUtils.elapsedTimeToString(mCreatedTimeMillis)
                 + ", evaluation result=" + mEvaluation + "]";
     }
