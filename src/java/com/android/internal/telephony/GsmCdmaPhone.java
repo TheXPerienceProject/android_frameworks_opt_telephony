@@ -5415,7 +5415,7 @@ public class GsmCdmaPhone extends Phone {
     public void refreshSafetySources(String refreshBroadcastId) {
         if (mFeatureFlags.enableIdentifierDisclosureTransparencyUnsolEvents()
                 || mFeatureFlags.enableModemCipherTransparencyUnsolEvents()) {
-            mSafetySource.refresh(mContext, refreshBroadcastId);
+            post(() -> mSafetySource.refresh(mContext, refreshBroadcastId));
         }
     }
 
