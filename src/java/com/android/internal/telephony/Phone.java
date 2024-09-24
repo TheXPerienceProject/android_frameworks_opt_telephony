@@ -295,9 +295,6 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
     // Key used to read/write the ID for storing the call forwarding status
     public static final String CF_ID = "cf_id_key";
 
-    // Key used to read/write "disable DNS server check" pref (used for testing)
-    private static final String DNS_SERVER_CHECK_DISABLED_KEY = "dns_server_check_disabled_key";
-
     // Integer used to let the calling application know that the we are ignoring auto mode switch.
     public static final int ALREADY_IN_AUTO_SELECTION = 1;
 
@@ -355,7 +352,6 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
     public CommandsInterface mCi;
     protected int mVmCount = 0;
-    private boolean mDnsCheckDisabled;
     protected DataNetworkController mDataNetworkController;
     /* Used for dispatching signals to configured carrier apps */
     protected CarrierSignalAgent mCarrierSignalAgent;
@@ -502,6 +498,7 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
     private static final String ALLOWED_NETWORK_TYPES_TEXT_POWER = "power";
     private static final String ALLOWED_NETWORK_TYPES_TEXT_CARRIER = "carrier";
     private static final String ALLOWED_NETWORK_TYPES_TEXT_ENABLE_2G = "enable_2g";
+    private static final String ALLOWED_NETWORK_TYPES_TEXT_TEST = "test";
     private static final int INVALID_ALLOWED_NETWORK_TYPES = -1;
     protected boolean mIsCarrierNrSupported = false;
     protected boolean mIsAllowedNetworkTypesLoadedFromDb = false;
@@ -631,7 +628,6 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
         setUnitTestMode(unitTestMode);
 
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
-        mDnsCheckDisabled = sp.getBoolean(DNS_SERVER_CHECK_DISABLED_KEY, false);
         mCi.setOnCallRing(this, EVENT_CALL_RING, null);
 
         /* "Voice capable" means that this device supports circuit-switched
@@ -1001,26 +997,6 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
 
     // Will be called when icc changed
     protected abstract void onUpdateIccAvailability();
-
-    /**
-     * Disables the DNS check (i.e., allows "0.0.0.0").
-     * Useful for lab testing environment.
-     * @param b true disables the check, false enables.
-     */
-    public void disableDnsCheck(boolean b) {
-        mDnsCheckDisabled = b;
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
-        SharedPreferences.Editor editor = sp.edit();
-        editor.putBoolean(DNS_SERVER_CHECK_DISABLED_KEY, b);
-        editor.apply();
-    }
-
-    /**
-     * Returns true if the DNS check is currently disabled.
-     */
-    public boolean isDnsCheckDisabled() {
-        return mDnsCheckDisabled;
-    }
 
     /**
      * Register for getting notifications for change in the Call State {@link Call.State}
@@ -2565,6 +2541,8 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
                 return TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_CARRIER;
             case ALLOWED_NETWORK_TYPES_TEXT_ENABLE_2G:
                 return TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_ENABLE_2G;
+            case ALLOWED_NETWORK_TYPES_TEXT_TEST:
+                return TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_TEST;
             default:
                 return INVALID_ALLOWED_NETWORK_TYPES;
         }
@@ -2588,6 +2566,8 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
                 return ALLOWED_NETWORK_TYPES_TEXT_CARRIER;
             case TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_ENABLE_2G:
                 return ALLOWED_NETWORK_TYPES_TEXT_ENABLE_2G;
+            case TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_TEST:
+                return ALLOWED_NETWORK_TYPES_TEXT_TEST;
             default:
                 throw new IllegalArgumentException(
                         "No DB name conversion available for allowed network type reason: " + reason
@@ -5488,7 +5468,6 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
         pw.println("Phone: subId=" + getSubId());
         pw.println(" mPhoneId=" + mPhoneId);
         pw.println(" mCi=" + mCi);
-        pw.println(" mDnsCheckDisabled=" + mDnsCheckDisabled);
         pw.println(" mDoesRilSendMultipleCallRing=" + mDoesRilSendMultipleCallRing);
         pw.println(" mCallRingContinueToken=" + mCallRingContinueToken);
         pw.println(" mCallRingDelay=" + mCallRingDelay);
@@ -5503,7 +5482,6 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
         pw.println(" mNotifier=" + mNotifier);
         pw.println(" mSimulatedRadioControl=" + mSimulatedRadioControl);
         pw.println(" mUnitTestMode=" + mUnitTestMode);
-        pw.println(" isDnsCheckDisabled()=" + isDnsCheckDisabled());
         pw.println(" getUnitTestMode()=" + getUnitTestMode());
         pw.println(" getState()=" + getState());
         pw.println(" getIccSerialNumber()=" + Rlog.pii(mLogTag, getIccSerialNumber()));

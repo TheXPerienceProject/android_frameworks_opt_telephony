@@ -2855,7 +2855,7 @@ public class ImsPhone extends ImsPhoneBase {
     }
 
     /**
-     * Update IMS registration information to modem.
+     * Update IMS registration information to modem and other modules.
      *
      * @param capabilities indicate MMTEL capability such as VOICE, VIDEO and SMS.
      */
@@ -2876,6 +2876,8 @@ public class ImsPhone extends ImsPhoneBase {
             mDefaultPhone.mCi.updateImsRegistrationInfo(mImsRegistrationState,
                     mImsRegistrationTech, 0, capabilities, null);
             mNotifiedRegisteredState = true;
+
+            mImsNrSaModeHandler.updateImsCapability(capabilities);
         }
     }
 
