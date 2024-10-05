@@ -70,6 +70,7 @@ import android.os.Registrant;
 import android.os.RegistrantList;
 import android.os.RemoteException;
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.sysprop.TelephonyProperties;
@@ -1613,7 +1614,11 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
         Intent intent = new Intent(intentAction);
         intent.putExtra(ImsManager.EXTRA_PHONE_ID, mPhone.getPhoneId());
         if (mPhone != null && mPhone.getContext() != null) {
-            mPhone.getContext().sendBroadcast(intent);
+            if (mFeatureFlags.hsumBroadcast()) {
+                mPhone.getContext().sendBroadcastAsUser(intent, UserHandle.ALL);
+            } else {
+                mPhone.getContext().sendBroadcast(intent);
+            }
         }
     }
 
@@ -5180,8 +5185,14 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
                     configChangedIntent.putExtra(ImsConfig.EXTRA_CHANGED_ITEM, item);
                     configChangedIntent.putExtra(ImsConfig.EXTRA_NEW_VALUE, value);
                     if (mPhone != null && mPhone.getContext() != null) {
-                        mPhone.getContext().sendBroadcast(configChangedIntent,
-                                Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+                        if (mFeatureFlags.hsumBroadcast()) {
+                            mPhone.getContext().sendBroadcastAsUser(configChangedIntent,
+                                    UserHandle.ALL,
+                                    Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+                        } else {
+                            mPhone.getContext().sendBroadcast(configChangedIntent,
+                                    Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+                        }
                     }
                 }
 
@@ -7011,8 +7022,13 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
         configChangedIntent.putExtra(ImsConfig.EXTRA_CHANGED_ITEM, item);
         configChangedIntent.putExtra(ImsConfig.EXTRA_NEW_VALUE, value);
         if (mPhone != null && mPhone.getContext() != null) {
-            mPhone.getContext().sendBroadcast(
-                    configChangedIntent, Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+            if (mFeatureFlags.hsumBroadcast()) {
+                mPhone.getContext().sendBroadcastAsUser(configChangedIntent, UserHandle.ALL,
+                        Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+            } else {
+                mPhone.getContext().sendBroadcast(
+                        configChangedIntent, Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+            }
         }
     }
 }

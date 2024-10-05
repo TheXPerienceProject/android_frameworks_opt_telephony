@@ -3370,7 +3370,8 @@ public class DataNetworkController extends Handler {
         if (!evaluation.containsDisallowedReasons()) {
             DataProfile dataProfile = dataSetupRetryEntry.dataProfile;
             DataProfile candidateDataProfile = evaluation.getCandidateDataProfile();
-            if (dataProfile == null || (!dataProfile.equals(candidateDataProfile))) {
+            if (dataProfile == null || (!dataProfile.equals(candidateDataProfile)) ||
+                !mDataProfileManager.isDataProfileCompatible(dataProfile)) {
                 dataProfile = candidateDataProfile;
             }
             if (dataProfile != null) {
