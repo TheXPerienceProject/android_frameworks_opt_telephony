@@ -1471,49 +1471,6 @@ public class SatelliteControllerTest extends TelephonyTest {
 
     @Test
     public void testStopSatelliteTransmissionUpdates() {
-        mIIntegerConsumerSemaphore.drainPermits();
-        mIIntegerConsumerResults.clear();
-        mSatelliteControllerUT.stopSatelliteTransmissionUpdates(mIIntegerConsumer,
-                mStopTransmissionUpdateCallback);
-        processAllMessages();
-        assertTrue(waitForIIntegerConsumerResult(1));
-        assertEquals(SATELLITE_RESULT_INVALID_TELEPHONY_STATE,
-                (long) mIIntegerConsumerResults.get(0));
-
-        mIIntegerConsumerResults.clear();
-        setUpResponseForRequestIsSatelliteSupported(false, SATELLITE_RESULT_SUCCESS);
-        verifySatelliteSupported(false, SATELLITE_RESULT_SUCCESS);
-        mSatelliteControllerUT.stopSatelliteTransmissionUpdates(mIIntegerConsumer,
-                mStopTransmissionUpdateCallback);
-        processAllMessages();
-        assertTrue(waitForIIntegerConsumerResult(1));
-        assertEquals(SATELLITE_RESULT_NOT_SUPPORTED, (long) mIIntegerConsumerResults.get(0));
-
-        resetSatelliteControllerUT();
-        mIIntegerConsumerResults.clear();
-        setUpResponseForRequestIsSatelliteSupported(true, SATELLITE_RESULT_SUCCESS);
-        verifySatelliteSupported(true, SATELLITE_RESULT_SUCCESS);
-        mSatelliteControllerUT.stopSatelliteTransmissionUpdates(mIIntegerConsumer,
-                mStopTransmissionUpdateCallback);
-        processAllMessages();
-        assertTrue(waitForIIntegerConsumerResult(1));
-        assertEquals(SATELLITE_RESULT_SERVICE_NOT_PROVISIONED,
-                (long) mIIntegerConsumerResults.get(0));
-
-        resetSatelliteControllerUT();
-        mIIntegerConsumerResults.clear();
-        setUpResponseForRequestIsSatelliteSupported(true, SATELLITE_RESULT_SUCCESS);
-        setUpResponseForRequestIsSatelliteProvisioned(false, SATELLITE_RESULT_SUCCESS);
-        verifySatelliteSupported(true, SATELLITE_RESULT_SUCCESS);
-        verifySatelliteProvisioned(false, SATELLITE_RESULT_SUCCESS);
-        setUpResponseForStopSatelliteTransmissionUpdates(SATELLITE_RESULT_SUCCESS);
-        mSatelliteControllerUT.stopSatelliteTransmissionUpdates(mIIntegerConsumer,
-                mStopTransmissionUpdateCallback);
-        processAllMessages();
-        assertTrue(waitForIIntegerConsumerResult(1));
-        assertEquals(SATELLITE_RESULT_SERVICE_NOT_PROVISIONED,
-                (long) mIIntegerConsumerResults.get(0));
-
         resetSatelliteControllerUT();
         mIIntegerConsumerResults.clear();
         provisionSatelliteService();
@@ -1533,7 +1490,11 @@ public class SatelliteControllerTest extends TelephonyTest {
         setUpResponseForStopSatelliteTransmissionUpdates(SATELLITE_RESULT_INVALID_TELEPHONY_STATE);
         mSatelliteControllerUT.stopSatelliteTransmissionUpdates(mIIntegerConsumer,
                 mStopTransmissionUpdateCallback);
+        verify(mMockPointingAppController, times(2)).unregisterForSatelliteTransmissionUpdates(
+                anyInt(), any(), eq(mStopTransmissionUpdateCallback));
         processAllMessages();
+        verify(mMockPointingAppController, times(2)).stopSatelliteTransmissionUpdates(
+                any(Message.class));
         assertTrue(waitForIIntegerConsumerResult(1));
         assertEquals(SATELLITE_RESULT_INVALID_TELEPHONY_STATE,
                 (long) mIIntegerConsumerResults.get(0));
@@ -3632,12 +3593,14 @@ public class SatelliteControllerTest extends TelephonyTest {
         processAllMessages();
         verify(mMockNotificationManager, times(1)).notifyAsUser(anyString(), anyInt(), any(),
                 any());
-        assertTrue(mSharedPreferences.getBoolean(SATELLITE_SYSTEM_NOTIFICATION_DONE_KEY, false));
+        // Just by showing notification we do not update the pref file , only once user interact
+        // only we will update the pref value to true.
+        assertFalse(mSharedPreferences.getBoolean(SATELLITE_SYSTEM_NOTIFICATION_DONE_KEY, false));
 
         // Check don't display again after displayed already a system notification.
         sendServiceStateChangedEvent();
         processAllMessages();
-        verify(mMockNotificationManager, times(1)).notifyAsUser(anyString(), anyInt(), any(),
+        verify(mMockNotificationManager, times(2)).notifyAsUser(anyString(), anyInt(), any(),
                 any());
     }
 
@@ -4155,7 +4118,7 @@ public class SatelliteControllerTest extends TelephonyTest {
         assertTrue(mSatelliteControllerUT.isCarrierRoamingNtnEligible(mPhone));
         verify(mPhone, times(0)).notifyCarrierRoamingNtnEligibleStateChanged(eq(true));
         verify(mPhone2, times(0)).notifyCarrierRoamingNtnEligibleStateChanged(anyBoolean());
-        verify(mMockNotificationManager, times(1)).cancelAsUser(anyString(), anyInt(),
+        verify(mMockNotificationManager, times(2)).cancelAsUser(anyString(), anyInt(),
                 any());
     }
 

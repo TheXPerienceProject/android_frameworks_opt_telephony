@@ -288,7 +288,7 @@ public class PhoneSwitcher extends Handler {
 
     /** Phone switcher callbacks. */
     @NonNull
-    private final Set<PhoneSwitcherCallback> mPhoneSwitcherCallbacks = new ArraySet<>();
+    protected final Set<PhoneSwitcherCallback> mPhoneSwitcherCallbacks = new ArraySet<>();
 
     private static final int EVENT_PRIMARY_DATA_SUB_CHANGED       = 101;
     protected static final int EVENT_SUBSCRIPTION_CHANGED         = 102;

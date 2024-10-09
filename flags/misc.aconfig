@@ -206,3 +206,26 @@ flag {
         purpose: PURPOSE_BUGFIX
     }
 }
+
+# OWNER=rambowang TARGET=25Q2
+flag {
+    name: "support_carrier_services_for_hsum"
+    namespace: "telephony"
+    description: "Support Carrier Services (APIs) for HSUM."
+    bug:"345522246"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+# OWNER=jackyu TARGET=25Q2
+flag {
+    name: "hsum_package_manager"
+    namespace: "telephony"
+    description: "Fixed the bug that package manager is not for the right user"
+    bug:"356827794"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
