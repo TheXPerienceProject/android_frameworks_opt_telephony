@@ -372,7 +372,7 @@ public class AccessNetworksManager extends Handler {
             log("onNetworkValidationRequested: networkCapability = ["
                     + DataUtils.networkCapabilityToString(networkCapability) + "]");
 
-            dnc.requestNetworkValidation(networkCapability, result -> post(() -> {
+            dnc.requestNetworkValidation(networkCapability, result -> {
                 try {
                     log("onNetworkValidationRequestDone:"
                             + DataServiceCallback.resultCodeToString(result));
@@ -381,7 +381,7 @@ public class AccessNetworksManager extends Handler {
                     // Ignore if the remote process is no longer available to call back.
                     loge("onNetworkValidationRequestDone RemoteException" + e);
                 }
-            }));
+            });
         }
 
         @Override

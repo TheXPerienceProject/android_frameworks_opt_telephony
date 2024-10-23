@@ -2464,12 +2464,6 @@ public class GsmCdmaPhone extends Phone {
         return (action == CF_ACTION_ENABLE) || (action == CF_ACTION_REGISTRATION);
     }
 
-    private boolean isImsUtEnabledOverCdma() {
-        return isPhoneTypeCdmaLte()
-            && mImsPhone != null
-            && mImsPhone.isUtEnabled();
-    }
-
     private boolean isCsRetry(Message onComplete) {
         if (onComplete != null) {
             return onComplete.getData().getBoolean(CS_FALLBACK_SS, false);
