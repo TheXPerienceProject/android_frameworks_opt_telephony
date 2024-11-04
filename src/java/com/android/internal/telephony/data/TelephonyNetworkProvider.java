@@ -50,7 +50,7 @@ import java.util.Map;
  */
 public class TelephonyNetworkProvider extends NetworkProvider implements NetworkOfferCallback {
 
-    public final String LOG_TAG = "TNP";
+    public String LOG_TAG = "TNP";
 
     /** Android feature flags */
     @NonNull
@@ -62,7 +62,7 @@ public class TelephonyNetworkProvider extends NetworkProvider implements Network
 
     /** Phone switcher responsible to determine request routing on dual-SIM device */
     @NonNull
-    private final PhoneSwitcher mPhoneSwitcher;
+    protected final PhoneSwitcher mPhoneSwitcher;
 
     /** Network requests map. Key is the network request, value is the phone id it applies to. */
     private final Map<TelephonyNetworkRequest, Integer> mNetworkRequests = new ArrayMap<>();
@@ -206,7 +206,7 @@ public class TelephonyNetworkProvider extends NetworkProvider implements Network
      * @param reason The reason for re-evaluating network request. Note this can be only used for
      * debugging message purposes.
      */
-    private void reevaluateNetworkRequests(@NonNull String reason) {
+    protected void reevaluateNetworkRequests(@NonNull String reason) {
         logl("reevaluateNetworkRequests: " + reason + ".");
         mNetworkRequests.forEach((request, oldPhoneId) -> {
             int newPhoneId = getPhoneIdForNetworkRequest(request);
@@ -269,7 +269,7 @@ public class TelephonyNetworkProvider extends NetworkProvider implements Network
      *
      * @param s The debug message to log
      */
-    private void log(@NonNull String s) {
+    protected void log(@NonNull String s) {
         Rlog.d(LOG_TAG, s);
     }
 
@@ -277,7 +277,7 @@ public class TelephonyNetworkProvider extends NetworkProvider implements Network
      * Log error debug messages to logcat.
      * @param s The error debug messages
      */
-    private void loge(@NonNull String s) {
+    protected void loge(@NonNull String s) {
         Rlog.e(LOG_TAG, s);
     }
 
@@ -286,7 +286,7 @@ public class TelephonyNetworkProvider extends NetworkProvider implements Network
      *
      * @param s The debug message to log
      */
-    private void logl(@NonNull String s) {
+    protected void logl(@NonNull String s) {
         log(s);
         mLocalLog.log(s);
     }
