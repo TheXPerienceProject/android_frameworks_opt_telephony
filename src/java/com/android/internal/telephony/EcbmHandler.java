@@ -80,7 +80,7 @@ public class EcbmHandler extends Handler {
     // mEcmTimerResetRegistrants are informed after Ecm timer is canceled or re-started
     private final RegistrantList mEcmTimerResetRegistrants = new RegistrantList();
     private boolean mIsEcbmOnIms = false;
-    private int mEcbmPhoneId = 0;
+    private int mEcbmPhoneId = SubscriptionManager.INVALID_PHONE_INDEX;
 
     private static final String PREF_KEY_ECBM_PHONEID = "ecbm_phoneid";
     private static final String PREF_KEY_IS_ECBM_ON_IMS = "is_ecbm_on_ims";
@@ -208,7 +208,7 @@ public class EcbmHandler extends Handler {
             if (DBG) logd("onECBMExited: " + phoneId);
             handleExitEmergencyCallbackMode(phoneId);
             mIsEcbmOnIms = false;
-            mEcbmPhoneId = 0;
+            mEcbmPhoneId = SubscriptionManager.INVALID_PHONE_INDEX;
         }
     }
 
@@ -233,7 +233,7 @@ public class EcbmHandler extends Handler {
                         "ar.exception: " + ar.exception);
                 if (ar.exception == null) {
                     handleExitEmergencyCallbackMode(phoneId);
-                    mEcbmPhoneId = 0;
+                    mEcbmPhoneId = SubscriptionManager.INVALID_PHONE_INDEX;
                 }
             }
             break;
@@ -413,7 +413,7 @@ public class EcbmHandler extends Handler {
         mEcbmPhoneId = sp.getInt(PREF_KEY_ECBM_PHONEID, 0);
         if (mEcbmPhoneId < 0  || mEcbmPhoneId >=
                 TelephonyManager.getDefault().getActiveModemCount()) {
-            mEcbmPhoneId = 0;
+            mEcbmPhoneId = SubscriptionManager.INVALID_PHONE_INDEX;
         }
         mIsEcbmOnIms = sp.getBoolean(PREF_KEY_IS_ECBM_ON_IMS, false);
     }
@@ -443,6 +443,15 @@ public class EcbmHandler extends Handler {
      */
     public void setEcmCanceledForEmergency(boolean isCanceled) {
         mEcmCanceledForEmergency = isCanceled;
+    }
+
+    /**
+     * Check whether a particular sub is in ECBM
+     * @param int phoneId is the particular phoneId that we are checking for ECBM
+     * @return boolean TRUE if the sub is in ECBM, otherwise false
+     */
+    public boolean isInEcm(int phoneId) {
+        return isInEcm() && (phoneId == mEcbmPhoneId);
     }
 
     private void logd(String s) {
