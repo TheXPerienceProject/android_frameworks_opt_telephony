@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/*
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
 package com.android.internal.telephony;
 
 import static android.telephony.TelephonyManager.HAL_SERVICE_RADIO;
@@ -310,14 +316,16 @@ public class PhoneFactory {
 
                 if (featureFlags.supportNetworkProvider()) {
                     // Create the TelephonyNetworkProvider instance, which is a singleton.
-                    sTelephonyNetworkProvider = new TelephonyNetworkProvider(Looper.myLooper(),
+                    sTelephonyNetworkProvider = TelephonyComponentFactory.getInstance().inject(
+                            TelephonyNetworkProvider.class.getName())
+                            .makeTelephonyNetworkProvider(Looper.myLooper(),
                             context, featureFlags);
                 } else {
                     for (int i = 0; i < numPhones; i++) {
-                        sTelephonyNetworkFactories[i] = TelephonyComponentFactory.getInstance().inject(
-                            TelephonyNetworkFactory.class.getName())
-                            .makeTelephonyNetworkFactory(Looper.myLooper(),
-                            sPhones[i], sPhoneSwitcher, featureFlags);
+                        sTelephonyNetworkFactories[i] = TelephonyComponentFactory.getInstance()
+                                .inject(TelephonyNetworkFactory.class.getName())
+                                .makeTelephonyNetworkFactory(Looper.myLooper(),
+                                sPhones[i], sPhoneSwitcher, featureFlags);
                     }
                 }
 
