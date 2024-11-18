@@ -36,6 +36,7 @@ import android.telephony.TelephonyManager;
 import android.util.AtomicFile;
 import android.util.Xml;
 
+import com.android.internal.telephony.flags.FeatureFlags;
 import com.android.internal.telephony.util.XmlUtils;
 import com.android.internal.util.FastXmlSerializer;
 import com.android.telephony.Rlog;
@@ -116,6 +117,8 @@ public class SmsUsageMonitor {
 
     /** Context for retrieving regexes from XML resource. */
     private final Context mContext;
+
+    private final FeatureFlags mFeatureFlags;
 
     /** Country code for the cached short code pattern matcher. */
     private String mCurrentCountry;
@@ -259,8 +262,9 @@ public class SmsUsageMonitor {
      * @param context the context to use to load resources and get TelephonyManager service
      */
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
-    public SmsUsageMonitor(Context context) {
+    public SmsUsageMonitor(Context context, FeatureFlags flags) {
         mContext = context;
+        mFeatureFlags = flags;
         ContentResolver resolver = context.getContentResolver();
         mRoleManager = (RoleManager) mContext.getSystemService(Context.ROLE_SERVICE);
 
@@ -408,7 +412,8 @@ public class SmsUsageMonitor {
         synchronized (mSettingsObserverHandler) {
             TelephonyManager tm = mContext.getSystemService(TelephonyManager.class);
             // always allow emergency numbers
-            if (tm.isEmergencyNumber(destAddress)) {
+            if (TelephonyCapabilities.supportsTelephonyCalling(mFeatureFlags, mContext)
+                    && tm != null && tm.isEmergencyNumber(destAddress)) {
                 if (DBG) Rlog.d(TAG, "isEmergencyNumber");
                 return SmsManager.SMS_CATEGORY_NOT_SHORT_CODE;
             }
