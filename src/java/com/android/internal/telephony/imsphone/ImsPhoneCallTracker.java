@@ -1926,7 +1926,8 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
                                 dialArgs.intentExtras);
                     }
                 };
-                EmergencyStateTracker.getInstance().exitEmergencyCallbackMode(onComplete);
+                EmergencyStateTracker.getInstance().exitEmergencyCallbackMode(onComplete,
+                        TelephonyManager.STOP_REASON_OUTGOING_NORMAL_CALL_INITIATED);
             } else {
                 try {
                     exitEmergencyMode();

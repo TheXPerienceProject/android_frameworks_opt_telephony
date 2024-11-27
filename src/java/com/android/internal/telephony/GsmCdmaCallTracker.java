@@ -571,7 +571,8 @@ public class GsmCdmaCallTracker extends CallTracker {
                         obtainCompleteMessage());
                     }
                 };
-                EmergencyStateTracker.getInstance().exitEmergencyCallbackMode(onComplete);
+                EmergencyStateTracker.getInstance().exitEmergencyCallbackMode(onComplete,
+                        TelephonyManager.STOP_REASON_OUTGOING_NORMAL_CALL_INITIATED);
             } else {
                 exitEmergencyMode();
                 mPendingCallClirMode=clirMode;
