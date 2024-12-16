@@ -57,6 +57,7 @@ import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.WorkSource;
 import android.telephony.DropBoxManagerLoggerBackend;
+import android.telephony.NetworkRegistrationInfo;
 import android.telephony.PersistentLogger;
 import android.telephony.ServiceState;
 import android.telephony.satellite.ISatelliteModemStateCallback;
@@ -76,6 +77,7 @@ import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.PhoneFactory;
 import com.android.internal.telephony.flags.FeatureFlags;
 import com.android.internal.telephony.satellite.metrics.SessionMetricsStats;
+import com.android.internal.telephony.util.ArrayUtils;
 import com.android.internal.util.State;
 import com.android.internal.util.StateMachine;
 import com.android.telephony.Rlog;
@@ -135,6 +137,7 @@ public class SatelliteSessionController extends StateMachine {
     private static final int EVENT_ENABLE_CELLULAR_MODEM_WHILE_SATELLITE_MODE_IS_ON_DONE = 12;
     private static final int EVENT_SERVICE_STATE_CHANGED = 13;
     protected static final int EVENT_P2P_SMS_INACTIVITY_TIMER_TIMED_OUT = 14;
+
     private static final long REBIND_INITIAL_DELAY = 2 * 1000; // 2 seconds
     private static final long REBIND_MAXIMUM_DELAY = 64 * 1000; // 1 minute
     private static final int REBIND_MULTIPLIER = 2;
@@ -180,8 +183,6 @@ public class SatelliteSessionController extends StateMachine {
     boolean mIsScreenOn = true;
     private boolean mIsDeviceAlignedWithSatellite = false;
 
-    @GuardedBy("mLock")
-    @NonNull private boolean mIsDisableCellularModemInProgress = false;
     @NonNull private final SatelliteController mSatelliteController;
     @NonNull private final DatagramController mDatagramController;
     @Nullable private PersistentLogger mPersistentLogger = null;
@@ -308,20 +309,6 @@ public class SatelliteSessionController extends StateMachine {
         mDeviceStateMonitor = satellitePhone.getDeviceStateMonitor();
         mSessionMetricsStats = SessionMetricsStats.getInstance();
         mAlarmManager = mContext.getSystemService(AlarmManager.class);
-
-        if (mFeatureFlags.carrierRoamingNbIotNtn()) {
-            // Register to received Cellular service state
-            for (Phone phone : PhoneFactory.getPhones()) {
-                if (phone == null) continue;
-
-                phone.registerForServiceStateChanged(
-                        getHandler(), EVENT_SERVICE_STATE_CHANGED, null);
-                if (DBG) {
-                    plogd("SatelliteSessionController: registerForServiceStateChanged phoneId "
-                            + phone.getPhoneId());
-                }
-            }
-        }
 
         addState(mUnavailableState);
         addState(mPowerOffState);
@@ -599,6 +586,17 @@ public class SatelliteSessionController extends StateMachine {
     }
 
     /**
+     * Get whether state machine is in connected state.
+     *
+     * @return {@code true} if state machine is in connected state and {@code false} otherwise.
+     */
+    public boolean isInConnectedState() {
+        if (DBG) plogd("isInConnectedState: getCurrentState=" + getCurrentState());
+        return getCurrentState() == mConnectedState;
+    }
+
+
+    /**
      * Release all resource.
      */
     @VisibleForTesting(visibility = VisibleForTesting.Visibility.PRIVATE)
@@ -690,9 +688,6 @@ public class SatelliteSessionController extends StateMachine {
             mPreviousState = mCurrentState;
             mCurrentState = SatelliteManager.SATELLITE_MODEM_STATE_OFF;
             mIsSendingTriggeredDuringTransferringState.set(false);
-            synchronized (mLock) {
-                mIsDisableCellularModemInProgress = false;
-            }
             unbindService();
             stopNbIotInactivityTimer();
             DemoSimulator.getInstance().onSatelliteModeOff();
@@ -894,7 +889,11 @@ public class SatelliteSessionController extends StateMachine {
             Message onCompleted =
                     obtainMessage(EVENT_ENABLE_CELLULAR_MODEM_WHILE_SATELLITE_MODE_IS_ON_DONE);
             mSatelliteModemInterface.enableCellularModemWhileSatelliteModeIsOn(true, onCompleted);
-            notifyStateChangedEvent(SatelliteManager.SATELLITE_MODEM_STATE_IDLE);
+            if (isConcurrentTnScanningSupported()) {
+                plogd("IDLE state is hidden from clients");
+            } else {
+                notifyStateChangedEvent(SatelliteManager.SATELLITE_MODEM_STATE_IDLE);
+            }
         }
 
         @Override
@@ -909,7 +908,7 @@ public class SatelliteSessionController extends StateMachine {
                     break;
                 case EVENT_DISABLE_CELLULAR_MODEM_WHILE_SATELLITE_MODE_IS_ON_DONE:
                     handleEventDisableCellularModemWhileSatelliteModeIsOnDone(
-                            (AsyncResult) msg.obj);
+                        (AsyncResult) msg.obj);
                     break;
                 case EVENT_SATELLITE_ENABLEMENT_STARTED:
                     handleSatelliteEnablementStarted((boolean) msg.obj);
@@ -924,12 +923,7 @@ public class SatelliteSessionController extends StateMachine {
                     handleSatelliteModemStateChanged(msg);
                     break;
                 case EVENT_ENABLE_CELLULAR_MODEM_WHILE_SATELLITE_MODE_IS_ON_DONE:
-                    if (!mIgnoreCellularServiceState) {
-                        handleEventEnableCellularModemWhileSatelliteModeIsOnDone();
-                    } else {
-                        plogd("IdleState: processing: ignore "
-                                + "EVENT_ENABLE_CELLULAR_MODEM_WHILE_SATELLITE_MODE_IS_ON_DONE");
-                    }
+                    plogd("EVENT_ENABLE_CELLULAR_MODEM_WHILE_SATELLITE_MODE_IS_ON_DONE");
                     break;
                 case EVENT_SERVICE_STATE_CHANGED:
                     if (!mIgnoreCellularServiceState) {
@@ -954,37 +948,17 @@ public class SatelliteSessionController extends StateMachine {
             if ((datagramTransferState.sendState == SATELLITE_DATAGRAM_TRANSFER_STATE_SENDING)
                     || (datagramTransferState.receiveState
                     == SATELLITE_DATAGRAM_TRANSFER_STATE_RECEIVING)) {
-                if (mSatelliteController.isSatelliteAttachRequired()) {
-                    ploge("Unexpected transferring state received for NB-IOT NTN");
-                } else {
-                    transitionTo(mTransferringState);
-                }
+                transitionTo(mTransferringState);
             } else if ((datagramTransferState.sendState
                     == SATELLITE_DATAGRAM_TRANSFER_STATE_WAITING_TO_CONNECT)
                     || (datagramTransferState.receiveState
                     == SATELLITE_DATAGRAM_TRANSFER_STATE_WAITING_TO_CONNECT)) {
                 if (mSatelliteController.isSatelliteAttachRequired()) {
-                    disableCellularModemWhileSatelliteModeIsOn();
+                    transitionTo(mNotConnectedState);
                 } else {
                     ploge("Unexpected transferring state received for non-NB-IOT NTN");
                 }
             }
-        }
-
-        private void handleEventEnableCellularModemWhileSatelliteModeIsOnDone() {
-            if (!mFeatureFlags.carrierRoamingNbIotNtn()) {
-                Rlog.d(TAG, "handleEventEnableCellularModemWhileSatelliteModeIsOnDone: "
-                        + "carrierRoamingNbIotNtn is disabled");
-                return;
-            }
-
-            ServiceState serviceState = mSatelliteController.getSatellitePhone().getServiceState();
-            if (serviceState == null) {
-                plogd("handleEventEnableCellularModemWhileSatelliteModeIsOnDone: "
-                        + "can't access ServiceState");
-                return;
-            }
-            handleEventServiceStateChanged(serviceState);
         }
 
         private void handleEventServiceStateChanged(ServiceState serviceState) {
@@ -1028,49 +1002,32 @@ public class SatelliteSessionController extends StateMachine {
 
         private void handleEventDisableCellularModemWhileSatelliteModeIsOnDone(
                 @NonNull AsyncResult result) {
-            synchronized (mLock) {
-                if (mIsDisableCellularModemInProgress) {
-                    int error = SatelliteServiceUtils.getSatelliteError(
-                            result, "DisableCellularModemWhileSatelliteModeIsOnDone");
-                    if (error == SatelliteManager.SATELLITE_RESULT_SUCCESS) {
-                        transitionTo(mNotConnectedState);
-                    }
-                    mIsDisableCellularModemInProgress = false;
-                } else {
-                    ploge("DisableCellularModemWhileSatelliteModeIsOn is not in progress");
-                }
-            }
+            int error = SatelliteServiceUtils.getSatelliteError(
+                        result, "DisableCellularModemWhileSatelliteModeIsOnDone");
+            plogd("Disable TN scanning done with result: " + error);
         }
 
         private void handleSatelliteModemStateChanged(@NonNull Message msg) {
             int state = msg.arg1;
             if (state == SatelliteManager.SATELLITE_MODEM_STATE_OFF) {
                 transitionTo(mPowerOffState);
-            }
-        }
-
-        private void disableCellularModemWhileSatelliteModeIsOn() {
-            synchronized (mLock) {
-                if (mIsDisableCellularModemInProgress) {
-                    plogd("Cellular scanning is already being disabled");
-                    return;
+            } else if (state == SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED
+                           || state == SatelliteManager.SATELLITE_MODEM_STATE_CONNECTED) {
+                if (isConcurrentTnScanningSupported()) {
+                    plogd("Notifying the new state " + state + " to clients but still"
+                            + " stay at IDLE state internally");
+                    notifyStateChangedEvent(state);
+                } else {
+                    plogd("Ignoring the modem state " + state);
                 }
-
-                mIsDisableCellularModemInProgress = true;
-                Message onCompleted =
-                        obtainMessage(EVENT_DISABLE_CELLULAR_MODEM_WHILE_SATELLITE_MODE_IS_ON_DONE);
-                mSatelliteModemInterface.enableCellularModemWhileSatelliteModeIsOn(false,
-                        onCompleted);
             }
         }
 
         @Override
         public void exit() {
             if (DBG) plogd("Exiting IdleState");
-            if (!mSatelliteController.isSatelliteAttachRequired()) {
-                // Disable cellular modem scanning
-                mSatelliteModemInterface.enableCellularModemWhileSatelliteModeIsOn(false, null);
-            }
+            // Disable cellular modem scanning
+            mSatelliteModemInterface.enableCellularModemWhileSatelliteModeIsOn(false, null);
         }
     }
 
@@ -1344,6 +1301,8 @@ public class SatelliteSessionController extends StateMachine {
             startNbIotInactivityTimer();
             evaluateStartingEsosInactivityTimer();
             evaluateStartingP2pSmsInactivityTimer();
+            mSatelliteController.updateLastNotifiedCarrierRoamingNtnSignalStrengthAndNotify(
+                    mSatelliteController.getSatellitePhone());
         }
 
         @Override
@@ -1694,6 +1653,19 @@ public class SatelliteSessionController extends StateMachine {
         }
         mIsScreenOn = screenOn;
 
+        if (mSatelliteController.getRequestIsEmergency()) {
+            if (DBG) logd("handleEventScreenStateChanged: Emergency mode");
+            // This is for coexistence
+            // emergency mode can be set after registerForScreenStateChanged() called for P2P-sms
+            return;
+        }
+
+        int subId = getSubId();
+        if (!isP2pSmsSupportedOnCarrierRoamingNtn(subId)) {
+            if (DBG) plogd("handleEventScreenStateChanged: P2P_SMS is not supported");
+            return;
+        }
+
         if (!screenOn) {
             // Screen off, start timer
             int timeoutMillis = getScreenOffInactivityTimeoutDurationSec() * 1000;
@@ -1805,19 +1777,19 @@ public class SatelliteSessionController extends StateMachine {
         }
 
         if (isP2pSmsInActivityTimerStarted()) {
-            plogd("isEsosInActivityTimerStarted: "
+            plogd("isP2pSmsInActivityTimerStarted: "
                     + "P2P_SMS inactivity timer already started");
             return;
         }
 
         int subId = getSubId();
-        if (!mSatelliteController.isSatelliteRoamingP2pSmSSupported(subId)) {
-            plogd("evaluateStartingEsosInactivityTimer: P2P_SMS is not supported");
+        if (!isP2pSmsSupportedOnCarrierRoamingNtn(subId)) {
+            if (DBG) plogd("evaluateStartingP2pSmsInactivityTimer: P2P_SMS is not supported");
             return;
         }
 
         if (mIsDeviceAlignedWithSatellite) {
-            plogd("evaluateStartingEsosInactivityTimer: "
+            plogd("evaluateStartingP2pSmsInactivityTimer: "
                     + "can't start P2P_SMS inactivity timer due to device aligned satellite");
             return;
         }
@@ -1827,10 +1799,10 @@ public class SatelliteSessionController extends StateMachine {
         if (datagramController.isSendingInIdleState()
                 && datagramController.isPollingInIdleState()) {
             sendMessageDelayed(EVENT_P2P_SMS_INACTIVITY_TIMER_TIMED_OUT, timeOutMillis);
-            plogd("evaluateStartingEsosInactivityTimer: start P2P_SMS inactivity timer "
+            plogd("evaluateStartingP2pSmsInactivityTimer: start P2P_SMS inactivity timer "
                     + timeOutMillis);
         } else {
-            plogd("evaluateStartingEsosInactivityTimer: "
+            plogd("evaluateStartingP2pSmsInactivityTimer: "
                     + "can't start P2P_SMS inactivity timer");
         }
     }
@@ -1848,6 +1820,15 @@ public class SatelliteSessionController extends StateMachine {
     }
 
     private void handleEventScreenOffInactivityTimerTimedOut() {
+        if (mSatelliteController.getRequestIsEmergency()) {
+            loge("handleEventScreenOffInactivityTimerTimedOut: Emergency mode");
+            /* This is for coexistence
+             * mIsEmergency can be set after
+             * EVENT_SCREEN_OFF_INACTIVITY_TIMER_TIMED_OUT timer started
+             */
+            return;
+        }
+
         plogd("handleEventScreenOffInactivityTimerTimedOut: request disable satellite");
 
         mSatelliteController.requestSatelliteEnabled(
@@ -1943,6 +1924,25 @@ public class SatelliteSessionController extends StateMachine {
         return true;
     }
 
+    private boolean isP2pSmsSupportedOnCarrierRoamingNtn(int subId) {
+        if (!mSatelliteController.isSatelliteRoamingP2pSmSSupported(subId)) {
+            if (DBG) plogd("isP2pSmsSupportedOnCarrierRoamingNtn: P2P_SMS is not supported");
+            return false;
+        }
+
+        int[] services = mSatelliteController.getSupportedServicesOnCarrierRoamingNtn(subId);
+        if (!ArrayUtils.contains(services, NetworkRegistrationInfo.SERVICE_TYPE_SMS)) {
+            if (DBG) {
+                plogd("isP2pSmsSupportedOnCarrierRoamingNtn: P2P_SMS service is not supported "
+                        + "on carrier roaming ntn.");
+            }
+            return false;
+        }
+
+        if (DBG) plogd("isP2pSmsSupportedOnCarrierRoamingNtn: P2_SMS is supported");
+        return true;
+    }
+
     private boolean isSatellitePersistentLoggingEnabled(
             @NonNull Context context, @NonNull FeatureFlags featureFlags) {
         if (featureFlags.satellitePersistentLogging()) {
@@ -1952,6 +1952,16 @@ public class SatelliteSessionController extends StateMachine {
             return context.getResources().getBoolean(
                     R.bool.config_dropboxmanager_persistent_logging_enabled);
         } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    private boolean isConcurrentTnScanningSupported() {
+        try {
+            return mContext.getResources().getBoolean(
+                R.bool.config_satellite_modem_support_concurrent_tn_scanning);
+        } catch (RuntimeException e) {
+            plogd("isConcurrentTnScanningSupported: ex=" + e);
             return false;
         }
     }

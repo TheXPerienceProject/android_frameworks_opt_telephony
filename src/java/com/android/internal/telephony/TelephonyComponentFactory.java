@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/*
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
 package com.android.internal.telephony;
 
 import android.annotation.NonNull;
@@ -52,6 +58,7 @@ import com.android.internal.telephony.data.PhoneSwitcher;
 import com.android.internal.telephony.data.TelephonyNetworkAgent;
 import com.android.internal.telephony.data.TelephonyNetworkAgent.TelephonyNetworkAgentCallback;
 import com.android.internal.telephony.data.TelephonyNetworkFactory;
+import com.android.internal.telephony.data.TelephonyNetworkProvider;
 import com.android.internal.telephony.emergency.EmergencyNumberTracker;
 import com.android.internal.telephony.flags.FeatureFlags;
 import com.android.internal.telephony.flags.FeatureFlagsImpl;
@@ -320,9 +327,9 @@ public class TelephonyComponentFactory {
         return new SmsStorageMonitor(phone, flags);
     }
 
-    public SmsUsageMonitor makeSmsUsageMonitor(Context context) {
-        Rlog.d(LOG_TAG, "makeSmsUsageMonitor");
-        return new SmsUsageMonitor(context);
+    public SmsUsageMonitor makeSmsUsageMonitor(Context context, FeatureFlags flags) {
+        Rlog.d(LOG_TAG, "makeSmsUsageMonitor");        
+        return new SmsUsageMonitor(context, flags);
     }
 
     public ServiceStateTracker makeServiceStateTracker(GsmCdmaPhone phone, CommandsInterface ci,
@@ -670,7 +677,8 @@ public class TelephonyComponentFactory {
         return CellularNetworkSecuritySafetySource.getInstance(context);
     }
 
-    public DataConfigManager makeDataConfigManager(Phone phone, Looper looper, FeatureFlags featureFlags) {
+    public DataConfigManager makeDataConfigManager(Phone phone, Looper looper,
+            FeatureFlags featureFlags) {
         Rlog.i(TAG, "makeDataConfigManager");
         return new DataConfigManager(phone, looper, featureFlags);
     }
@@ -678,7 +686,8 @@ public class TelephonyComponentFactory {
     public DataRetryManager makeDataRetryManager(Phone phone,
             DataNetworkController dataNetworkController,
             SparseArray<DataServiceManager> dataServiceManagers,
-            Looper looper, FeatureFlags featureFlags, DataRetryManager.DataRetryManagerCallback dataRetryManagerCallback) {
+            Looper looper, FeatureFlags featureFlags,
+            DataRetryManager.DataRetryManagerCallback dataRetryManagerCallback) {
         Rlog.i(TAG, "makeDataRetryManager");
         return new DataRetryManager(phone, dataNetworkController, dataServiceManagers,
                 looper, featureFlags, dataRetryManagerCallback);
@@ -697,6 +706,12 @@ public class TelephonyComponentFactory {
             PhoneSwitcher phoneSwitcher, @NonNull FeatureFlags flags) {
         Rlog.i(TAG, "make TelephonyNetworkFactory");
         return new TelephonyNetworkFactory(looper, phone, phoneSwitcher, flags);
+    }
+
+    public TelephonyNetworkProvider makeTelephonyNetworkProvider(@NonNull Looper looper,
+            @NonNull Context context, @NonNull FeatureFlags flags) {
+        Rlog.i(TAG, "make TelephonyNetworkProvider");
+        return new TelephonyNetworkProvider(looper, context, flags);
     }
 
     public SubscriptionManagerService makeSubscriptionManagerService(
