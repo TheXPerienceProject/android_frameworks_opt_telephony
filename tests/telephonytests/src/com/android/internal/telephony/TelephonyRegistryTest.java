@@ -138,7 +138,7 @@ public class TelephonyRegistryTest extends TelephonyTest {
     private long mCallbackModeDurationMillis;
     private boolean mCarrierRoamingNtnMode;
     private boolean mCarrierRoamingNtnEligible;
-    private List<Integer> mCarrierRoamingNtnAvailableServices;
+    private int[] mCarrierRoamingNtnAvailableServices;
     private NtnSignalStrength mCarrierRoamingNtnSignalStrength;
     private boolean mIsSatelliteEnabled;
 
@@ -354,7 +354,7 @@ public class TelephonyRegistryTest extends TelephonyTest {
         }
 
         @Override
-        public void onCarrierRoamingNtnAvailableServicesChanged(List<Integer> services) {
+        public void onCarrierRoamingNtnAvailableServicesChanged(int[] services) {
             invocationCount.incrementAndGet();
             mCarrierRoamingNtnAvailableServices = services;
         }
@@ -1344,7 +1344,7 @@ public class TelephonyRegistryTest extends TelephonyTest {
         TelephonyDisplayInfo displayInfo = new TelephonyDisplayInfo(
                 TelephonyManager.NETWORK_TYPE_LTE,
                 TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED,
-                false);
+                false, false, false);
 
         // Notify with invalid subId on default phone. Should NOT trigger callback.
         mTelephonyRegistry.notifyDisplayInfoChanged(0, INVALID_SUBSCRIPTION_ID, displayInfo);
@@ -1371,11 +1371,11 @@ public class TelephonyRegistryTest extends TelephonyTest {
         TelephonyDisplayInfo displayInfo = new TelephonyDisplayInfo(
                 TelephonyManager.NETWORK_TYPE_LTE,
                 TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED,
-                false);
+                false, false, false);
         TelephonyDisplayInfo expectDisplayInfo = new TelephonyDisplayInfo(
                 TelephonyManager.NETWORK_TYPE_LTE,
                 TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA_MMWAVE,
-                false);
+                false, false, false);
 
         // Notify with invalid subId on default phone. Should NOT trigger callback.
         mTelephonyRegistry.notifyDisplayInfoChanged(0, INVALID_SUBSCRIPTION_ID, displayInfo);
@@ -1398,11 +1398,11 @@ public class TelephonyRegistryTest extends TelephonyTest {
         TelephonyDisplayInfo displayInfo = new TelephonyDisplayInfo(
                 TelephonyManager.NETWORK_TYPE_LTE,
                 TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED,
-                false);
+                false, false, false);
         TelephonyDisplayInfo expectDisplayInfo = new TelephonyDisplayInfo(
                 TelephonyManager.NETWORK_TYPE_LTE,
                 TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA_MMWAVE,
-                false);
+                false, false, false);
         TelephonyCallback telephonyCallback2 = new TelephonyCallbackWrapper() {
             @Override
             public void onDisplayInfoChanged(TelephonyDisplayInfo displayInfoNotify) {
@@ -1768,9 +1768,7 @@ public class TelephonyRegistryTest extends TelephonyTest {
         int[] services = {3, 6};
         mTelephonyRegistry.notifyCarrierRoamingNtnAvailableServicesChanged(subId, services);
         processAllMessages();
-        int[] carrierServices = mCarrierRoamingNtnAvailableServices.stream()
-                .mapToInt(Integer::intValue).toArray();
-        assertTrue(Arrays.equals(carrierServices, services));
+        assertTrue(Arrays.equals(mCarrierRoamingNtnAvailableServices, services));
     }
 
     @Test
