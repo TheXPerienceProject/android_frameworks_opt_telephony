@@ -1724,7 +1724,8 @@ public class PhoneSwitcher extends Handler {
         mPendingSwitchNeedValidation = needValidation;
         mSetOpptSubCallback = callback;
         long validationTimeout = getValidationTimeout(subIdToValidate, needValidation);
-        mValidator.validate(subIdToValidate, validationTimeout, false, mValidationCallback);
+        mValidator.validate(subIdToValidate, validationTimeout,
+                mFlags.keepPingRequest() && mPendingSwitchNeedValidation, mValidationCallback);
     }
 
     private long getValidationTimeout(int subId, boolean needValidation) {

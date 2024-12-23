@@ -1087,6 +1087,14 @@ public class ImsPhone extends ImsPhoneBase {
             return mCT.dial(dialString, imsDialArgs);
         }
 
+        if (mFeatureFlags.skipMmiCodeCheckForEmergencyCall()) {
+            // Skip to check mmi code if outgoing call is emergency
+            if (dialArgs.isEmergency) {
+                logd("dialInternal: emergency number, skip to check mmi code");
+                return mCT.dial(dialString, imsDialArgsBuilder.build());
+            }
+        }
+
         // Only look at the Network portion for mmi
         String networkPortion = PhoneNumberUtils.extractNetworkPortionAlt(newDialString);
         ImsPhoneMmiCode mmi =  ImsPhoneMmiCode.newFromDialString(networkPortion, this,
