@@ -1141,7 +1141,8 @@ public abstract class SMSDispatcher extends Handler {
                     tracker.mMessageId,
                     tracker.isFromDefaultSmsApplication(mContext),
                     tracker.getInterval(),
-                    mTelephonyManager.isEmergencyNumber(tracker.mDestAddress));
+                    mTelephonyManager.isEmergencyNumber(tracker.mDestAddress),
+                    tracker.isMtSmsPollingMessage(mContext));
             if (mPhone != null) {
                 TelephonyAnalytics telephonyAnalytics = mPhone.getTelephonyAnalytics();
                 if (telephonyAnalytics != null) {
@@ -1205,7 +1206,8 @@ public abstract class SMSDispatcher extends Handler {
                         tracker.mMessageId,
                         tracker.isFromDefaultSmsApplication(mContext),
                         tracker.getInterval(),
-                        mTelephonyManager.isEmergencyNumber(tracker.mDestAddress));
+                        mTelephonyManager.isEmergencyNumber(tracker.mDestAddress),
+                        tracker.isMtSmsPollingMessage(mContext));
                 if (mPhone != null) {
                     TelephonyAnalytics telephonyAnalytics = mPhone.getTelephonyAnalytics();
                     if (telephonyAnalytics != null) {
@@ -1242,7 +1244,8 @@ public abstract class SMSDispatcher extends Handler {
                         tracker.mMessageId,
                         tracker.isFromDefaultSmsApplication(mContext),
                         tracker.getInterval(),
-                        mTelephonyManager.isEmergencyNumber(tracker.mDestAddress));
+                        mTelephonyManager.isEmergencyNumber(tracker.mDestAddress),
+                        tracker.isMtSmsPollingMessage(mContext));
                 if (mPhone != null) {
                     TelephonyAnalytics telephonyAnalytics = mPhone.getTelephonyAnalytics();
                     if (telephonyAnalytics != null) {
@@ -1269,7 +1272,8 @@ public abstract class SMSDispatcher extends Handler {
                         tracker.mMessageId,
                         tracker.isFromDefaultSmsApplication(mContext),
                         tracker.getInterval(),
-                        mTelephonyManager.isEmergencyNumber(tracker.mDestAddress));
+                        mTelephonyManager.isEmergencyNumber(tracker.mDestAddress),
+                        tracker.isMtSmsPollingMessage(mContext));
                 if (mPhone != null) {
                     TelephonyAnalytics telephonyAnalytics = mPhone.getTelephonyAnalytics();
                     if (telephonyAnalytics != null) {
@@ -2518,7 +2522,8 @@ public abstract class SMSDispatcher extends Handler {
                     trackers[0].mMessageId,
                     trackers[0].isFromDefaultSmsApplication(mContext),
                     trackers[0].getInterval(),
-                    mTelephonyManager.isEmergencyNumber(trackers[0].mDestAddress));
+                    mTelephonyManager.isEmergencyNumber(trackers[0].mDestAddress),
+                    trackers[0].isMtSmsPollingMessage(mContext));
             if (mPhone != null) {
                 TelephonyAnalytics telephonyAnalytics = mPhone.getTelephonyAnalytics();
                 if (telephonyAnalytics != null) {
@@ -2648,7 +2653,7 @@ public abstract class SMSDispatcher extends Handler {
         }
 
         @VisibleForTesting
-        public SmsTracker(String destAddr, long messageId) {
+        public SmsTracker(String destAddr, long messageId, String messageText) {
             mData = null;
             mSentIntent = null;
             mDeliveryIntent = null;
@@ -2665,6 +2670,7 @@ public abstract class SMSDispatcher extends Handler {
             mSkipShortCodeDestAddrCheck = false;
             mUniqueMessageId = 0;
             mResultCodeFromCarrierMessagingService = CarrierMessagingService.SEND_STATUS_OK;
+            mFullMessageText = messageText;
         }
 
         public HashMap<String, Object> getData() {
@@ -2702,6 +2708,22 @@ public abstract class SMSDispatcher extends Handler {
                                     getAppPackageName(), userHandle);
             }
             return mIsFromDefaultSmsApplication;
+        }
+
+        /**
+         * Check if the message is a MT SMS polling message.
+         *
+         * @param context The Context
+         * @return true if the message is a MT SMS polling message, false otherwise.
+         */
+        public boolean isMtSmsPollingMessage(Context context) {
+            if (mFullMessageText == null) {
+                return false;
+            }
+
+            String mtSmsPollingText =
+                    context.getResources().getString(R.string.config_mt_sms_polling_text);
+            return mFullMessageText.equals(mtSmsPollingText);
         }
 
         /**
