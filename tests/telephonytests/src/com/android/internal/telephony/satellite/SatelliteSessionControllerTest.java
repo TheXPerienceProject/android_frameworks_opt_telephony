@@ -24,12 +24,14 @@ import static android.telephony.satellite.SatelliteManager.DATAGRAM_TYPE_SOS_MES
 import static android.telephony.satellite.SatelliteManager.DATAGRAM_TYPE_UNKNOWN;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_IDLE;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_RECEIVE_FAILED;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_RECEIVE_NONE;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_RECEIVE_SUCCESS;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_RECEIVING;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_SENDING;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_SEND_FAILED;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_SEND_SUCCESS;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_WAITING_TO_CONNECT;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_UNKNOWN;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_SUCCESS;
 
 import static org.junit.Assert.assertEquals;
@@ -2122,6 +2124,128 @@ public class SatelliteSessionControllerTest extends TelephonyTest {
         verify(mMockDatagramController).onSatelliteModemStateChanged(
                 SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED);
         clearInvocations(mMockDatagramController);
+    }
+
+    @Test
+    public void testP2pSmsInactivityTimerTimedOut_tnScanningNotSupported() {
+        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
+        when(mMockSatelliteController.isSatelliteAttachRequired()).thenReturn(true);
+
+        when(mMockSatelliteController.getRequestIsEmergency()).thenReturn(false);
+        when(mMockSatelliteController.isSatelliteRoamingP2pSmSSupported(
+                anyInt())).thenReturn(true);
+        when(mMockSatelliteController.getSupportedServicesOnCarrierRoamingNtn(anyInt()))
+                .thenReturn(new int[]{
+                        NetworkRegistrationInfo.SERVICE_TYPE_SMS,
+                        NetworkRegistrationInfo.SERVICE_TYPE_EMERGENCY});
+        when(mMockSatelliteController.isInCarrierRoamingNbIotNtn()).thenReturn(true);
+        Resources resources = mContext.getResources();
+        when(resources.getBoolean(
+                R.bool.config_satellite_allow_tn_scanning_during_satellite_session))
+                .thenReturn(false);
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putInt(KEY_SATELLITE_ROAMING_P2P_SMS_INACTIVITY_TIMEOUT_SEC_INT,
+                P2P_SMS_INACTIVITY_TIMEOUT_SEC);
+        when(mMockSatelliteController.getPersistableBundle(anyInt())).thenReturn(bundle);
+
+        // Since satellite is supported, SatelliteSessionController should move to POWER_OFF state.
+        assertNotNull(mTestSatelliteSessionController);
+        mTestSatelliteSessionController.setSatelliteEnabledForNtnOnlySubscription(false);
+        assertEquals(STATE_POWER_OFF, mTestSatelliteSessionController.getCurrentStateName());
+        setupDatagramTransferringState(true);
+
+        moveToNotConnectedState();
+
+        // Verify that the P2P SMS inactivity timer is started.
+        assertTrue(mTestSatelliteSessionController.isP2pSmsInActivityTimerStarted());
+
+        // Time shift to cause timeout
+        moveTimeForward(P2P_SMS_INACTIVITY_TIMEOUT_SEC * 1000);
+        processAllMessages();
+
+        // Should disable satellite
+        verify(mMockSatelliteController).requestSatelliteEnabled(
+                eq(false), eq(false), eq(false), any(IIntegerConsumer.Stub.class));
+    }
+
+    @Test
+    public void testSetDeviceAlignedWithSatellite_updatesMaxInactivityDuration() {
+        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
+        setUserInactivityStart();
+
+        mTestSatelliteSessionController.setDeviceAlignedWithSatellite(true);
+
+        verify(mMockSessionMetricsStats, times(1)).updateMaxInactivityDurationSec(anyInt());
+    }
+
+    @Test
+    public void
+            testSetDeviceAlignedWithSatellite_setsInactivityStartTimestampUndefinedAfterUpdate() {
+        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
+        setUserInactivityStart();
+        mTestSatelliteSessionController.setDeviceAlignedWithSatellite(true);
+
+        mTestSatelliteSessionController.setDeviceAlignedWithSatellite(true);
+
+        // There should be only one call to updateMaxInactivityDurationSec since the inactivity
+        // start timestamp is reset to undefined.
+        verify(mMockSessionMetricsStats, times(1)).updateMaxInactivityDurationSec(anyInt());
+    }
+
+    @Test
+    public void
+            testSetDeviceAlignedWithSatellite_noInactivityStart_noUpdateMaxInactivityDuration() {
+        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
+
+        mTestSatelliteSessionController.setDeviceAlignedWithSatellite(true);
+
+        verify(mMockSessionMetricsStats, times(0)).updateMaxInactivityDurationSec(anyInt());
+    }
+
+    @Test
+    public void testSetDeviceAlignedWithSatellite_flagOff_noUpdateMaxInactivityDuration() {
+        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(false);
+        setUserInactivityStart();
+
+        mTestSatelliteSessionController.setDeviceAlignedWithSatellite(true);
+
+        verify(mMockSessionMetricsStats, times(0)).updateMaxInactivityDurationSec(anyInt());
+    }
+
+    @Test
+    public void testOnDatagramTransferStateChanged_notIdle_updatesMaxInactivityDuration() {
+        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
+        setUserInactivityStart();
+
+        mTestSatelliteSessionController.onDatagramTransferStateChanged(
+                SATELLITE_DATAGRAM_TRANSFER_STATE_WAITING_TO_CONNECT,
+                SATELLITE_DATAGRAM_TRANSFER_STATE_IDLE,
+                DATAGRAM_TYPE_UNKNOWN);
+
+        // Since both the send and receive datagram transfer state is not idle, the max inactivity
+        // duration should be updated.
+        verify(mMockSessionMetricsStats, times(1)).updateMaxInactivityDurationSec(anyInt());
+    }
+
+    @Test
+    public void testOnDatagramTransferStateChanged_idle_updatesMaxInactivityDuration() {
+        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
+        setUserInactivityStart();
+        moveToIdleState();
+
+        moveToPowerOffState();
+
+        verify(mMockSessionMetricsStats, times(1)).updateMaxInactivityDurationSec(anyInt());
+    }
+
+    private void setUserInactivityStart() {
+        // Set DatagramTransferState to idle and unaligned with satellite to define inactivity start
+        // timestamp
+        mTestSatelliteSessionController.onDatagramTransferStateChanged(
+                SATELLITE_DATAGRAM_TRANSFER_STATE_IDLE,
+                SATELLITE_DATAGRAM_TRANSFER_STATE_IDLE,
+                DATAGRAM_TYPE_UNKNOWN);
+        mTestSatelliteSessionController.setDeviceAlignedWithSatellite(false);
     }
 
     private void verifyEsosP2pSmsInactivityTimer(boolean esosTimer, boolean p2pSmsTimer) {
