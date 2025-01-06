@@ -189,6 +189,9 @@ public class RIL extends BaseCommands implements CommandsInterface {
     /** @hide */
     public static final HalVersion RADIO_HAL_VERSION_2_3 = new HalVersion(2, 3);
 
+    /** @hide */
+    public static final HalVersion RADIO_HAL_VERSION_2_4 = new HalVersion(2, 4);
+
     // Hal version
     private final Map<Integer, HalVersion> mHalVersion = new HashMap<>();
 
@@ -1134,6 +1137,9 @@ public class RIL extends BaseCommands implements CommandsInterface {
             SparseArray<RadioServiceProxy> proxies, @NonNull FeatureFlags flags) {
         super(context);
         mFeatureFlags = flags;
+        if (mFeatureFlags.cleanupCdma()) {
+            cdmaSubscription = TelephonyManager.CDMA_SUBSCRIPTION_UNKNOWN;
+        }
         if (RILJ_LOGD) {
             riljLog("RIL: init allowedNetworkTypes=" + allowedNetworkTypes
                     + " cdmaSubscription=" + cdmaSubscription + ")");
@@ -3240,6 +3246,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void setCdmaSubscriptionSource(int cdmaSubscription, Message result) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioSimProxy simProxy = getRadioServiceProxy(RadioSimProxy.class);
         if (!canMakeRequest("setCdmaSubscriptionSource", simProxy, result, RADIO_HAL_VERSION_1_4)) {
             return;
@@ -3260,6 +3268,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void queryCdmaRoamingPreference(Message result) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioNetworkProxy networkProxy = getRadioServiceProxy(RadioNetworkProxy.class);
         if (!canMakeRequest("queryCdmaRoamingPreference", networkProxy, result,
                 RADIO_HAL_VERSION_1_4)) {
@@ -3280,6 +3290,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void setCdmaRoamingPreference(int cdmaRoamingType, Message result) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioNetworkProxy networkProxy = getRadioServiceProxy(RadioNetworkProxy.class);
         if (!canMakeRequest("setCdmaRoamingPreference", networkProxy, result,
                 RADIO_HAL_VERSION_1_4)) {
@@ -3379,6 +3391,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void sendCDMAFeatureCode(String featureCode, Message result) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioVoiceProxy voiceProxy = getRadioServiceProxy(RadioVoiceProxy.class);
         if (!canMakeRequest("sendCDMAFeatureCode", voiceProxy, result, RADIO_HAL_VERSION_1_4)) {
             return;
@@ -3419,6 +3433,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void sendCdmaSMSExpectMore(byte[] pdu, Message result) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioMessagingProxy messagingProxy = getRadioServiceProxy(RadioMessagingProxy.class);
         if (!canMakeRequest("sendCdmaSMSExpectMore", messagingProxy, result,
                 RADIO_HAL_VERSION_1_4)) {
@@ -3445,6 +3461,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void sendCdmaSms(byte[] pdu, Message result) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioMessagingProxy messagingProxy = getRadioServiceProxy(RadioMessagingProxy.class);
         if (!canMakeRequest("sendCdmaSms", messagingProxy, result, RADIO_HAL_VERSION_1_4)) {
             return;
@@ -3466,6 +3484,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void acknowledgeLastIncomingCdmaSms(boolean success, int cause, Message result) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioMessagingProxy messagingProxy = getRadioServiceProxy(RadioMessagingProxy.class);
         if (!canMakeRequest("acknowledgeLastIncomingCdmaSms", messagingProxy, result,
                 RADIO_HAL_VERSION_1_4)) {
@@ -3553,6 +3573,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void getCdmaBroadcastConfig(Message result) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioMessagingProxy messagingProxy = getRadioServiceProxy(RadioMessagingProxy.class);
         if (!canMakeRequest("getCdmaBroadcastConfig", messagingProxy, result,
                 RADIO_HAL_VERSION_1_4)) {
@@ -3573,6 +3595,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void setCdmaBroadcastConfig(CdmaSmsBroadcastConfigInfo[] configs, Message result) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioMessagingProxy messagingProxy = getRadioServiceProxy(RadioMessagingProxy.class);
         if (!canMakeRequest("setCdmaBroadcastConfig", messagingProxy, result,
                 RADIO_HAL_VERSION_1_4)) {
@@ -3597,6 +3621,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void setCdmaBroadcastActivation(boolean activate, Message result) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioMessagingProxy messagingProxy = getRadioServiceProxy(RadioMessagingProxy.class);
         if (!canMakeRequest("setCdmaBroadcastActivation", messagingProxy, result,
                 RADIO_HAL_VERSION_1_4)) {
@@ -3618,6 +3644,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void getCDMASubscription(Message result) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioSimProxy simProxy = getRadioServiceProxy(RadioSimProxy.class);
         if (!canMakeRequest("getCDMASubscription", simProxy, result, RADIO_HAL_VERSION_1_4)) {
             return;
@@ -3656,6 +3684,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void deleteSmsOnRuim(int index, Message result) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioMessagingProxy messagingProxy = getRadioServiceProxy(RadioMessagingProxy.class);
         if (!canMakeRequest("deleteSmsOnRuim", messagingProxy, result, RADIO_HAL_VERSION_1_4)) {
             return;
@@ -3809,6 +3839,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void getCdmaSubscriptionSource(Message result) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioSimProxy simProxy = getRadioServiceProxy(RadioSimProxy.class);
         if (!canMakeRequest("getCdmaSubscriptionSource", simProxy, result, RADIO_HAL_VERSION_1_4)) {
             return;
@@ -4096,6 +4128,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void nvReadItem(int itemID, Message result, WorkSource workSource) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioModemProxy modemProxy = getRadioServiceProxy(RadioModemProxy.class);
         if (!canMakeRequest("nvReadItem", modemProxy, result, RADIO_HAL_VERSION_1_4)) {
             return;
@@ -4116,6 +4150,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void nvWriteItem(int itemId, String itemValue, Message result, WorkSource workSource) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioModemProxy modemProxy = getRadioServiceProxy(RadioModemProxy.class);
         if (!canMakeRequest("nvWriteItem", modemProxy, result, RADIO_HAL_VERSION_1_4)) {
             return;
@@ -4137,6 +4173,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void nvWriteCdmaPrl(byte[] preferredRoamingList, Message result) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioModemProxy modemProxy = getRadioServiceProxy(RadioModemProxy.class);
         if (!canMakeRequest("nvWriteCdmaPrl", modemProxy, result, RADIO_HAL_VERSION_1_4)) {
             return;
@@ -4157,6 +4195,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @Override
     public void nvResetConfig(int resetType, Message result) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         RadioModemProxy modemProxy = getRadioServiceProxy(RadioModemProxy.class);
         if (!canMakeRequest("nvResetConfig", modemProxy, result, RADIO_HAL_VERSION_1_4)) {
             return;
@@ -5377,6 +5417,102 @@ public class RIL extends BaseCommands implements CommandsInterface {
             });
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setSatellitePlmn(int simSlot, @NonNull List<String> carrierPlmnList,
+            @NonNull List<String> allSatellitePlmnList, Message result) {
+        RadioNetworkProxy networkProxy = getRadioServiceProxy(RadioNetworkProxy.class);
+        if (!canMakeRequest(
+                "setSatellitePlmn",
+                networkProxy,
+                result,
+                RADIO_HAL_VERSION_2_4)) {
+            return;
+        }
+
+        RILRequest rr = obtainRequest(RIL_REQUEST_SET_SATELLITE_PLMN, result,
+                mRILDefaultWorkSource);
+
+        if (RILJ_LOGD) {
+            riljLog(rr.serialString() + "> " + RILUtils.requestToString(rr.mRequest)
+                    + " simSlot=" + simSlot + " carrierPlmnList=" + carrierPlmnList
+                    + " allSatellitePlmnList=" + allSatellitePlmnList);
+        }
+
+        radioServiceInvokeHelper(
+                HAL_SERVICE_NETWORK,
+                rr,
+                "setSatellitePlmn",
+                () -> {
+                    networkProxy.setSatellitePlmn(rr.mSerial, simSlot, carrierPlmnList,
+                            allSatellitePlmnList);
+                });
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setSatelliteEnabledForCarrier(int simSlot, boolean satelliteEnabled,
+            Message result) {
+        RadioNetworkProxy networkProxy = getRadioServiceProxy(RadioNetworkProxy.class);
+        if (!canMakeRequest(
+                "setSatelliteEnabledForCarrier",
+                networkProxy,
+                result,
+                RADIO_HAL_VERSION_2_4)) {
+            return;
+        }
+
+        RILRequest rr = obtainRequest(RIL_REQUEST_SET_SATELLITE_ENABLED_FOR_CARRIER, result,
+                mRILDefaultWorkSource);
+
+        if (RILJ_LOGD) {
+            riljLog(rr.serialString() + "> " + RILUtils.requestToString(rr.mRequest)
+                    + " simSlot=" + simSlot + " satelliteEnabled=" + satelliteEnabled);
+        }
+
+        radioServiceInvokeHelper(
+                HAL_SERVICE_NETWORK,
+                rr,
+                "setSatelliteEnabledForCarrier",
+                () -> {
+                    networkProxy.setSatelliteEnabledForCarrier(rr.mSerial, simSlot,
+                            satelliteEnabled);
+                });
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void isSatelliteEnabledForCarrier(int simSlot, Message result) {
+        RadioNetworkProxy networkProxy = getRadioServiceProxy(RadioNetworkProxy.class);
+        if (!canMakeRequest(
+                "isSatelliteEnabledForCarrier",
+                networkProxy,
+                result,
+                RADIO_HAL_VERSION_2_4)) {
+            return;
+        }
+
+        RILRequest rr = obtainRequest(RIL_REQUEST_IS_SATELLITE_ENABLED_FOR_CARRIER, result,
+                mRILDefaultWorkSource);
+
+        if (RILJ_LOGD) {
+            riljLog(rr.serialString() + "> " + RILUtils.requestToString(rr.mRequest)
+                    + " simSlot=" + simSlot);
+        }
+
+        radioServiceInvokeHelper(
+                HAL_SERVICE_NETWORK, rr, "isSatelliteEnabledForCarrier", () -> {
+                    networkProxy.isSatelliteEnabledForCarrier(rr.mSerial, simSlot);
+                });
+    }
+
+
     //***** Private Methods
     /**
      * This is a helper function to be called when an indication callback is called for any radio
@@ -6058,6 +6194,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     @UnsupportedAppUsage
     void notifyRegistrantsCdmaInfoRec(CdmaInformationRecords infoRec) {
+        if (mFeatureFlags.cleanupCdma()) return;
+
         int response = RIL_UNSOL_CDMA_INFO_REC;
         if (infoRec.record instanceof CdmaInformationRecords.CdmaDisplayInfoRec) {
             if (mDisplayInfoRegistrants != null) {
@@ -6255,6 +6393,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
             case 2: return RADIO_HAL_VERSION_2_1;
             case 3: return RADIO_HAL_VERSION_2_2;
             case 4: return RADIO_HAL_VERSION_2_3;
+            case 5: return RADIO_HAL_VERSION_2_4;
             default: return RADIO_HAL_VERSION_UNKNOWN;
         }
     }

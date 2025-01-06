@@ -778,6 +778,7 @@ public class GsmCdmaPhone extends Phone {
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
     @Override
     public int getPhoneType() {
+        if (mFeatureFlags.cleanupCdma()) return PhoneConstants.PHONE_TYPE_GSM;
         if (mPrecisePhoneType == PhoneConstants.PHONE_TYPE_GSM) {
             return PhoneConstants.PHONE_TYPE_GSM;
         } else {
@@ -2220,7 +2221,12 @@ public class GsmCdmaPhone extends Phone {
 
     @Override
     public void resetCarrierKeysForImsiEncryption() {
-        mCIM.resetCarrierKeysForImsiEncryption(mContext, mPhoneId);
+        mCIM.resetCarrierKeysForImsiEncryption(mContext, mPhoneId, false);
+    }
+
+    @Override
+    public void resetCarrierKeysForImsiEncryption(boolean forceResetAll) {
+        mCIM.resetCarrierKeysForImsiEncryption(mContext, mPhoneId, forceResetAll);
     }
 
     @Override
@@ -3785,6 +3791,13 @@ public class GsmCdmaPhone extends Phone {
                         && disclosure != null) {
                     mIdentifierDisclosureNotifier.addDisclosure(mContext, getSubId(), disclosure);
                 }
+                if (mFeatureFlags.cellularIdentifierDisclosureIndications()
+                        && mIdentifierDisclosureNotifier != null
+                        && disclosure != null) {
+                    logd("EVENT_CELL_IDENTIFIER_DISCLOSURE for non-Safety Center listeners "
+                            + "phoneId = " + getPhoneId());
+                    mNotifier.notifyCellularIdentifierDisclosedChanged(this, disclosure);
+                }
                 break;
 
             case EVENT_SET_IDENTIFIER_DISCLOSURE_ENABLED_DONE:
@@ -3795,12 +3808,20 @@ public class GsmCdmaPhone extends Phone {
 
             case EVENT_SECURITY_ALGORITHM_UPDATE:
                 logd("EVENT_SECURITY_ALGORITHM_UPDATE phoneId = " + getPhoneId());
+
+                ar = (AsyncResult) msg.obj;
+                SecurityAlgorithmUpdate update = (SecurityAlgorithmUpdate) ar.result;
+
                 if (mFeatureFlags.enableModemCipherTransparencyUnsolEvents()
                         && mNullCipherNotifier != null) {
-                    ar = (AsyncResult) msg.obj;
-                    SecurityAlgorithmUpdate update = (SecurityAlgorithmUpdate) ar.result;
                     mNullCipherNotifier.onSecurityAlgorithmUpdate(mContext, getPhoneId(),
                             getSubId(), update);
+                }
+                if (mFeatureFlags.securityAlgorithmsUpdateIndications()
+                        && mNullCipherNotifier != null) {
+                    logd("EVENT_SECURITY_ALGORITHM_UPDATE for non-Safety Center listeners "
+                              + "phoneId = " + getPhoneId());
+                    mNotifier.notifySecurityAlgorithmsChanged(this, update);
                 }
                 break;
 
