@@ -1688,6 +1688,13 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
         }
     }
 
+    private boolean isConcurrentEmergency(boolean isEmergencyNumber) {
+        ImsPhoneConnection conn = mForegroundCall != null ?
+                mForegroundCall.getFirstConnection() : null;
+        ImsCall imsCall = conn != null ? conn.getImsCall() : null;
+        return isEmergencyNumber && (imsCall != null && imsCall.isCallSessionMergePending());
+    }
+
     private boolean prepareForDialing(ImsPhone.ImsDialArgs dialArgs) throws CallStateException {
         boolean holdBeforeDial = false;
         boolean isEmergencyNumber = dialArgs.isEmergency;
@@ -1700,13 +1707,19 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
         if (isEmergencyNumber && mRingingCall != null && mRingingCall.isRinging()) {
             rejectCall();
         }
+        // We need to handle the cases where dial will fail in below use case
+        // Conference merge in progress from DUT, User dial an emrgency call
+        // For this scenario, we can skip the relevant call checks as this is
+        // gracefully handled in lower layers.
+        boolean concurrentEmergency = isConcurrentEmergency(isEmergencyNumber);
+
         // Make room for emergency call
-        if (isEmergencyNumber && hasMaximumLiveCalls()) {
+        if (isEmergencyNumber && hasMaximumLiveCalls() && !concurrentEmergency) {
             hangupFirstHeldCall();
         }
         // See if there are any issues which preclude placing a call; throw a CallStateException
         // if there is.
-        checkForDialIssues();
+        checkForDialIssues(concurrentEmergency);
         int videoState = dialArgs.videoState;
         if (!canAddVideoCallDuringImsAudioCall(videoState)) {
             throw new CallStateException("cannot dial in current state");
@@ -1715,7 +1728,7 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
         // The new call must be assigned to the foreground call.
         // That call must be idle, so place anything that's
         // there on hold
-        if (mForegroundCall.getState() == ImsPhoneCall.State.ACTIVE) {
+        if (mForegroundCall.getState() == ImsPhoneCall.State.ACTIVE && !concurrentEmergency) {
             if (mBackgroundCall.getState().isAlive()) {
                 //we should have failed in checkForDialIssues above before we get here
                 throw new CallStateException(CallStateException.ERROR_TOO_MANY_CALLS,
@@ -2907,6 +2920,16 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
      * @throws CallStateException
      */
     public void checkForDialIssues() throws CallStateException {
+        checkForDialIssues(false);
+    }
+
+    /**
+     * Determines if there are issues which would preclude dialing an outgoing call.
+     * This is an overloaded API used to determine if we need to skip the hasMaximumLiveCalls
+     * in case when emergency call is dialed while conference merge is in progress.
+     * @throws CallStateException
+     */
+    public void checkForDialIssues(boolean isConcurrentEmergency) throws CallStateException {
         boolean disableCall = TelephonyProperties.disable_call().orElse(false);
         if (disableCall) {
             throw new CallStateException(CallStateException.ERROR_CALLING_DISABLED,
@@ -2920,7 +2943,7 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
             throw new CallStateException(CallStateException.ERROR_CALL_RINGING,
                     "Can't place a call while another is ringing.");
         }
-        if (hasMaximumLiveCalls()) {
+        if (!isConcurrentEmergency && hasMaximumLiveCalls()) {
             throw new CallStateException(CallStateException.ERROR_TOO_MANY_CALLS,
                     "Already an active foreground and background call.");
         }
