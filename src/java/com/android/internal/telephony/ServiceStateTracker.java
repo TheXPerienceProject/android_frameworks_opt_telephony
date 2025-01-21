@@ -3022,14 +3022,11 @@ public class ServiceStateTracker extends Handler {
 
         String satellitePlmn = null;
         SatelliteModemStateListener satelliteModemStateListener = getSatelliteModemStateListener();
-        if (combinedRegState == ServiceState.STATE_OUT_OF_SERVICE
-                && satelliteModemStateListener != null
+        if (satelliteModemStateListener != null
                 && satelliteModemStateListener.isInConnectedState()) {
-            // If device is connected to the nb-iot satellite,
-            // 1) No service but nb-iot satellite is connected ->
-            //    expected to show "Satellite" for demo mode.
             satellitePlmn = getSatelliteDisplayName();
         }
+        log("updateCarrierDisplayName: satellitePlmn=" + satellitePlmn);
 
         if (mPhone.isPhoneTypeGsm()) {
             // The values of plmn/showPlmn change in different scenarios.
@@ -3209,9 +3206,15 @@ public class ServiceStateTracker extends Handler {
         }
 
         SatelliteModemStateListener satelliteModemStateListener = getSatelliteModemStateListener();
+        String operator = mNewSS.getOperatorAlphaLong();
+        SatelliteController sc = SatelliteController.getInstance();
+        // Override satellite display name if device is in carrier roaming nb iot ntn mode
+        // and has a valid operator
         if (satelliteModemStateListener != null
-                && satelliteModemStateListener.isInConnectedState()) {
-            // override satellite display name.
+                && satelliteModemStateListener.isInConnectedState()
+                || (!TextUtils.isEmpty(operator)
+                        && sc != null && sc.isInCarrierRoamingNbIotNtn())) {
+            // override satellite display name
             mNewSS.setOperatorName(
                     satelliteDisplayName, satelliteDisplayName, mNewSS.getOperatorNumeric());
             log("Override satellite display name to " + satelliteDisplayName);
