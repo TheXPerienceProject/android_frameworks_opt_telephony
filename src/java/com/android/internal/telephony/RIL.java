@@ -102,6 +102,7 @@ import com.android.internal.telephony.imsphone.ImsCallInfo;
 import com.android.internal.telephony.metrics.ModemRestartStats;
 import com.android.internal.telephony.metrics.TelephonyMetrics;
 import com.android.internal.telephony.nano.TelephonyProto.SmsSession;
+import com.android.internal.telephony.satellite.SatelliteModemInterface;
 import com.android.internal.telephony.uicc.IccCardApplicationStatus.PersoSubState;
 import com.android.internal.telephony.uicc.IccUtils;
 import com.android.internal.telephony.uicc.SimPhonebookRecord;
@@ -5425,11 +5426,10 @@ public class RIL extends BaseCommands implements CommandsInterface {
     public void setSatellitePlmn(int simSlot, @NonNull List<String> carrierPlmnList,
             @NonNull List<String> allSatellitePlmnList, Message result) {
         RadioNetworkProxy networkProxy = getRadioServiceProxy(RadioNetworkProxy.class);
-        if (!canMakeRequest(
-                "setSatellitePlmn",
-                networkProxy,
-                result,
-                RADIO_HAL_VERSION_2_4)) {
+        if (getHalVersion(HAL_SERVICE_NETWORK).less(RADIO_HAL_VERSION_2_4)) {
+            riljLog("setSatellitePlmn: SatelliteModemInterface is used.");
+            SatelliteModemInterface.getInstance().setSatellitePlmn(
+                    simSlot, carrierPlmnList, allSatellitePlmnList, result);
             return;
         }
 
@@ -5447,7 +5447,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
                 rr,
                 "setSatellitePlmn",
                 () -> {
-                    networkProxy.setSatellitePlmn(rr.mSerial, simSlot, carrierPlmnList,
+                    networkProxy.setSatellitePlmn(rr.mSerial, carrierPlmnList,
                             allSatellitePlmnList);
                 });
     }
@@ -5459,11 +5459,10 @@ public class RIL extends BaseCommands implements CommandsInterface {
     public void setSatelliteEnabledForCarrier(int simSlot, boolean satelliteEnabled,
             Message result) {
         RadioNetworkProxy networkProxy = getRadioServiceProxy(RadioNetworkProxy.class);
-        if (!canMakeRequest(
-                "setSatelliteEnabledForCarrier",
-                networkProxy,
-                result,
-                RADIO_HAL_VERSION_2_4)) {
+        if (getHalVersion(HAL_SERVICE_NETWORK).less(RADIO_HAL_VERSION_2_4)) {
+            riljLog("setSatelliteEnabledForCarrier: SatelliteModemInterface is used.");
+            SatelliteModemInterface.getInstance().requestSetSatelliteEnabledForCarrier(
+                    simSlot, satelliteEnabled, result);
             return;
         }
 
@@ -5480,8 +5479,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
                 rr,
                 "setSatelliteEnabledForCarrier",
                 () -> {
-                    networkProxy.setSatelliteEnabledForCarrier(rr.mSerial, simSlot,
-                            satelliteEnabled);
+                    networkProxy.setSatelliteEnabledForCarrier(rr.mSerial, satelliteEnabled);
                 });
     }
 
@@ -5491,11 +5489,10 @@ public class RIL extends BaseCommands implements CommandsInterface {
     @Override
     public void isSatelliteEnabledForCarrier(int simSlot, Message result) {
         RadioNetworkProxy networkProxy = getRadioServiceProxy(RadioNetworkProxy.class);
-        if (!canMakeRequest(
-                "isSatelliteEnabledForCarrier",
-                networkProxy,
-                result,
-                RADIO_HAL_VERSION_2_4)) {
+        if (getHalVersion(HAL_SERVICE_NETWORK).less(RADIO_HAL_VERSION_2_4)) {
+            riljLog("isSatelliteEnabledForCarrier: SatelliteModemInterface is used.");
+            SatelliteModemInterface.getInstance().requestIsSatelliteEnabledForCarrier(
+                    simSlot, result);
             return;
         }
 
@@ -5509,7 +5506,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
         radioServiceInvokeHelper(
                 HAL_SERVICE_NETWORK, rr, "isSatelliteEnabledForCarrier", () -> {
-                    networkProxy.isSatelliteEnabledForCarrier(rr.mSerial, simSlot);
+                    networkProxy.isSatelliteEnabledForCarrier(rr.mSerial);
                 });
     }
 
@@ -6050,7 +6047,6 @@ public class RIL extends BaseCommands implements CommandsInterface {
             case RIL_REQUEST_GET_IMEISV:
             case RIL_REQUEST_SIM_OPEN_CHANNEL:
             case RIL_REQUEST_SIM_TRANSMIT_APDU_CHANNEL:
-            case RIL_REQUEST_DEVICE_IMEI:
 
                 if (!RILJ_LOGV) {
                     // If not versbose logging just return and don't display IMSI and IMEI, IMEISV
@@ -6089,6 +6085,16 @@ public class RIL extends BaseCommands implements CommandsInterface {
                 while (i < length) {
                     sb.append(", ").append(strings[i++]);
                 }
+            }
+            sb.append("}");
+            s = sb.toString();
+        } else if (req == RIL_REQUEST_DEVICE_IMEI) {
+            sb = new StringBuilder("{");
+            ImeiInfo imeiInfo = (ImeiInfo) ret;
+            if (imeiInfo != null) {
+                sb.append(Rlog.pii(RILJ_LOG_TAG, imeiInfo.imei)).append(", ");
+                sb.append(imeiInfo.type).append(", ");
+                sb.append(imeiInfo.svn);
             }
             sb.append("}");
             s = sb.toString();
