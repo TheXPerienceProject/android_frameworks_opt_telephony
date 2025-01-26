@@ -329,7 +329,7 @@ public class ServiceStateTracker extends Handler {
     protected static final String REGISTRATION_DENIED_GEN  = "General";
     protected static final String REGISTRATION_DENIED_AUTH = "Authentication Failure";
 
-    private CarrierDisplayNameResolver mCdnr;
+    protected CarrierDisplayNameResolver mCdnr;
 
     private boolean mImsRegistrationOnOff = false;
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
@@ -364,7 +364,7 @@ public class ServiceStateTracker extends Handler {
     private final LocalLog mCdnrLogs = new LocalLog(64);
 
     private Pattern mOperatorNameStringPattern;
-    private PersistableBundle mCarrierConfig;
+    protected PersistableBundle mCarrierConfig;
 
     @NonNull
     private final FeatureFlags mFeatureFlags;
@@ -2861,7 +2861,7 @@ public class ServiceStateTracker extends Handler {
         }
     }
 
-    private void notifyCarrierDisplayNameDataChanged() {
+    protected void notifyCarrierDisplayNameDataChanged() {
         final String log = String.format("notifyCarrierDisplayNameDataChanged: "
                         + "changed sending intent, "
                         + "rule=%d, CarrierDisplayNameData=%s, subId=%d",
@@ -2883,7 +2883,7 @@ public class ServiceStateTracker extends Handler {
     }
 
     @NonNull
-    private String getCarrierName(CarrierDisplayNameData cdnd) {
+    protected String getCarrierName(CarrierDisplayNameData cdnd) {
         boolean showPlmn = cdnd.shouldShowPlmn();
         boolean showSpn = cdnd.shouldShowSpn();
         String plmn = cdnd.getPlmn();
@@ -2932,7 +2932,7 @@ public class ServiceStateTracker extends Handler {
 
     }
 
-    private @NonNull CarrierDisplayNameData getCarrierDisplayNameLegacy() {
+    protected @NonNull CarrierDisplayNameData getCarrierDisplayNameLegacy() {
         log("getCarrierDisplayNameLegacy+");
 
         String spn = null;
