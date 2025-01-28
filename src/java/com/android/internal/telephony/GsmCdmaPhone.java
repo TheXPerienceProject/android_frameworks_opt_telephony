@@ -1732,9 +1732,16 @@ public class GsmCdmaPhone extends Phone {
         String newDialString = PhoneNumberUtils.stripSeparators(dialString);
 
         if (isPhoneTypeGsm()) {
-            // handle in-call MMI first if applicable
-            if (handleInCallMmiCommands(newDialString)) {
-                return null;
+            if (mFeatureFlags.skipMmiCodeCheckForEmergencyCall()) {
+                // If not emergency number, handle in-call MMI first if applicable
+                if (!dialArgs.isEmergency && handleInCallMmiCommands(newDialString)) {
+                    return null;
+                }
+            } else {
+                // handle in-call MMI first if applicable
+                if (handleInCallMmiCommands(newDialString)) {
+                    return null;
+                }
             }
 
             // Only look at the Network portion for mmi
@@ -2496,24 +2503,20 @@ public class GsmCdmaPhone extends Phone {
      */
     @Override
     public void setN1ModeEnabled(boolean enable, @Nullable Message result) {
-        if (mFeatureFlags.enableCarrierConfigN1ControlAttempt2()) {
-            // This might be called by IMS on another thread, so to avoid the requirement to
-            // lock, post it through the handler.
-            post(() -> {
-                if (enable) {
-                    mN1ModeDisallowedReasons.remove(N1_MODE_DISALLOWED_REASON_IMS);
-                } else {
-                    mN1ModeDisallowedReasons.add(N1_MODE_DISALLOWED_REASON_IMS);
-                }
-                if (mModemN1Mode == null) {
-                    mCi.isN1ModeEnabled(obtainMessage(EVENT_GET_N1_MODE_ENABLED_DONE, result));
-                } else {
-                    maybeUpdateModemN1Mode(result);
-                }
-            });
-        } else {
-            super.setN1ModeEnabled(enable, result);
-        }
+        // This might be called by IMS on another thread, so to avoid the requirement to
+        // lock, post it through the handler.
+        post(() -> {
+            if (enable) {
+                mN1ModeDisallowedReasons.remove(N1_MODE_DISALLOWED_REASON_IMS);
+            } else {
+                mN1ModeDisallowedReasons.add(N1_MODE_DISALLOWED_REASON_IMS);
+            }
+            if (mModemN1Mode == null) {
+                mCi.isN1ModeEnabled(obtainMessage(EVENT_GET_N1_MODE_ENABLED_DONE, result));
+            } else {
+                maybeUpdateModemN1Mode(result);
+            }
+        });
     }
 
     /** Only called on the handler thread. */
@@ -2537,8 +2540,6 @@ public class GsmCdmaPhone extends Phone {
 
     /** Only called on the handler thread. */
     private void updateCarrierN1ModeSupported(@NonNull PersistableBundle b) {
-        if (!mFeatureFlags.enableCarrierConfigN1ControlAttempt2()) return;
-
         if (!CarrierConfigManager.isConfigForIdentifiedCarrier(b)) return;
 
         final int[] supportedNrModes = b.getIntArray(
