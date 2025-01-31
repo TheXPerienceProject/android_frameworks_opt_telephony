@@ -46,6 +46,8 @@ import com.android.internal.telephony.flags.FeatureFlags;
 import com.android.internal.telephony.subscription.SubscriptionManagerService;
 import com.android.telephony.Rlog;
 
+import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -140,11 +142,6 @@ public class PhoneConfigurationManager {
     private final String EXTRAS_MSIM_VOICE_CAPABILITY = "MsimVoiceCapability";
     private final String EXTRAS_DSDS_TRANSITION_SUPPORTED = "DsdsTransitionSupported";
 
-    private static final String ACTION_MSIM_VOICE_CAPABILITY_CHANGED =
-            "org.codeaurora.intent.action.MSIM_VOICE_CAPABILITY_CHANGED";
-    private static final String PERMISSION_MSIM_VOICE_CAPABILITY_CHANGED =
-            "com.qti.permission.RECEIVE_MSIM_VOICE_CAPABILITY_CHANGED";
-
     /**
      * Init method to instantiate the object
      * Should only be called once.
@@ -209,7 +206,13 @@ public class PhoneConfigurationManager {
                     " + isDsdsTransitionSupported : " + isDsdsTransitionSupported);
             TelephonyProperties.multi_sim_voice_capability(voiceCapability);
             TelephonyProperties.dsds_transition_supported(isDsdsTransitionSupported);
-            broadcastMsimVoiceCapabilityChanged(voiceCapability);
+            // in cases where multi_sim_voice_capability is still used and simultaneous
+            // calling API(s) are not supported, generate the simultaneous calling info
+            // using the property values
+            if (voiceCapability != TelephonyManager.MultiSimVoiceCapability.UNSUPPORTED) {
+                mHandler.sendMessage(
+                        mHandler.obtainMessage(EVENT_SIMULTANEOUS_CALLING_SUPPORT_CHANGED));
+            }
         }
     };
 
@@ -412,8 +415,14 @@ public class PhoneConfigurationManager {
                         break;
                     }
                     ar = (AsyncResult) msg.obj;
-                    if (ar != null && ar.exception == null) {
-                        List<Integer> returnedArrayList = (List<Integer>) ar.result;
+                    boolean generateSimultaneousCallingSupport =
+                            TelephonyProperties.multi_sim_voice_capability().orElse(
+                            TelephonyManager.MultiSimVoiceCapability.UNKNOWN) !=
+                            TelephonyManager.MultiSimVoiceCapability.UNSUPPORTED;
+                    if ((ar != null && ar.exception == null) ||
+                            generateSimultaneousCallingSupport) {
+                        List<Integer> returnedArrayList = generateSimultaneousCallingSupport ?
+                                generateSimultaneousCallingSupport() : (List<Integer>) ar.result;
                         if (!mSlotsSupportingSimultaneousCellularCalls.isEmpty()) {
                             mSlotsSupportingSimultaneousCellularCalls.clear();
                         }
@@ -873,13 +882,6 @@ public class PhoneConfigurationManager {
         return mPhones[0].mCi.getModemService();
     }
 
-    private void broadcastMsimVoiceCapabilityChanged(int capability) {
-        log("broadcastMsimVoiceCapabilityChanged with capability: " + capability);
-        Intent intent = new Intent(ACTION_MSIM_VOICE_CAPABILITY_CHANGED);
-        intent.putExtra(EXTRAS_MSIM_VOICE_CAPABILITY, capability);
-        mContext.sendBroadcast(intent, PERMISSION_MSIM_VOICE_CAPABILITY_CHANGED);
-    }
-
     /**
      * A wrapper class that wraps some methods so that they can be replaced or mocked in unit-tests.
      *
@@ -935,6 +937,21 @@ public class PhoneConfigurationManager {
         public Optional<String> getMultiSimProperty() {
             return TelephonyProperties.multi_sim_config();
         }
+    }
+
+    // helper function used to generate the simultaneous calling support array
+    // based on the multi_sim_voice_capability value. This is used for backwards
+    // compatibility where the lower layers don't support the new simultaneous
+    // calling API(s)
+    private List<Integer> generateSimultaneousCallingSupport() {
+        log("generateSimultaneousCallingSupport");
+        List<Integer> simultaneousCallingSupported = new ArrayList<>();
+        int mSimVoiceConfig = TelephonyProperties.multi_sim_voice_capability().orElse(
+                TelephonyManager.MultiSimVoiceCapability.UNKNOWN);
+        if (mSimVoiceConfig == TelephonyManager.MultiSimVoiceCapability.DSDA) {
+            simultaneousCallingSupported.addAll(Arrays.asList(0,1));
+        }
+        return simultaneousCallingSupported;
     }
 
     private static void log(String s) {
