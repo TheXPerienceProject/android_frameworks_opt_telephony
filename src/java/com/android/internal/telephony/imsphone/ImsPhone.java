@@ -192,18 +192,11 @@ public class ImsPhone extends ImsPhoneBase {
     }
 
     public static class ImsDialArgs extends DialArgs {
-        public enum DeferDial {
-            INVALID, //Default value. Used for non DSDA and same sub dial cases
-            ENABLE,  //Defer DIAL until ACTIVE call on other sub is held
-            DISABLE, //Used when hold has completed on other sub. Go ahead and DIAL
-        }
-
         public static class Builder extends DialArgs.Builder<ImsDialArgs.Builder> {
             private android.telecom.Connection.RttTextStream mRttTextStream;
             private int mRetryCallFailCause = ImsReasonInfo.CODE_UNSPECIFIED;
             private int mRetryCallFailNetworkType = TelephonyManager.NETWORK_TYPE_UNKNOWN;
             private boolean mIsWpsCall = false;
-            private DeferDial mDeferDial = DeferDial.INVALID;
 
             public static ImsDialArgs.Builder from(DialArgs dialArgs) {
                 if (dialArgs instanceof ImsDialArgs) {
@@ -218,8 +211,7 @@ public class ImsPhone extends ImsPhoneBase {
                             .setRetryCallFailCause(((ImsDialArgs)dialArgs).retryCallFailCause)
                             .setRetryCallFailNetworkType(
                                     ((ImsDialArgs)dialArgs).retryCallFailNetworkType)
-                            .setIsWpsCall(((ImsDialArgs)dialArgs).isWpsCall)
-                            .setDeferDial(((ImsDialArgs)dialArgs).deferDial);
+                            .setIsWpsCall(((ImsDialArgs)dialArgs).isWpsCall);
                 }
                 return new ImsDialArgs.Builder()
                         .setUusInfo(dialArgs.uusInfo)
@@ -250,11 +242,6 @@ public class ImsPhone extends ImsPhoneBase {
                 return this;
             }
 
-            public ImsDialArgs.Builder setDeferDial(DeferDial deferDial) {
-                this.mDeferDial = deferDial;
-                return this;
-            }
-
             public ImsDialArgs build() {
                 return new ImsDialArgs(this);
             }
@@ -272,15 +259,12 @@ public class ImsPhone extends ImsPhoneBase {
         /** Indicates the call is Wireless Priority Service call */
         public final boolean isWpsCall;
 
-        public final DeferDial deferDial;
-
         private ImsDialArgs(ImsDialArgs.Builder b) {
             super(b);
             this.rttTextStream = b.mRttTextStream;
             this.retryCallFailCause = b.mRetryCallFailCause;
             this.retryCallFailNetworkType = b.mRetryCallFailNetworkType;
             this.isWpsCall = b.mIsWpsCall;
-            this.deferDial = b.mDeferDial;
         }
     }
 
@@ -715,29 +699,12 @@ public class ImsPhone extends ImsPhoneBase {
     }
 
     /**
-     * Holds the active call and does not perform swapping even if there is a HELD call
-     * @throws CallStateException
-     */
-    public void holdActiveCallOnly() throws CallStateException {
-        mCT.holdActiveCallOnly();
-    }
-
-    /**
      * Unhold the currently active call, possibly holding a currently active call.
      * If the call tracker is already in the middle of a hold operation, this is a noop.
      * @throws CallStateException
      */
     public void unholdHeldCall() throws CallStateException {
         mCT.unholdHeldCall();
-    }
-
-    /**
-     * Unhold a particular HELD connection
-     * If the call tracker is already in the middle of a hold operation, this is a noop.
-     * @throws CallStateException
-     */
-    public void unholdHeldCall(ImsPhoneConnection connection) throws CallStateException {
-        mCT.unholdHeldCall(connection);
     }
 
     private boolean handleCallDeflectionIncallSupplementaryService(
@@ -756,14 +723,10 @@ public class ImsPhone extends ImsPhoneBase {
             }
         } else if (getBackgroundCall().getState() != ImsPhoneCall.State.IDLE) {
             if (DBG) logd("MmiCode 0: hangupWaitingOrBackground");
-            // For DSDA, hangup all background connections
-            // For DSDS/SS, there can only be one background connection
-            ImsPhoneCall call = getBackgroundCall();
             try {
-                mCT.hangupAllConnections(call);
-            } catch(CallStateException e) {
+                mCT.hangup(getBackgroundCall());
+            } catch (CallStateException e) {
                 if (DBG) Rlog.d(LOG_TAG, "hangup failed", e);
-                notifySuppServiceFailed(Phone.SuppService.HANGUP);
             }
         }
 
@@ -809,7 +772,7 @@ public class ImsPhone extends ImsPhoneBase {
     }
 
     private boolean handleCallWaitingIncallSupplementaryService(
-            String dialString, ImsDialArgs.DeferDial deferDial) throws CallStateException {
+            String dialString) {
         int len = dialString.length();
 
         if (len > 2) {
@@ -826,35 +789,20 @@ public class ImsPhone extends ImsPhoneBase {
                 if (call.getState() != ImsPhoneCall.State.IDLE) {
                     if (DBG) logd("MmiCode 1: hangup foreground");
                     mCT.hangup(call);
-                }
-                if (getRingingCall().getState() != ImsPhoneCall.State.IDLE) {
-                    throwExceptionIfDialDeferred(deferDial);
-                    // Accept ringing call
-                    mCT.acceptCall(VideoProfile.STATE_AUDIO_ONLY);
-                } else if (getBackgroundCall().getState() == ImsPhoneCall.State.HOLDING) {
-                    throwExceptionIfDialDeferred(deferDial);
-                    if (deferDial == ImsDialArgs.DeferDial.DISABLE) {
-                        // Active call on other sub has been held. Unhold the first held call
-                        mCT.unholdHeldCall(getBackgroundCall().getFirstConnection());
-                        return true;
-                    }
-                    // Legacy use case: resume held call
-                    mCT.unholdHeldCall();
+                } else {
+                    if (DBG) logd("MmiCode 1: holdActiveCallForWaitingCall");
+                    mCT.holdActiveCallForWaitingCall();
                 }
             }
         } catch (CallStateException e) {
             if (DBG) Rlog.d(LOG_TAG, "hangup failed", e);
-            if (e.getError() == CallStateException.ERROR_HOLD_ACTIVE_CALL_ON_OTHER_SUB) {
-                throw e;
-            }
             notifySuppServiceFailed(Phone.SuppService.HANGUP);
         }
 
         return true;
     }
 
-    private boolean handleCallHoldIncallSupplementaryService(String dialString,
-                ImsDialArgs.DeferDial deferDial) throws CallStateException {
+    private boolean handleCallHoldIncallSupplementaryService(String dialString) {
         int len = dialString.length();
 
         if (len > 2) {
@@ -867,10 +815,7 @@ public class ImsPhone extends ImsPhoneBase {
         } else {
             try {
                 if (getRingingCall().getState() != ImsPhoneCall.State.IDLE) {
-                    // Active call on other sub needs to be held by HoldAndDialHandler before
-                    // ringing call can be accepted
                     if (DBG) logd("MmiCode 2: accept ringing call");
-                    throwExceptionIfDialDeferred(deferDial);
                     if (mFeatureFlags.answerAudioOnlyWhenAnsweringViaMmiCode()) {
                         mCT.acceptCall(VideoProfile.STATE_AUDIO_ONLY);
                     } else {
@@ -884,13 +829,6 @@ public class ImsPhone extends ImsPhoneBase {
                         mCT.holdActiveCall();
                     } else {
                         if (DBG) logd("MmiCode 2: unhold held call");
-                        throwExceptionIfDialDeferred(deferDial);
-                        if (deferDial == ImsDialArgs.DeferDial.DISABLE) {
-                            // Active call on other sub has been held. Unhold the first held call
-                            mCT.unholdHeldCall(getBackgroundCall().getFirstConnection());
-                            return true;
-                        }
-                        // Legacy behavior
                         mCT.unholdHeldCall();
                     }
                 } else if (getForegroundCall().getState() != ImsPhoneCall.State.IDLE) {
@@ -899,9 +837,6 @@ public class ImsPhone extends ImsPhoneBase {
                 }
             } catch (CallStateException e) {
                 if (DBG) Rlog.d(LOG_TAG, "switch failed", e);
-                if (e.getError() == CallStateException.ERROR_HOLD_ACTIVE_CALL_ON_OTHER_SUB) {
-                    throw e;
-                }
                 notifySuppServiceFailed(Phone.SuppService.SWITCH);
             }
         }
@@ -909,14 +844,10 @@ public class ImsPhone extends ImsPhoneBase {
         return true;
     }
 
-    private boolean handleMultipartyIncallSupplementaryService(String dialString) {
+    private boolean handleMultipartyIncallSupplementaryService(
+            String dialString) {
         if (dialString.length() > 1) {
             return false;
-        }
-
-        if (!getForegroundCall().getState().isAlive()) {
-            // Do nothing if there is no ACTIVE call on this sub
-            return true;
         }
 
         if (DBG) logd("MmiCode 3: merge calls");
@@ -927,11 +858,6 @@ public class ImsPhone extends ImsPhoneBase {
     private boolean handleEctIncallSupplementaryService(String dialString) {
         if (dialString.length() != 1) {
             return false;
-        }
-
-        if (!getForegroundCall().getState().isAlive()) {
-            // Do nothing if there is no ACTIVE call on this sub
-            return true;
         }
 
         if (DBG) logd("MmiCode 4: explicit call transfer");
@@ -962,8 +888,9 @@ public class ImsPhone extends ImsPhoneBase {
         mSsnRegistrants.notifyRegistrants(ar);
     }
 
-    private boolean handleInCallMmiCommandsInternal(String dialString,
-                ImsDialArgs.DeferDial deferDial) throws CallStateException {
+    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @Override
+    public boolean handleInCallMmiCommands(String dialString) {
         if (!isInCall()) {
             return false;
         }
@@ -976,13 +903,15 @@ public class ImsPhone extends ImsPhoneBase {
         char ch = dialString.charAt(0);
         switch (ch) {
             case '0':
-                result = handleCallDeflectionIncallSupplementaryService(dialString);
+                result = handleCallDeflectionIncallSupplementaryService(
+                        dialString);
                 break;
             case '1':
-                result = handleCallWaitingIncallSupplementaryService(dialString, deferDial);
+                result = handleCallWaitingIncallSupplementaryService(
+                        dialString);
                 break;
             case '2':
-                result = handleCallHoldIncallSupplementaryService(dialString, deferDial);
+                result = handleCallHoldIncallSupplementaryService(dialString);
                 break;
             case '3':
                 result = handleMultipartyIncallSupplementaryService(dialString);
@@ -998,17 +927,6 @@ public class ImsPhone extends ImsPhoneBase {
         }
 
         return result;
-    }
-
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
-    @Override
-    public boolean handleInCallMmiCommands(String dialString) {
-        try {
-            return handleInCallMmiCommandsInternal(dialString, ImsDialArgs.DeferDial.INVALID);
-        } catch (CallStateException e) {
-            loge("Failed to process MMI.");
-            return false;
-        }
     }
 
     boolean isInCall() {
@@ -1073,18 +991,18 @@ public class ImsPhone extends ImsPhoneBase {
         // Need to make sure dialString gets parsed properly.
         newDialString = PhoneNumberUtils.stripSeparators(dialString);
 
+        // handle in-call MMI first if applicable
+        if (handleInCallMmiCommands(newDialString)) {
+            return null;
+        }
+
         ImsDialArgs.Builder imsDialArgsBuilder;
         imsDialArgsBuilder = ImsDialArgs.Builder.from(dialArgs);
         // Get the CLIR info if needed
         imsDialArgsBuilder.setClirMode(mCT.getClirMode());
-        ImsDialArgs imsDialArgs = imsDialArgsBuilder.build();
-        // handle in-call MMI first if applicable
-        if (handleInCallMmiCommandsInternal(newDialString, imsDialArgs.deferDial)) {
-            return null;
-        }
 
         if (mDefaultPhone.getPhoneType() == PhoneConstants.PHONE_TYPE_CDMA) {
-            return mCT.dial(dialString, imsDialArgs);
+            return mCT.dial(dialString, imsDialArgsBuilder.build());
         }
 
         if (mFeatureFlags.skipMmiCodeCheckForEmergencyCall()) {
@@ -1103,7 +1021,7 @@ public class ImsPhone extends ImsPhoneBase {
         if (DBG) logd("dialInternal: dialing w/ mmi '" + mmi + "'...");
 
         if (mmi == null) {
-            return mCT.dial(dialString, imsDialArgs);
+            return mCT.dial(dialString, imsDialArgsBuilder.build());
         } else if (mmi.isTemporaryModeCLIR()) {
             imsDialArgsBuilder.setClirMode(mmi.getCLIRMode());
             return mCT.dial(mmi.getDialingNumber(), imsDialArgsBuilder.build());
@@ -3061,14 +2979,5 @@ public class ImsPhone extends ImsPhoneBase {
 
     private void loge(String s) {
         Rlog.e(LOG_TAG, "[" + mPhoneId + "] " + s);
-    }
-
-    private void throwExceptionIfDialDeferred(ImsDialArgs.DeferDial deferDial)
-            throws CallStateException {
-        if (deferDial == ImsDialArgs.DeferDial.ENABLE) {
-            // Active call on other sub needs to be held before MMI can be processed
-            throw new CallStateException(CallStateException.ERROR_HOLD_ACTIVE_CALL_ON_OTHER_SUB,
-                    "Cannot process MMI in DSDA");
-        }
     }
 }

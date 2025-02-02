@@ -35,7 +35,6 @@ public class CallStateException extends Exception
     public static final int ERROR_CALLING_DISABLED = 5;
     public static final int ERROR_TOO_MANY_CALLS = 6;
     public static final int ERROR_OTASP_PROVISIONING_IN_PROCESS = 7;
-    public static final int ERROR_HOLD_ACTIVE_CALL_ON_OTHER_SUB = 8;
     public static final int ERROR_DEVICE_IN_SECURE_MODE = 9;
     public static final int ERROR_FDN_BLOCKED = 10;
 
