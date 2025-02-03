@@ -142,6 +142,7 @@ import com.android.internal.telephony.uicc.UiccController;
 import com.android.internal.telephony.uicc.UiccPort;
 import com.android.internal.telephony.uicc.UiccProfile;
 import com.android.internal.telephony.uicc.UiccSlot;
+import com.android.internal.telephony.util.WorkerThread;
 import com.android.server.pm.permission.LegacyPermissionManagerService;
 
 import org.mockito.Mockito;
@@ -582,6 +583,7 @@ public abstract class TelephonyTest {
         doReturn(true).when(mFeatureFlags).hsumBroadcast();
         doReturn(true).when(mFeatureFlags).hsumPackageManager();
 
+        WorkerThread.reset();
         TelephonyManager.disableServiceHandleCaching();
         PropertyInvalidatedCache.disableForTestMode();
         // For testing do not allow Log.WTF as it can cause test process to crash
