@@ -56,7 +56,6 @@ import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.UUSInfo;
 import com.android.internal.telephony.emergency.EmergencyNumberTracker;
-import com.android.internal.telephony.imsphone.ImsPhone.ImsDialArgs.DeferDial;
 import com.android.internal.telephony.metrics.TelephonyMetrics;
 import com.android.telephony.Rlog;
 
@@ -157,10 +156,6 @@ public class ImsPhoneConnection extends Connection implements
      * Used to indicate that this call is held by remote party.
      */
     private boolean mIsHeldByRemote = false;
-
-    // Indicates whether dial needs to be deferred. By default, value
-    // is INVALID meaning do not defer dial
-    private DeferDial mDeferDial = DeferDial.INVALID;
 
     /**
      * Used to indicate if both the user and carrier config have enabled the business composer.
@@ -1848,13 +1843,5 @@ public class ImsPhoneConnection extends Connection implements
             return 1;
         }
         return 0;
-    }
-
-    public void setDeferDialStatus(DeferDial deferDial) {
-        mDeferDial = deferDial;
-    }
-
-    public DeferDial getDeferDialStatus() {
-        return mDeferDial;
     }
 }

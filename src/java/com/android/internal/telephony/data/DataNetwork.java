@@ -1537,10 +1537,6 @@ public class DataNetwork extends StateMachine {
                         setupData();
                     } else {
                         mRetryDelayMillis = DataCallResponse.RETRY_DURATION_UNDEFINED;
-                        if (!mFlags.keepEmptyRequestsNetwork()) {
-                            // This will mark the data profile as no retry perm failure.
-                            mFailCause = DataFailCause.NO_RETRY_FAILURE;
-                        }
                         transitionTo(mDisconnectedState);
                     }
                     break;
@@ -1665,15 +1661,6 @@ public class DataNetwork extends StateMachine {
                 }
 
                 updateDataNetwork(response);
-
-                if (!mFlags.keepEmptyRequestsNetwork() && mAttachedNetworkRequestList.isEmpty()) {
-                    log("Tear down the network since there is no live network request.");
-                    // Directly call onTearDown here. Calling tearDown will cause deadlock because
-                    // EVENT_TEAR_DOWN_NETWORK is deferred until state machine enters connected
-                    // state, which will never happen in this case.
-                    onTearDown(TEAR_DOWN_REASON_NO_LIVE_REQUEST);
-                    return;
-                }
 
                 if (mVcnManager != null && mVcnManager.applyVcnNetworkPolicy(mNetworkCapabilities,
                         mLinkProperties).isTeardownRequested()) {

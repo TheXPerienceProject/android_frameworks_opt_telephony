@@ -44,6 +44,7 @@ import android.telephony.ServiceState;
 import android.telephony.SignalStrength;
 import android.telephony.SubscriptionInfo;
 import android.telephony.TelephonyDisplayInfo;
+import android.telephony.TelephonyManager;
 import android.util.IndentingPrintWriter;
 import android.util.LocalLog;
 
@@ -641,6 +642,21 @@ public class AutoDataSwitchController extends Handler {
      * @param reason The reason for the evaluation.
      */
     public void evaluateAutoDataSwitch(@AutoDataSwitchEvaluationReason int reason) {
+        int numActiveModems = PhoneFactory.getPhones().length;
+        boolean isAutoDataSwitchUiEnabled = false;
+        for (int phoneId = 0; phoneId < numActiveModems; phoneId++) {
+            Phone phone = PhoneFactory.getPhone(phoneId);
+            isAutoDataSwitchUiEnabled = phone.getDataSettingsManager()
+                    .isMobileDataPolicyEnabled(
+                    TelephonyManager.MOBILE_DATA_POLICY_AUTO_DATA_SWITCH);
+            if (isAutoDataSwitchUiEnabled) {
+                break;
+            }
+        }
+        log("evaluateAutoDataSwitch: isAutoDataSwitchUiEnabled = " + isAutoDataSwitchUiEnabled);
+        if (!isAutoDataSwitchUiEnabled) {
+            return;
+        }
         long delayMs = reason == EVALUATION_REASON_RETRY_VALIDATION
                 ? mAutoDataSwitchAvailabilityStabilityTimeThreshold
                 << mAutoSwitchValidationFailedCount
@@ -697,31 +713,21 @@ public class AutoDataSwitchController extends Handler {
             }
 
             DataEvaluation internetEvaluation;
-            if (sFeatureFlags.autoDataSwitchUsesDataEnabled()) {
-                if (!defaultDataPhone.isUserDataEnabled()) {
-                    mPhoneSwitcherCallback.onRequireImmediatelySwitchToPhone(DEFAULT_PHONE_INDEX,
-                            EVALUATION_REASON_DATA_SETTINGS_CHANGED);
-                    log(debugMessage.append(
-                            ", immediately back to default as user turns off default").toString());
-                    return;
-                } else if (!(internetEvaluation = backupDataPhone.getDataNetworkController()
-                        .getInternetEvaluation(false/*ignoreExistingNetworks*/))
-                        .isSubsetOf(DataEvaluation.DataDisallowedReason.NOT_IN_SERVICE)) {
-                    mPhoneSwitcherCallback.onRequireImmediatelySwitchToPhone(
-                            DEFAULT_PHONE_INDEX, EVALUATION_REASON_DATA_SETTINGS_CHANGED);
-                    log(debugMessage.append(
-                                    ", immediately back to default because backup ")
-                            .append(internetEvaluation).toString());
-                    return;
-                }
-            } else {
-                if (!defaultDataPhone.isUserDataEnabled() || !backupDataPhone.isDataAllowed()) {
-                    mPhoneSwitcherCallback.onRequireImmediatelySwitchToPhone(DEFAULT_PHONE_INDEX,
-                            EVALUATION_REASON_DATA_SETTINGS_CHANGED);
-                    log(debugMessage.append(
-                            ", immediately back to default as user turns off settings").toString());
-                    return;
-                }
+            if (!defaultDataPhone.isUserDataEnabled()) {
+                mPhoneSwitcherCallback.onRequireImmediatelySwitchToPhone(DEFAULT_PHONE_INDEX,
+                        EVALUATION_REASON_DATA_SETTINGS_CHANGED);
+                log(debugMessage.append(
+                        ", immediately back to default as user turns off default").toString());
+                return;
+            } else if (!(internetEvaluation = backupDataPhone.getDataNetworkController()
+                    .getInternetEvaluation(false/*ignoreExistingNetworks*/))
+                    .isSubsetOf(DataEvaluation.DataDisallowedReason.NOT_IN_SERVICE)) {
+                mPhoneSwitcherCallback.onRequireImmediatelySwitchToPhone(
+                        DEFAULT_PHONE_INDEX, EVALUATION_REASON_DATA_SETTINGS_CHANGED);
+                log(debugMessage.append(
+                                ", immediately back to default because backup ")
+                        .append(internetEvaluation).toString());
+                return;
             }
 
             boolean backToDefault = false;
@@ -951,14 +957,15 @@ public class AutoDataSwitchController extends Handler {
      * @return {@code true} If the feature of switching base on RAT and signal strength is enabled.
      */
     private boolean isRatSignalStrengthBasedSwitchEnabled() {
-        return mScoreTolerance >= 0 && mAutoDataSwitchPerformanceStabilityTimeThreshold >= 0;
+        return mScoreTolerance >= 0 && mAutoDataSwitchPerformanceStabilityTimeThreshold >= 0
+                && sFeatureFlags.autoDataSwitchEnhanced();
     }
 
     /**
      * @return {@code true} If the feature of switching to roaming non DDS is enabled.
      */
     private boolean isNddsRoamingEnabled() {
-        return sFeatureFlags.autoDataSwitchAllowRoaming() && mAllowNddsRoaming;
+        return mAllowNddsRoaming;
     }
 
     /**

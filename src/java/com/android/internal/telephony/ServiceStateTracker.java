@@ -329,7 +329,7 @@ public class ServiceStateTracker extends Handler {
     protected static final String REGISTRATION_DENIED_GEN  = "General";
     protected static final String REGISTRATION_DENIED_AUTH = "Authentication Failure";
 
-    private CarrierDisplayNameResolver mCdnr;
+    protected CarrierDisplayNameResolver mCdnr;
 
     private boolean mImsRegistrationOnOff = false;
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
@@ -364,7 +364,7 @@ public class ServiceStateTracker extends Handler {
     private final LocalLog mCdnrLogs = new LocalLog(64);
 
     private Pattern mOperatorNameStringPattern;
-    private PersistableBundle mCarrierConfig;
+    protected PersistableBundle mCarrierConfig;
 
     @NonNull
     private final FeatureFlags mFeatureFlags;
@@ -2861,7 +2861,7 @@ public class ServiceStateTracker extends Handler {
         }
     }
 
-    private void notifyCarrierDisplayNameDataChanged() {
+    protected void notifyCarrierDisplayNameDataChanged() {
         final String log = String.format("notifyCarrierDisplayNameDataChanged: "
                         + "changed sending intent, "
                         + "rule=%d, CarrierDisplayNameData=%s, subId=%d",
@@ -2883,7 +2883,7 @@ public class ServiceStateTracker extends Handler {
     }
 
     @NonNull
-    private String getCarrierName(CarrierDisplayNameData cdnd) {
+    protected String getCarrierName(CarrierDisplayNameData cdnd) {
         boolean showPlmn = cdnd.shouldShowPlmn();
         boolean showSpn = cdnd.shouldShowSpn();
         String plmn = cdnd.getPlmn();
@@ -2932,7 +2932,7 @@ public class ServiceStateTracker extends Handler {
 
     }
 
-    private @NonNull CarrierDisplayNameData getCarrierDisplayNameLegacy() {
+    protected @NonNull CarrierDisplayNameData getCarrierDisplayNameLegacy() {
         log("getCarrierDisplayNameLegacy+");
 
         String spn = null;
@@ -3022,14 +3022,11 @@ public class ServiceStateTracker extends Handler {
 
         String satellitePlmn = null;
         SatelliteModemStateListener satelliteModemStateListener = getSatelliteModemStateListener();
-        if (combinedRegState == ServiceState.STATE_OUT_OF_SERVICE
-                && satelliteModemStateListener != null
+        if (satelliteModemStateListener != null
                 && satelliteModemStateListener.isInConnectedState()) {
-            // If device is connected to the nb-iot satellite,
-            // 1) No service but nb-iot satellite is connected ->
-            //    expected to show "Satellite" for demo mode.
             satellitePlmn = getSatelliteDisplayName();
         }
+        log("updateCarrierDisplayName: satellitePlmn=" + satellitePlmn);
 
         if (mPhone.isPhoneTypeGsm()) {
             // The values of plmn/showPlmn change in different scenarios.
@@ -3209,9 +3206,15 @@ public class ServiceStateTracker extends Handler {
         }
 
         SatelliteModemStateListener satelliteModemStateListener = getSatelliteModemStateListener();
+        String operator = mNewSS.getOperatorAlphaLong();
+        SatelliteController sc = SatelliteController.getInstance();
+        // Override satellite display name if device is in carrier roaming nb iot ntn mode
+        // and has a valid operator
         if (satelliteModemStateListener != null
-                && satelliteModemStateListener.isInConnectedState()) {
-            // override satellite display name.
+                && satelliteModemStateListener.isInConnectedState()
+                || (!TextUtils.isEmpty(operator)
+                        && sc != null && sc.isInCarrierRoamingNbIotNtn())) {
+            // override satellite display name
             mNewSS.setOperatorName(
                     satelliteDisplayName, satelliteDisplayName, mNewSS.getOperatorNumeric());
             log("Override satellite display name to " + satelliteDisplayName);

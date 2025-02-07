@@ -27,6 +27,9 @@ import android.os.PersistableBundle;
 import android.telephony.CarrierConfigManager;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
+import android.telecom.PhoneAccount;
+import android.telecom.PhoneAccountHandle;
+import android.telecom.TelecomManager;
 import android.text.TextUtils;
 
 import com.android.internal.telephony.flags.FeatureFlags;
@@ -279,29 +282,88 @@ public abstract class CallTracker extends Handler {
     }
 
     /**
-     * Determines if an incoming call has ACTIVE (or HELD) call on the other SUB.
-     * Returns false if
+     * Determines whether incoming call is a pseudo-DSDA call.
+     * Returns false immediately for:
      *     1. SINGLE SIM configuration
-     *     2. DSDA
-     *     3. DSDS and Telephony supporting DSDS transition mode. (i.e. Telephony need to behave
-     *        like DSDA In DSDS transition mode)
+     *     2. If the other SUB which receives the incoming call does not have any calls
+     *     3. DSDA (part of the other phone account's calling restriction)
      * Returns true if
-     *     1. Pseudo DSDA / UNKNOWN and call is present on other SUB.
+     *     1. If the SUB which receives the incoming call does not have any other calls
+     *        and the other SUB has calls, otherwise returns false
      */
     protected boolean isPseudoDsdaCall() {
         TelephonyManager telephony = TelephonyManager.from(getPhone().getContext());
-        if (telephony.isConcurrentCallsPossible() ||
-            telephony.getActiveModemCount() <= PhoneConstants.MAX_PHONE_COUNT_SINGLE_SIM) {
+        if (telephony.getActiveModemCount() <= PhoneConstants.MAX_PHONE_COUNT_SINGLE_SIM) {
             return false;
         }
-
-        if (telephony.isDsdsMode() && telephony.isDsdsTransitionSupported()) {
+        Phone otherOffhookPhone = getOtherOffhookPhone();
+        // If the other SUB is not offhook, then no need to check further
+        // Ex cases which are handled (and vice versa):
+        //  1) SUB1: INCOMING
+        //     SUB2: IDLE
+        //  2) SUB1: OFFHOOK + INCOMING
+        //     SUB2: IDLE
+        if (otherOffhookPhone == null) {
             return false;
         }
+        if (containedInSimultaneousRestriction(otherOffhookPhone)) {
+            log("containsPhoneAccount in simultaneous restriction, so do not treat as pseudo dsda");
+            return false;
+        }
+        // For cases where the UE is not configured for DSDA, identify pseudo-DSDA cases
+        boolean hasCallOnSameSub = getPhone().getDefaultPhone().getState() ==
+                PhoneConstants.State.OFFHOOK;
+        // ex: SUB1: ACTIVE
+        //     SUB2: INCOMING --> treat as pseudo-DSDA
+        if (!hasCallOnSameSub) {
+            log("This is a pseudo dsda call");
+            return true;
+        }
+        // ex: SUB1: OFFHOOK + INCOMING
+        //     SUB2: OFFHOOK --> do not treat as pseudo-DSDA since there is already a call on SUB1
+        return false;
+    }
 
+    // helper function to check and return the offhook phone if it is
+    // not the phone where the incoming call resides
+    private Phone getOtherOffhookPhone() {
         for (Phone phone: PhoneFactory.getPhones()) {
-            if (phone.getSubId() != getPhone().getSubId()) {
-                return phone.getState() == PhoneConstants.State.OFFHOOK;
+            if (phone.getSubId() != getPhone().getSubId() &&
+                    phone.getState() == PhoneConstants.State.OFFHOOK) {
+                return phone;
+            }
+        }
+        return null;
+    }
+
+    // Checks if device is configured for DSDA, where the offhook phone account
+    // is a part of the incoming phone account's simultaneous restriction
+    private boolean containedInSimultaneousRestriction(Phone offhook) {
+        Context context = getPhone().getContext();
+        final TelecomManager telecomManager = context.getSystemService(TelecomManager.class);
+        final TelephonyManager telephonyManager = TelephonyManager.from(context);
+        Phone ringing = getPhone().getDefaultPhone();
+
+        if (offhook == null || ringing == null) {
+            log("Either offhook or ringing call is null, which is not expected");
+            return false;
+        }
+        PhoneAccountHandle ringingAccount = telephonyManager != null ?
+                telephonyManager.getPhoneAccountHandleForSubscriptionId(ringing.getSubId()) : null;
+        PhoneAccountHandle offhookAccount = telephonyManager != null ?
+                telephonyManager.getPhoneAccountHandleForSubscriptionId(offhook.getSubId()) : null;
+
+        if (ringingAccount == null || offhookAccount == null) {
+            log("Null phone account handle for ringing phone");
+            return false;
+        }
+
+        PhoneAccount pa = telecomManager != null ? telecomManager.getPhoneAccount(offhookAccount) :
+                null;
+        if (pa != null && pa.hasSimultaneousCallingRestriction()) {
+            if (pa.getSimultaneousCallingRestriction().contains(ringingAccount)) {
+                log("contains phone account in simultaneous calling restriction");
+                return true;
             }
         }
         return false;
