@@ -587,6 +587,13 @@ public class PhoneSwitcher extends Handler {
                                             "EVENT_DATA_DURING_CALL_ENABLED_CHANGED",
                                             DataSwitch.Reason.DATA_SWITCH_REASON_IN_CALL);
                                 }
+                                if (policy == TelephonyManager
+                                        .MOBILE_DATA_POLICY_AUTO_DATA_SWITCH) {
+                                    PhoneSwitcher.this.mAutoDataSwitchController
+                                            .evaluateAutoDataSwitch(
+                                                    AutoDataSwitchController
+                                                   .EVALUATION_REASON_DATA_SETTINGS_CHANGED);
+                                }
                             }
 
                             @Override
@@ -863,9 +870,40 @@ public class PhoneSwitcher extends Handler {
                     registerForImsRadioTechChange();
                 }
 
-                evaluateTelephonyTempDdsIfRequried("precise call state changed",
-                        DataSwitch.Reason.DATA_SWITCH_REASON_IN_CALL);
+                // If the phoneId in voice call didn't change, do nothing.
+                if (!updatesIfPhoneInVoiceCallChanged()) {
+                    break;
+                }
 
+                if (!isAnyVoiceCallActiveOnDevice()) {
+                    for (int i = 0; i < mActiveModemCount; i++) {
+                        if (mCurrentDdsSwitchFailure.get(i).contains(
+                                CommandException.Error.OP_NOT_ALLOWED_DURING_VOICE_CALL)
+                                 && isPhoneIdValidForRetry(i)) {
+                            sendRilCommands(i);
+                        }
+                    }
+                }
+
+                // Only handle this event if we are currently waiting for the emergency call
+                // associated with the override request to start or end.
+                if (mEmergencyOverride != null && mEmergencyOverride.mPendingOriginatingCall) {
+                    removeMessages(EVENT_REMOVE_DDS_EMERGENCY_OVERRIDE);
+                    if (mPhoneIdInVoiceCall == SubscriptionManager.INVALID_PHONE_INDEX) {
+                        // not in a call anymore.
+                        Message msg2 = obtainMessage(EVENT_REMOVE_DDS_EMERGENCY_OVERRIDE);
+                        sendMessageDelayed(msg2, mEmergencyOverride.mGnssOverrideTimeMs
+                                + ECBM_DEFAULT_DATA_SWITCH_BASE_TIME_MS);
+                        // Do not extend the emergency override by waiting for other calls to end.
+                        // If it needs to be extended, a new request will come in and replace the
+                        // current override.
+                        mEmergencyOverride.mPendingOriginatingCall = false;
+                    }
+                }
+                // Always update data modem via data during call code path, because
+                // mAutoSelectedDataSubId doesn't know about any data switch due to voice call
+                evaluateIfImmediateDataSwitchIsNeeded("precise call state changed",
+                        DataSwitch.Reason.DATA_SWITCH_REASON_IN_CALL);
                 if (!isAnyVoiceCallActiveOnDevice()) {
                     // consider auto switch on hang up all voice call
                     mAutoDataSwitchController.evaluateAutoDataSwitch(
@@ -1084,6 +1122,12 @@ public class PhoneSwitcher extends Handler {
                                 evaluateTelephonyTempDdsIfRequried(
                                         "EVENT_DATA_DURING_CALL_ENABLED_CHANGED",
                                         DataSwitch.Reason.DATA_SWITCH_REASON_IN_CALL);
+                            }
+                            if (policy == TelephonyManager
+                                    .MOBILE_DATA_POLICY_AUTO_DATA_SWITCH) {
+                                PhoneSwitcher.this.mAutoDataSwitchController.evaluateAutoDataSwitch(
+                                        AutoDataSwitchController
+                                                .EVALUATION_REASON_DATA_SETTINGS_CHANGED);
                             }
                         }
 
