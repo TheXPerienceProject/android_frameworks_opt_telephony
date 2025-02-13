@@ -92,7 +92,6 @@ import android.text.TextUtils;
 import android.util.SparseArray;
 
 import com.android.internal.annotations.VisibleForTesting;
-import com.android.internal.telephony.OperatorInfo;
 import com.android.internal.telephony.cdma.CdmaInformationRecords;
 import com.android.internal.telephony.cdma.CdmaSmsBroadcastConfigInfo;
 import com.android.internal.telephony.emergency.EmergencyConstants;
@@ -2546,11 +2545,6 @@ public class RIL extends BaseCommands implements CommandsInterface {
             networkProxy.setNetworkSelectionModeManual(rr.mSerial,
                     RILUtils.convertNullToEmptyString(operatorNumeric), ran);
         });
-    }
-
-    @Override
-    public void setNetworkSelectionModeManual(OperatorInfo network, Message result) {
-        riljLog("setNetworkSelectionModeManual request not supoorted");
     }
 
     @Override

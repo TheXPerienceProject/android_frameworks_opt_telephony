@@ -44,7 +44,6 @@ import android.telephony.ServiceState;
 import android.telephony.SignalStrength;
 import android.telephony.SubscriptionInfo;
 import android.telephony.TelephonyDisplayInfo;
-import android.telephony.TelephonyManager;
 import android.util.IndentingPrintWriter;
 import android.util.LocalLog;
 
@@ -365,7 +364,6 @@ public class AutoDataSwitchController extends Handler {
         for (int phoneId = 0; phoneId < numActiveModems; phoneId++) {
             registerAllEventsForPhone(phoneId);
         }
-        registerForCarrierConfigChanged();
     }
 
     /**
@@ -419,18 +417,6 @@ public class AutoDataSwitchController extends Handler {
         if (changed) logl("onSubscriptionChanged: " + Arrays.toString(mPhonesSignalStatus));
     }
 
-    private void registerForCarrierConfigChanged() {
-        Phone phone = PhoneFactory.getDefaultPhone();
-        DataConfigManager dataConfigManager =
-                phone.getDataNetworkController().getDataConfigManager();
-        dataConfigManager.registerCallback(new DataConfigManagerCallback(this::post) {
-                @Override
-                public void onCarrierConfigChanged() {
-                    readDeviceResourceConfig();
-                }
-            });
-    }
-
     /**
      * Register all tracking events for a phone.
      * @param phoneId The phone to register for all events.
@@ -471,7 +457,7 @@ public class AutoDataSwitchController extends Handler {
      * Read the default device config from any default phone because the resource config are per
      * device. No need to register callback for the same reason.
      */
-    private void readDeviceResourceConfig() {
+    public void readDeviceResourceConfig() {
         Phone phone = PhoneFactory.getDefaultPhone();
         DataConfigManager dataConfig = phone.getDataNetworkController().getDataConfigManager();
         mScoreTolerance =  dataConfig.getAutoDataSwitchScoreTolerance();
@@ -642,21 +628,6 @@ public class AutoDataSwitchController extends Handler {
      * @param reason The reason for the evaluation.
      */
     public void evaluateAutoDataSwitch(@AutoDataSwitchEvaluationReason int reason) {
-        int numActiveModems = PhoneFactory.getPhones().length;
-        boolean isAutoDataSwitchUiEnabled = false;
-        for (int phoneId = 0; phoneId < numActiveModems; phoneId++) {
-            Phone phone = PhoneFactory.getPhone(phoneId);
-            isAutoDataSwitchUiEnabled = phone.getDataSettingsManager()
-                    .isMobileDataPolicyEnabled(
-                    TelephonyManager.MOBILE_DATA_POLICY_AUTO_DATA_SWITCH);
-            if (isAutoDataSwitchUiEnabled) {
-                break;
-            }
-        }
-        log("evaluateAutoDataSwitch: isAutoDataSwitchUiEnabled = " + isAutoDataSwitchUiEnabled);
-        if (!isAutoDataSwitchUiEnabled) {
-            return;
-        }
         long delayMs = reason == EVALUATION_REASON_RETRY_VALIDATION
                 ? mAutoDataSwitchAvailabilityStabilityTimeThreshold
                 << mAutoSwitchValidationFailedCount

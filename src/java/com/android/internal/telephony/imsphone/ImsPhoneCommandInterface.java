@@ -39,7 +39,6 @@ import android.telephony.emergency.EmergencyNumber;
 
 import com.android.internal.telephony.BaseCommands;
 import com.android.internal.telephony.CommandsInterface;
-import com.android.internal.telephony.OperatorInfo;
 import com.android.internal.telephony.RadioCapability;
 import com.android.internal.telephony.UUSInfo;
 import com.android.internal.telephony.cdma.CdmaSmsBroadcastConfigInfo;
@@ -329,10 +328,6 @@ class ImsPhoneCommandInterface extends BaseCommands implements CommandsInterface
 
     @Override
     public void setNetworkSelectionModeManual(String operatorNumeric, int ran, Message response) {
-    }
-
-    @Override
-    public void setNetworkSelectionModeManual(OperatorInfo network, Message result) {
     }
 
     @Override
