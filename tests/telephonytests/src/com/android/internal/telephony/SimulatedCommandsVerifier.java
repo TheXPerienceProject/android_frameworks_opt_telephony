@@ -38,7 +38,6 @@ import android.telephony.data.TrafficDescriptor;
 import android.telephony.emergency.EmergencyNumber;
 
 import com.android.internal.telephony.CommandsInterface;
-import com.android.internal.telephony.OperatorInfo;
 import com.android.internal.telephony.RadioCapability;
 import com.android.internal.telephony.UUSInfo;
 import com.android.internal.telephony.cdma.CdmaSmsBroadcastConfigInfo;
@@ -963,11 +962,6 @@ public class SimulatedCommandsVerifier implements CommandsInterface {
     }
 
     @Override
-    public void setNetworkSelectionModeManual(OperatorInfo network, Message response) {
-
-    }
-
-    @Override
     public void getNetworkSelectionMode(Message response) {
 
     }
@@ -1487,10 +1481,6 @@ public class SimulatedCommandsVerifier implements CommandsInterface {
 
     @Override
     public void cancelHandover(Message result, int callId) {
-    }
-
-    @Override
-    public void getEnhancedRadioCapability(Message result) {
     }
 
     /**

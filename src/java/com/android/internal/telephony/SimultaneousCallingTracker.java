@@ -408,7 +408,9 @@ public class SimultaneousCallingTracker {
                         phone.isImsServiceSimultaneousCallingSupportCapable(mContext)) {
                     // Check if the transport types of each phone support simultaneous IMS calling:
                     int phone1TransportType = getImsTransportType(phone);
-                    if (phone1TransportType == AccessNetworkConstants.TRANSPORT_TYPE_WLAN) {
+                    if (mContext.getResources().getBoolean(
+                        com.android.internal.R.bool.config_enable_aosp_wlan_dsda_logic) &&
+                        phone1TransportType == AccessNetworkConstants.TRANSPORT_TYPE_WLAN) {
                         // The transport type of this phone is WLAN so all combos are supported:
                         continue;
                     }
@@ -462,7 +464,9 @@ public class SimultaneousCallingTracker {
 
     private boolean phonesSupportSimultaneousCallingViaCellularOrWlan(Phone phone1, Phone phone2) {
         int phone2TransportType = getImsTransportType(phone2);
-        return phone2TransportType == AccessNetworkConstants.TRANSPORT_TYPE_WLAN ||
+        return (mContext.getResources().getBoolean(
+                com.android.internal.R.bool.config_enable_aosp_wlan_dsda_logic) &&
+                phone2TransportType == AccessNetworkConstants.TRANSPORT_TYPE_WLAN) ||
                 phonesSupportCellularSimultaneousCalling(phone1, phone2);
     }
 

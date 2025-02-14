@@ -2557,21 +2557,6 @@ public class GsmCdmaPhoneTest extends TelephonyTest {
                 any(Message.class));
     }
 
-    @Test
-    public void testHandleNullCipherAndIntegrityEnabled_featureFlagOff() {
-        mPhoneUT.mCi = mMockCi;
-        DeviceConfig.setProperty(DeviceConfig.NAMESPACE_CELLULAR_SECURITY,
-                TelephonyManager.PROPERTY_ENABLE_NULL_CIPHER_TOGGLE, Boolean.FALSE.toString(),
-                false);
-
-        mPhoneUT.sendMessage(mPhoneUT.obtainMessage(EVENT_RADIO_AVAILABLE,
-                new AsyncResult(null, new int[]{ServiceState.RIL_RADIO_TECHNOLOGY_GSM}, null)));
-        processAllMessages();
-
-        verify(mMockCi, times(0)).setNullCipherAndIntegrityEnabled(anyBoolean(),
-                any(Message.class));
-    }
-
     public void fdnCheckCleanup() {
         doReturn(false).when(mUiccCardApplication3gpp).getIccFdnAvailable();
         doReturn(false).when(mUiccCardApplication3gpp).getIccFdnEnabled();
@@ -2909,31 +2894,7 @@ public class GsmCdmaPhoneTest extends TelephonyTest {
     }
 
     @Test
-    public void testCellularIdentifierDisclosureFlagOff() {
-        when(mFeatureFlags.enableIdentifierDisclosureTransparencyUnsolEvents()).thenReturn(false);
-
-        GsmCdmaPhone phoneUT =
-                new GsmCdmaPhone(
-                        mContext,
-                        mSimulatedCommands,
-                        mNotifier,
-                        true,
-                        0,
-                        PhoneConstants.PHONE_TYPE_GSM,
-                        mTelephonyComponentFactory,
-                        (c, p) -> mImsManager,
-                        mFeatureFlags);
-        phoneUT.mCi = mMockCi;
-
-        verify(mMockCi, never())
-                .registerForCellularIdentifierDisclosures(
-                        any(Handler.class), anyInt(), any(Object.class));
-    }
-
-    @Test
-    public void testCellularIdentifierDisclosureFlagOn() {
-        when(mFeatureFlags.enableIdentifierDisclosureTransparencyUnsolEvents()).thenReturn(true);
-
+    public void testCellularIdentifierDisclosure() {
         Phone phoneUT =
                 new GsmCdmaPhone(
                         mContext,
@@ -2957,7 +2918,6 @@ public class GsmCdmaPhoneTest extends TelephonyTest {
     public void testCellularIdentifierDisclosure_disclosureEventAddedToNotifier() {
         int phoneId = 0;
         int subId = 10;
-        when(mFeatureFlags.enableIdentifierDisclosureTransparencyUnsolEvents()).thenReturn(true);
         when(mSubscriptionManagerService.getSubId(phoneId)).thenReturn(subId);
 
         Phone phoneUT =
@@ -2992,7 +2952,6 @@ public class GsmCdmaPhoneTest extends TelephonyTest {
     public void testCellularIdentifierDisclosure_disclosureEventNull() {
         int phoneId = 4;
         int subId = 6;
-        when(mFeatureFlags.enableIdentifierDisclosureTransparencyUnsolEvents()).thenReturn(true);
         when(mSubscriptionManagerService.getSubId(phoneId)).thenReturn(subId);
         Phone phoneUT =
                 new GsmCdmaPhone(
@@ -3016,21 +2975,7 @@ public class GsmCdmaPhoneTest extends TelephonyTest {
     }
 
     @Test
-    public void testCellularIdentifierDisclosure_noModemCallOnRadioAvailable_FlagOff() {
-        when(mFeatureFlags.enableIdentifierDisclosureTransparency()).thenReturn(false);
-        GsmCdmaPhone phoneUT = makeNewPhoneUT();
-        assertFalse(phoneUT.isIdentifierDisclosureTransparencySupported());
-
-        sendRadioAvailableToPhone(phoneUT);
-
-        verify(mMockCi, never()).setCellularIdentifierTransparencyEnabled(anyBoolean(),
-                any(Message.class));
-        assertFalse(phoneUT.isIdentifierDisclosureTransparencySupported());
-    }
-
-    @Test
     public void testCellularIdentifierDisclosure_unsupportedByModemOnRadioAvailable() {
-        when(mFeatureFlags.enableIdentifierDisclosureTransparency()).thenReturn(true);
         GsmCdmaPhone phoneUT = makeNewPhoneUT();
         assertFalse(phoneUT.isIdentifierDisclosureTransparencySupported());
 
@@ -3047,7 +2992,6 @@ public class GsmCdmaPhoneTest extends TelephonyTest {
 
     @Test
     public void testCellularIdentifierDisclosure_supportedByModem() {
-        when(mFeatureFlags.enableIdentifierDisclosureTransparency()).thenReturn(true);
         GsmCdmaPhone phoneUT = makeNewPhoneUT();
         assertFalse(phoneUT.isIdentifierDisclosureTransparencySupported());
 

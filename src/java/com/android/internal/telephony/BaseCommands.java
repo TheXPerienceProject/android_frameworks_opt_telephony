@@ -1177,9 +1177,6 @@ public abstract class BaseCommands implements CommandsInterface {
     public void unregisterForTriggerImsDeregistration(Handler h) {
         mTriggerImsDeregistrationRegistrants.remove(h);
     }
-    @Override
-    public void getEnhancedRadioCapability(Message result) {
-    }
 
     /**
      * Register to listen for the changes in the primary IMEI with respect to the sim slot.

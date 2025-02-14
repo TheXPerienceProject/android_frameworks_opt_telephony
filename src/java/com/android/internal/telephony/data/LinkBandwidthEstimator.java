@@ -27,7 +27,6 @@ import android.hardware.display.DisplayManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
-import android.net.TrafficStats;
 import android.os.AsyncResult;
 import android.os.Handler;
 import android.os.HandlerExecutor;
@@ -48,7 +47,6 @@ import android.telephony.ModemActivityInfo;
 import android.telephony.NetworkRegistrationInfo;
 import android.telephony.ServiceState;
 import android.telephony.SignalStrength;
-import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
@@ -85,7 +83,7 @@ public class LinkBandwidthEstimator extends Handler {
     @VisibleForTesting
     static final int MSG_SCREEN_STATE_CHANGED = 1;
     @VisibleForTesting
-    static final int MSG_TRAFFIC_STATS_POLL = 2;
+    protected static final int MSG_TRAFFIC_STATS_POLL = 2;
     @VisibleForTesting
     static final int MSG_MODEM_ACTIVITY_RETURNED = 3;
     @VisibleForTesting
@@ -105,7 +103,7 @@ public class LinkBandwidthEstimator extends Handler {
     static final int UNKNOWN_TAC = CellInfo.UNAVAILABLE;
 
     // TODO: move the following parameters to xml file
-    private static final int TRAFFIC_STATS_POLL_INTERVAL_MS = 1_000;
+    protected static final int TRAFFIC_STATS_POLL_INTERVAL_MS = 1_000;
     private static final int MODEM_POLL_MIN_INTERVAL_MS = 5_000;
     private static final int TRAFFIC_MODEM_POLL_BYTE_RATIO = 8;
     private static final int TRAFFIC_POLL_BYTE_THRESHOLD_MAX = 20_000;
@@ -168,20 +166,17 @@ public class LinkBandwidthEstimator extends Handler {
     public final static int UNSUPPORTED = -1;
 
     // One common timestamp for all sim to avoid frequent modem polling
-    private final Phone mPhone;
+    protected final Phone mPhone;
     private final TelephonyFacade mTelephonyFacade;
     private final TelephonyManager mTelephonyManager;
-    private final DataNetworkController mDataNetworkController;
     private final LocalLog mLocalLog = new LocalLog(512);
-    private boolean mScreenOn = false;
-    private boolean mIsOnDefaultRoute = false;
-    private boolean mIsOnActiveData = false;
+    protected boolean mScreenOn = false;
+    protected boolean mIsOnDefaultRoute = false;
+    protected boolean mIsOnActiveData = false;
     private long mLastModemPollTimeMs;
     private boolean mLastTrafficValid = true;
     private long mLastMobileTxBytes;
-    private long mLastMobileTxBytesPerSim;
     private long mLastMobileRxBytes;
-    private long mLastMobileRxBytesPerSim;
     private long mTxBytesDeltaAcc;
     private long mRxBytesDeltaAcc;
 
@@ -205,11 +200,11 @@ public class LinkBandwidthEstimator extends Handler {
     private long mLastPlmnOrRatChangeTimeMs;
     private long mLastDrsOrRatChangeTimeMs;
 
-    private int mDataActivity = TelephonyManager.DATA_ACTIVITY_NONE;
+    protected int mDataActivity = TelephonyManager.DATA_ACTIVITY_NONE;
 
     /** Link bandwidth estimator callbacks. */
     @NonNull
-    private final Set<LinkBandwidthEstimatorCallback> mLinkBandwidthEstimatorCallbacks =
+    protected final Set<LinkBandwidthEstimatorCallback> mLinkBandwidthEstimatorCallbacks =
             new ArraySet<>();
 
     /**
@@ -333,7 +328,6 @@ public class LinkBandwidthEstimator extends Handler {
                 .TRANSPORT_TYPE_WWAN, this, MSG_DATA_REG_STATE_OR_RAT_CHANGED, null);
         mPhone.getSignalStrengthController().registerForSignalStrengthChanged(this,
                 MSG_SIGNAL_STRENGTH_CHANGED, null);
-        mDataNetworkController = mPhone.getDataNetworkController();
     }
 
     @Override
@@ -343,11 +337,7 @@ public class LinkBandwidthEstimator extends Handler {
                 handleScreenStateChanged((boolean) msg.obj);
                 break;
             case MSG_TRAFFIC_STATS_POLL:
-                updateDataActivity();
                 handleTrafficStatsPoll();
-                // Schedule the next traffic stats poll
-                sendEmptyMessageDelayed(MSG_TRAFFIC_STATS_POLL,
-                        TRAFFIC_STATS_POLL_INTERVAL_MS);
                 break;
             case MSG_MODEM_ACTIVITY_RETURNED:
                 handleModemActivityReturned((ModemActivityInfo) msg.obj);
@@ -461,17 +451,11 @@ public class LinkBandwidthEstimator extends Handler {
         mLastDrsOrRatChangeTimeMs = mTelephonyFacade.getElapsedSinceBootMillis();
     }
 
-    private void handleTrafficStatsPollConditionChanged() {
+    protected void handleTrafficStatsPollConditionChanged() {
         removeMessages(MSG_TRAFFIC_STATS_POLL);
-        if (mScreenOn && mIsOnDefaultRoute
-                && SubscriptionManager.isValidSubscriptionId(mPhone.getSubId())) {
-            updateDataActivity();
-            if (mIsOnActiveData) {
-                updateDataRatCellIdentityBandwidth();
-                handleTrafficStatsPoll();
-            }
-            // Schedule the next traffic stats poll
-            sendEmptyMessageDelayed(MSG_TRAFFIC_STATS_POLL, TRAFFIC_STATS_POLL_INTERVAL_MS);
+        if (mScreenOn && mIsOnDefaultRoute && mIsOnActiveData) {
+            updateDataRatCellIdentityBandwidth();
+            handleTrafficStatsPoll();
         } else {
             logd("Traffic status poll stopped");
             if (mDataActivity != TelephonyManager.DATA_ACTIVITY_NONE) {
@@ -482,12 +466,34 @@ public class LinkBandwidthEstimator extends Handler {
         }
     }
 
-    private void handleTrafficStatsPoll() {
+    protected void handleTrafficStatsPoll() {
         invalidateTxRxSamples();
         long mobileTxBytes = mTelephonyFacade.getMobileTxBytes();
         long mobileRxBytes = mTelephonyFacade.getMobileRxBytes();
         long txBytesDelta = mobileTxBytes - mLastMobileTxBytes;
         long rxBytesDelta = mobileRxBytes - mLastMobileRxBytes;
+
+        int dataActivity;
+        if (txBytesDelta > 0 && rxBytesDelta > 0) {
+            dataActivity = TelephonyManager.DATA_ACTIVITY_INOUT;
+        } else if (rxBytesDelta > 0) {
+            dataActivity = TelephonyManager.DATA_ACTIVITY_IN;
+        } else if (txBytesDelta > 0) {
+            dataActivity = TelephonyManager.DATA_ACTIVITY_OUT;
+        } else {
+            dataActivity = TelephonyManager.DATA_ACTIVITY_NONE;
+        }
+
+        if (!isDataPacketsCaluclationOnEachSimSeperately()) {
+            if (mDataActivity != dataActivity) {
+                mDataActivity = dataActivity;
+                mLinkBandwidthEstimatorCallbacks.forEach(callback -> callback.invokeFromExecutor(
+                        () -> callback.onDataActivityChanged(dataActivity)));
+            }
+
+            // Schedule the next traffic stats poll
+            sendEmptyMessageDelayed(MSG_TRAFFIC_STATS_POLL, TRAFFIC_STATS_POLL_INTERVAL_MS);
+        }
 
         mLastMobileTxBytes = mobileTxBytes;
         mLastMobileRxBytes = mobileRxBytes;
@@ -541,42 +547,6 @@ public class LinkBandwidthEstimator extends Handler {
                 updateTxRxBandwidthFilterSendToDataConnection();
             }
         }
-    }
-
-    private long addIfSupported(long stat) {
-        return (stat == UNSUPPORTED) ? 0 : stat;
-    }
-
-    private void updateDataActivity() {
-        List<String> ifaces = mDataNetworkController.getAllActiveCellularInterfaces();
-        long mobileTxBytes = 0;
-        long mobileRxBytes = 0;
-        for(String iface : ifaces) {
-            mobileTxBytes += addIfSupported(TrafficStats.getTxBytes(iface));
-            mobileRxBytes += addIfSupported(TrafficStats.getRxBytes(iface));
-        }
-        long txBytesDelta = mobileTxBytes - mLastMobileTxBytesPerSim;
-        long rxBytesDelta = mobileRxBytes - mLastMobileRxBytesPerSim;
-
-        int dataActivity;
-        if (txBytesDelta > 0 && rxBytesDelta > 0) {
-            dataActivity = TelephonyManager.DATA_ACTIVITY_INOUT;
-        } else if (rxBytesDelta > 0) {
-            dataActivity = TelephonyManager.DATA_ACTIVITY_IN;
-        } else if (txBytesDelta > 0) {
-            dataActivity = TelephonyManager.DATA_ACTIVITY_OUT;
-        } else {
-            dataActivity = TelephonyManager.DATA_ACTIVITY_NONE;
-        }
-
-        if (mDataActivity != dataActivity) {
-            mDataActivity = dataActivity;
-            mLinkBandwidthEstimatorCallbacks.forEach(callback -> callback.invokeFromExecutor(
-                    () -> callback.onDataActivityChanged(dataActivity)));
-        }
-
-        mLastMobileTxBytesPerSim = mobileTxBytes;
-        mLastMobileRxBytesPerSim = mobileRxBytes;
     }
 
     private void makeRequestModemActivity() {
@@ -1079,7 +1049,7 @@ public class LinkBandwidthEstimator extends Handler {
                 NetworkRegistrationInfo.DOMAIN_PS, AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
     }
 
-    private boolean updateDataRatCellIdentityBandwidth() {
+    protected boolean updateDataRatCellIdentityBandwidth() {
         final ServiceState ss = mPhone.getServiceState();
         final CellIdentity cellIdentity = mPhone.getCurrentCellIdentity();
 
@@ -1319,5 +1289,9 @@ public class LinkBandwidthEstimator extends Handler {
         pw.decreaseIndent();
         pw.println();
         pw.flush();
+    }
+
+    protected boolean isDataPacketsCaluclationOnEachSimSeperately() {
+        return false;
     }
 }

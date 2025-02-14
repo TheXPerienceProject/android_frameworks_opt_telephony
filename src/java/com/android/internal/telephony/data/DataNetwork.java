@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/*
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
 package com.android.internal.telephony.data;
 
 import static android.telephony.TelephonyManager.HAL_SERVICE_DATA;
@@ -1193,8 +1199,7 @@ public class DataNetwork extends StateMachine {
         return TelephonyComponentFactory.getInstance().inject(
                 TelephonyNetworkAgent.class.getName()).makeTelephonyNetworkAgent(
                 mPhone, getHandler().getLooper(), this,
-                new NetworkScore.Builder().setLegacyInt(mNetworkScore.getLegacyInt()).build(),
-                configBuilder.build(), provider,
+                mNetworkScore, configBuilder.build(), provider,
                 new TelephonyNetworkAgentCallback(getHandler()::post) {
                     @Override
                     public void onValidationStatus(@ValidationStatus int status,
@@ -3570,16 +3575,6 @@ public class DataNetwork extends StateMachine {
                 .setFailCause(mFailCause)
                 .setDefaultQos(mDefaultQos)
                 .setNetworkValidationStatus(mNetworkValidationStatus)
-                .build();
-    }
-
-    static PreciseDataConnectionState
-            getPreciseDisconnectedDataConnectionState(ApnSetting apnSetting) {
-        return new PreciseDataConnectionState.Builder()
-                .setTransportType(AccessNetworkConstants.TRANSPORT_TYPE_WWAN)
-                .setId(INVALID_CID)
-                .setState(TelephonyManager.DATA_DISCONNECTED)
-                .setApnSetting(apnSetting)
                 .build();
     }
 

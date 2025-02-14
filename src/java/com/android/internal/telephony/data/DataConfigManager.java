@@ -268,9 +268,9 @@ public class DataConfigManager extends Handler {
     private boolean mIsApnConfigAnomalyReportEnabled;
 
     @NonNull
-    private final Phone mPhone;
+    protected final Phone mPhone;
     @NonNull
-    private final String mLogTag;
+    protected String mLogTag;
     @NonNull
     private final FeatureFlags mFeatureFlags;
     @Nullable
@@ -472,12 +472,6 @@ public class DataConfigManager extends Handler {
     }
 
     /**
-     * This can be overridden by vendors classes to load other configs.
-     */
-    protected void updateOtherConfigs() {
-    }
-
-    /**
      * Update the configuration from carrier configs and resources.
      */
     protected void updateCarrierConfig() {
@@ -499,7 +493,6 @@ public class DataConfigManager extends Handler {
         updateBandwidths();
         updateTcpBuffers();
         updateHandoverRules();
-        updateOtherConfigs();
         updateAutoDataSwitchConfig();
 
         log("Carrier config updated. Config is " + (isConfigCarrierSpecific() ? "" : "not ")

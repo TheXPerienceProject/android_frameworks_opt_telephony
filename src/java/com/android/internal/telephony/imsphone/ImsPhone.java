@@ -56,7 +56,6 @@ import static com.android.internal.telephony.CommandsInterface.SERVICE_CLASS_VOI
 
 import android.annotation.NonNull;
 import android.app.Activity;
-import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -1017,7 +1016,6 @@ public class ImsPhone extends ImsPhoneBase {
         String networkPortion = PhoneNumberUtils.extractNetworkPortionAlt(newDialString);
         ImsPhoneMmiCode mmi =  ImsPhoneMmiCode.newFromDialString(networkPortion, this,
                 wrappedCallback, mFeatureFlags);
-        UserHandle currentUserHandle = UserHandle.of(ActivityManager.getCurrentUser());
         if (DBG) logd("dialInternal: dialing w/ mmi '" + mmi + "'...");
 
         if (mmi == null) {
@@ -1025,11 +1023,10 @@ public class ImsPhone extends ImsPhoneBase {
         } else if (mmi.isTemporaryModeCLIR()) {
             imsDialArgsBuilder.setClirMode(mmi.getCLIRMode());
             return mCT.dial(mmi.getDialingNumber(), imsDialArgsBuilder.build());
-        } else if (!currentUserHandle.isSystem()) {
+        } else if (!QtiImsUtils.isSystemUser()) {
             // Must be primary user to use supplementary service.
-            loge("dialInternal: Supplementary service not allowed in non-primary mode");
-            throw new CallStateException(
-                    "Supplementary service is not allowed for non-primary user");
+            QtiImsUtils.throwExceptionForSupplementaryService();
+            return null;
         } else if (!mmi.isSupportedOverImsPhone()) {
             // If the mmi is not supported by IMS service,
             // try to initiate dialing with default phone
@@ -1771,36 +1768,7 @@ public class ImsPhone extends ImsPhoneBase {
 
     @Override
     public String getSubscriberUriNumber() {
-        if (mCurrentSubscriberUris == null || mCurrentSubscriberUris.length == 0) {
-            logd("mCurrentSubscriberUris is null");
-            return null;
-        }
-        for (Uri currentSubscriberUri : mCurrentSubscriberUris) {
-            if (currentSubscriberUri == null) {
-                continue;
-            }
-            String number = extractPhoneNumber(currentSubscriberUri);
-            if (number != null) {
-                return number;
-            }
-        }
-        return null;
-    }
-
-    private String extractPhoneNumber(Uri uri) {
-        // Number is always in the scheme specific part, regardless of whether this is a TEL or SIP
-        // URI.
-        String number = uri.getSchemeSpecificPart();
-        if (number == null) {
-            return null;
-        }
-        String[] numberParts = number.split("[@;:]");
-
-        if (numberParts.length == 0) {
-            logi("extractPhoneNumber(N) : no number in uri");
-            return null;
-        }
-        return numberParts[0];
+        return QtiImsUtils.getSubscriberUriNumber(mCurrentSubscriberUris);
     }
 
     /**
