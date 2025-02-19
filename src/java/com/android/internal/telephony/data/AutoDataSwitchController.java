@@ -685,6 +685,7 @@ public class AutoDataSwitchController extends Handler {
 
             DataEvaluation internetEvaluation;
             if (!defaultDataPhone.isUserDataEnabled()) {
+                mSelectedTargetPhoneId = INVALID_PHONE_INDEX;
                 mPhoneSwitcherCallback.onRequireImmediatelySwitchToPhone(DEFAULT_PHONE_INDEX,
                         EVALUATION_REASON_DATA_SETTINGS_CHANGED);
                 log(debugMessage.append(
@@ -693,6 +694,7 @@ public class AutoDataSwitchController extends Handler {
             } else if (!(internetEvaluation = backupDataPhone.getDataNetworkController()
                     .getInternetEvaluation(false/*ignoreExistingNetworks*/))
                     .isSubsetOf(DataEvaluation.DataDisallowedReason.NOT_IN_SERVICE)) {
+                mSelectedTargetPhoneId = INVALID_PHONE_INDEX;
                 mPhoneSwitcherCallback.onRequireImmediatelySwitchToPhone(
                         DEFAULT_PHONE_INDEX, EVALUATION_REASON_DATA_SETTINGS_CHANGED);
                 log(debugMessage.append(

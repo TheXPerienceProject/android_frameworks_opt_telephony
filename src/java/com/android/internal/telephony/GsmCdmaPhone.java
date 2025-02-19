@@ -529,10 +529,8 @@ public class GsmCdmaPhone extends Phone {
 
         mCi.registerForImeiMappingChanged(this, EVENT_IMEI_MAPPING_CHANGED, null);
 
-        if (mFeatureFlags.enableModemCipherTransparencyUnsolEvents()) {
-            mSafetySource =
-                    mTelephonyComponentFactory.makeCellularNetworkSecuritySafetySource(mContext);
-        }
+        mSafetySource = mTelephonyComponentFactory
+                .makeCellularNetworkSecuritySafetySource(mContext);
 
         logi(
                 "enable_identifier_disclosure_transparency_unsol_events is on. Registering for "
@@ -545,18 +543,16 @@ public class GsmCdmaPhone extends Phone {
         mCi.registerForCellularIdentifierDisclosures(
                 this, EVENT_CELL_IDENTIFIER_DISCLOSURE, null);
 
-        if (mFeatureFlags.enableModemCipherTransparencyUnsolEvents()) {
-            logi(
-                    "enable_modem_cipher_transparency_unsol_events is on. Registering for security "
-                            + "algorithm updates from phone "
-                            + getPhoneId());
-            mNullCipherNotifier =
-                    mTelephonyComponentFactory
-                            .inject(NullCipherNotifier.class.getName())
-                            .makeNullCipherNotifier(mSafetySource);
-            mCi.registerForSecurityAlgorithmUpdates(
-                    this, EVENT_SECURITY_ALGORITHM_UPDATE, null);
-        }
+        logi(
+                "enable_modem_cipher_transparency_unsol_events is on. Registering for security "
+                        + "algorithm updates from phone "
+                        + getPhoneId());
+        mNullCipherNotifier =
+                mTelephonyComponentFactory
+                        .inject(NullCipherNotifier.class.getName())
+                        .makeNullCipherNotifier(mSafetySource);
+        mCi.registerForSecurityAlgorithmUpdates(
+                this, EVENT_SECURITY_ALGORITHM_UPDATE, null);
 
         initializeCarrierApps();
     }
@@ -3785,8 +3781,7 @@ public class GsmCdmaPhone extends Phone {
                 ar = (AsyncResult) msg.obj;
                 SecurityAlgorithmUpdate update = (SecurityAlgorithmUpdate) ar.result;
 
-                if (mFeatureFlags.enableModemCipherTransparencyUnsolEvents()
-                        && mNullCipherNotifier != null) {
+                if (mNullCipherNotifier != null) {
                     mNullCipherNotifier.onSecurityAlgorithmUpdate(mContext, getPhoneId(),
                             getSubId(), update);
                 }
@@ -5327,25 +5322,14 @@ public class GsmCdmaPhone extends Phone {
 
     @Override
     public void handleNullCipherNotificationPreferenceChanged() {
-        if (!mFeatureFlags.enableModemCipherTransparency()) {
-            logi("Not handling null cipher notification preference change. Feature flag "
-                    + "enable_modem_cipher_transparency disabled");
-            return;
-        }
         boolean prefEnabled = getNullCipherNotificationsPreferenceEnabled();
 
         // The notifier is tied to handling unsolicited updates from the modem, not the
         // enable/disable API.
-        if (mFeatureFlags.enableModemCipherTransparencyUnsolEvents()) {
-            if (prefEnabled) {
-                mNullCipherNotifier.enable(mContext);
-            } else {
-                mNullCipherNotifier.disable(mContext);
-            }
+        if (prefEnabled) {
+            mNullCipherNotifier.enable(mContext);
         } else {
-            logi(
-                    "Not toggling enable state for cipher notifier. Feature flag "
-                            + "enable_modem_cipher_transparency_unsol_events is disabled.");
+            mNullCipherNotifier.disable(mContext);
         }
 
         mCi.setSecurityAlgorithmsUpdatedEnabled(prefEnabled,
@@ -5357,10 +5341,6 @@ public class GsmCdmaPhone extends Phone {
      */
     @VisibleForTesting
     public void updateNullCipherNotifier() {
-        if (!mFeatureFlags.enableModemCipherTransparencyUnsolEvents()) {
-            return;
-        }
-
         SubscriptionInfoInternal subInfo = mSubscriptionManagerService
                 .getSubscriptionInfoInternal(getSubId());
         boolean active = false;
@@ -5388,9 +5368,7 @@ public class GsmCdmaPhone extends Phone {
 
     @Override
     public void refreshSafetySources(String refreshBroadcastId) {
-        if (mFeatureFlags.enableModemCipherTransparencyUnsolEvents()) {
-            post(() -> mSafetySource.refresh(mContext, refreshBroadcastId));
-        }
+        post(() -> mSafetySource.refresh(mContext, refreshBroadcastId));
     }
 
     /**

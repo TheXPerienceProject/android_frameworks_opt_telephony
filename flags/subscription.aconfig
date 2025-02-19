@@ -58,18 +58,6 @@ flag {
   }
 }
 
-# OWNER=jackyu TARGET=24Q4
-flag {
-  name: "uicc_phone_number_fix"
-  namespace: "telephony"
-  description: "Fixed that empty phone number when getLine1Number returns empty"
-  bug: "302437869"
-
-  metadata {
-    purpose: PURPOSE_BUGFIX
-  }
-}
-
 # OWNER=jmattis TARGET=25Q2
 flag {
   name: "subscription_plan_allow_status_and_end_date"
