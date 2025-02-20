@@ -853,8 +853,7 @@ public class UiccController extends Handler {
             }
             Rlog.d(LOG_TAG, "Broadcasting intent ACTION_SIM_CARD_STATE_CHANGED "
                     + TelephonyManager.simStateToString(state) + " for phone: " + phoneId
-                    + " slot: " + slotId + " port: "
-                    + (slot != null ? portIndex : null) + " sub: " + subId);
+                    + " slot: " + slotId + " port: " + portIndex + " sub: " + subId);
             if (mFeatureFlags.hsumBroadcast()) {
                 mContext.sendBroadcastAsUser(intent, UserHandle.ALL,
                         Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
