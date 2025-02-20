@@ -924,10 +924,6 @@ public class SubscriptionManagerService extends ISub.Stub {
      * {@code false} otherwise.
      */
     public void setNtn(int subId, boolean isNtn) {
-        if (!mFeatureFlags.oemEnabledSatelliteFlag()) {
-            return;
-        }
-
         // This can throw IllegalArgumentException if the subscription does not exist.
         try {
             mSubscriptionDatabaseManager.setNtn(subId, (isNtn ? 1 : 0));
@@ -1248,14 +1244,9 @@ public class SubscriptionManagerService extends ISub.Stub {
                     }
 
                     boolean isSatelliteSpn = false;
-                    if (mFeatureFlags.oemEnabledSatelliteFlag() ) {
-                        if (isSatelliteSpn(embeddedProfile.getServiceProviderName())) {
-                            isSatelliteSpn = true;
-                            builder.setOnlyNonTerrestrialNetwork(1);
-                        }
-                    } else {
-                        log("updateEmupdateEmbeddedSubscriptions: oemEnabledSatelliteFlag is "
-                                + "disabled");
+                    if (isSatelliteSpn(embeddedProfile.getServiceProviderName())) {
+                        isSatelliteSpn = true;
+                        builder.setOnlyNonTerrestrialNetwork(1);
                     }
 
                     if (android.os.Build.isDebuggable() &&
@@ -1282,7 +1273,7 @@ public class SubscriptionManagerService extends ISub.Stub {
                         String mnc = cid.getMnc();
                         builder.setMcc(mcc);
                         builder.setMnc(mnc);
-                        if (mFeatureFlags.oemEnabledSatelliteFlag() && !isSatelliteSpn) {
+                        if (!isSatelliteSpn) {
                             builder.setOnlyNonTerrestrialNetwork(
                                     isSatellitePlmn(mcc + mnc) ? 1 : 0);
                         }
@@ -3928,21 +3919,13 @@ public class SubscriptionManagerService extends ISub.Stub {
         switch(source) {
             case SubscriptionManager.PHONE_NUMBER_SOURCE_UICC:
                 final Phone phone = PhoneFactory.getPhone(getSlotIndex(subId));
-                if (mFeatureFlags.uiccPhoneNumberFix()) {
-                    if (phone != null) {
-                        String number = phone.getLine1Number();
-                        if (!TextUtils.isEmpty(number)) {
-                            return number;
-                        }
-                    }
-                    return subInfo.getNumber();
-                } else {
-                    if (phone != null) {
-                        return TextUtils.emptyIfNull(phone.getLine1Number());
-                    } else {
-                        return subInfo.getNumber();
+                if (phone != null) {
+                    String number = phone.getLine1Number();
+                    if (!TextUtils.isEmpty(number)) {
+                        return number;
                     }
                 }
+                return subInfo.getNumber();
             case SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER:
                 return subInfo.getNumberFromCarrier();
             case SubscriptionManager.PHONE_NUMBER_SOURCE_IMS:
@@ -4157,6 +4140,9 @@ public class SubscriptionManagerService extends ISub.Stub {
      * Returns whether the given subscription is associated with the calling user.
      *
      * @param subscriptionId the subscription ID of the subscription
+     * @param callingPackage The package making the call
+     * @param callingFeatureId The feature in the package
+     *
      * @return {@code true} if the subscription is associated with the user that the calling process
      *         is running in; {@code false} otherwise.
      *
@@ -4164,9 +4150,13 @@ public class SubscriptionManagerService extends ISub.Stub {
      * @throws SecurityException if the caller doesn't have permissions required.
      */
     @Override
-    public boolean isSubscriptionAssociatedWithCallingUser(int subscriptionId) {
-        enforcePermissions("isSubscriptionAssociatedWithCallingUser",
-                Manifest.permission.READ_PHONE_STATE);
+    public boolean isSubscriptionAssociatedWithCallingUser(int subscriptionId,
+            @NonNull String callingPackage, @Nullable String callingFeatureId) {
+        if (!TelephonyPermissions.checkCallingOrSelfReadPhoneState(mContext, subscriptionId,
+                callingPackage, callingFeatureId, "isSubscriptionAssociatedWithCallingUser")) {
+            throw new SecurityException("Need READ_PHONE_STATE, READ_PRIVILEGED_PHONE_STATE, or "
+                    + "carrier privilege");
+        }
 
         UserHandle myUserHandle = UserHandle.of(UserHandle.getCallingUserId());
         return mFeatureFlags.subscriptionUserAssociationQuery()
@@ -4814,11 +4804,6 @@ public class SubscriptionManagerService extends ISub.Stub {
      * "config_satellite_sim_plmn_identifier", {@code false} otherwise.
      */
     private boolean isSatellitePlmn(@NonNull String mccMnc) {
-        if (!mFeatureFlags.oemEnabledSatelliteFlag()) {
-            log("isSatellitePlmn: oemEnabledSatelliteFlag is disabled");
-            return false;
-        }
-
         final int id = R.string.config_satellite_sim_plmn_identifier;
         String overlayMccMnc = null;
         try {
@@ -4843,11 +4828,6 @@ public class SubscriptionManagerService extends ISub.Stub {
      * "config_satellite_sim_spn_identifier", {@code false} otherwise.
      */
     private boolean isSatelliteSpn(@NonNull String spn) {
-        if (!mFeatureFlags.oemEnabledSatelliteFlag()) {
-            log("isSatelliteSpn: oemEnabledSatelliteFlag is disabled");
-            return false;
-        }
-
         final int id = R.string.config_satellite_sim_spn_identifier;
         String overlaySpn = null;
         try {
