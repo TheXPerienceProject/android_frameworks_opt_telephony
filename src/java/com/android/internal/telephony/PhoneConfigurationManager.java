@@ -198,7 +198,7 @@ public class PhoneConfigurationManager {
         @Override
         public void onReceive(Context context, Intent intent) {
             int voiceCapability = intent.getIntExtra(EXTRAS_MSIM_VOICE_CAPABILITY,
-                    TelephonyManager.MultiSimVoiceCapability.UNKNOWN);
+                    TelephonyManager.MultiSimVoiceCapability.UNSUPPORTED);
             boolean isDsdsTransitionSupported =
                     intent.getBooleanExtra(EXTRAS_DSDS_TRANSITION_SUPPORTED,
                     false);
@@ -415,9 +415,12 @@ public class PhoneConfigurationManager {
                         break;
                     }
                     ar = (AsyncResult) msg.obj;
+                    // check if simultaneous calling values should be generated with property
+                    // to ensure that property values are used in cases where lower layers
+                    // don't support simultaneous calling API(s)
                     boolean generateSimultaneousCallingSupport =
                             TelephonyProperties.multi_sim_voice_capability().orElse(
-                            TelephonyManager.MultiSimVoiceCapability.UNKNOWN) !=
+                            TelephonyManager.MultiSimVoiceCapability.UNSUPPORTED) !=
                             TelephonyManager.MultiSimVoiceCapability.UNSUPPORTED;
                     if ((ar != null && ar.exception == null) ||
                             generateSimultaneousCallingSupport) {

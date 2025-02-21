@@ -141,10 +141,6 @@ public class IccCardApplicationStatus {
             this.State = this.ordinal();
         }
 
-        public int getState() {
-            return this.State;
-        }
-
         boolean isPersoSubStateUnknown() {
             return this == PERSOSUBSTATE_UNKNOWN;
         }
