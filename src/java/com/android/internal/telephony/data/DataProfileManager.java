@@ -275,8 +275,6 @@ public class DataProfileManager extends Handler {
      *                     to modem.
      */
     private void updateDataProfiles(boolean forceUpdateIa) {
-        /** All APN settings applicable to the current carrier */
-        ArrayList<ApnSetting> allApnSettings = new ArrayList<>();
         List<DataProfile> profiles = new ArrayList<>();
         if (mDataConfigManager.isConfigCarrierSpecific()) {
             Cursor cursor = mPhone.getContext().getContentResolver().query(
@@ -290,7 +288,14 @@ public class DataProfileManager extends Handler {
             while (cursor.moveToNext()) {
                 ApnSetting apn = ApnSetting.makeApnSetting(cursor);
                 if (apn != null) {
-                    allApnSettings.add(apn);
+                    DataProfile dataProfile = new DataProfile.Builder()
+                            .setApnSetting(apn)
+                            .setTrafficDescriptor(new TrafficDescriptor(apn.getApnName(), null))
+                            .setPreferred(false)
+                            .build();
+                    profiles.add(dataProfile);
+                    log("Added " + dataProfile);
+
                     isInternetSupported |= apn.canHandleType(ApnSetting.TYPE_DEFAULT);
                     if (mDataConfigManager.isApnConfigAnomalyReportEnabled()
                             && apn.getEditedStatus() == Telephony.Carriers.UNEDITED) {
@@ -300,18 +305,8 @@ public class DataProfileManager extends Handler {
             }
             cursor.close();
 
-            if (!allApnSettings.isEmpty()) {
-                filterApnSettingsWithRadioCapability(allApnSettings);
-            }
-
-            for (ApnSetting apn : allApnSettings) {
-                DataProfile dataProfile = new DataProfile.Builder()
-                        .setApnSetting(apn)
-                        .setTrafficDescriptor(new TrafficDescriptor(apn.getApnName(), null))
-                        .setPreferred(false)
-                        .build();
-                profiles.add(dataProfile);
-                log("Added " + dataProfile);
+            if (!profiles.isEmpty()) {
+                filterDataProfilesWithRadioCapability(profiles);
             }
 
             if (!isInternetSupported
@@ -407,7 +402,7 @@ public class DataProfileManager extends Handler {
      * Filters out multiple APNs based on radio capability if the APN's GID value is listed in
      * CarrierConfigManager#KEY_MULTI_APN_ARRAY_FOR_SAME_GID as per the operator requirement.
      */
-    protected void filterApnSettingsWithRadioCapability(ArrayList<ApnSetting> allApnSettings) {
+    protected void filterDataProfilesWithRadioCapability(List<DataProfile> profiles) {
     }
 
     /**

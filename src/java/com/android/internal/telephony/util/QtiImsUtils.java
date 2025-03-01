@@ -26,16 +26,26 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
 package com.android.internal.telephony.util;
 
+import android.app.ActivityManager;
 import android.content.Context;
+import android.net.Uri;
 import android.os.PersistableBundle;
 import android.os.SystemProperties;
+import android.os.UserHandle;
 import android.provider.Settings;
 import android.telephony.CarrierConfigManager;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.util.Log;
+
+import com.android.internal.telephony.CallStateException;
 
 /**
  * This class contains QtiImsExt specific utiltity functions.
@@ -266,5 +276,48 @@ public class QtiImsUtils {
         return android.provider.Settings.Global.getInt(context.getContentResolver(),
                QTI_IMS_CAN_START_RTT_CALL + convertRttPhoneId(phoneId), RTT_CALL_TYPE_RTT)
                == RTT_CALL_TYPE_RTT;
+    }
+
+    public static boolean isSystemUser() {
+        UserHandle currentUserHandle = UserHandle.of(ActivityManager.getCurrentUser());
+        return currentUserHandle.isSystem();
+    }
+
+    public static void throwExceptionForSupplementaryService() throws CallStateException {
+        Log.e(LOG_TAG, "Supplementary service not allowed in non-primary mode");
+        throw new CallStateException("Supplementary service is not allowed for non-primary user");
+    }
+
+    public static String getSubscriberUriNumber(Uri[] mCurrentSubscriberUris) {
+        if (mCurrentSubscriberUris == null || mCurrentSubscriberUris.length == 0) {
+            Log.e(LOG_TAG, "mCurrentSubscriberUris is null");
+            return null;
+        }
+        for (Uri currentSubscriberUri : mCurrentSubscriberUris) {
+            if (currentSubscriberUri == null) {
+                continue;
+            }
+            String number = extractPhoneNumber(currentSubscriberUri);
+            if (number != null) {
+                return number;
+            }
+        }
+        return null;
+    }
+
+    private static  String extractPhoneNumber(Uri uri) {
+        // Number is always in the scheme specific part, regardless of whether this is a TEL or SIP
+        // URI.
+        String number = uri.getSchemeSpecificPart();
+        if (number == null) {
+            return null;
+        }
+        String[] numberParts = number.split("[@;:]");
+
+        if (numberParts.length == 0) {
+            Log.e(LOG_TAG, "extractPhoneNumber(N) : no number in uri");
+            return null;
+        }
+        return numberParts[0];
     }
 }

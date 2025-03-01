@@ -28,7 +28,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.net.LinkProperties;
 import android.net.NetworkAgent;
 import android.net.NetworkCapabilities;
 import android.net.NetworkPolicyManager;
@@ -444,11 +443,6 @@ public class DataNetworkController extends Handler {
 
     @NonNull
     private final FeatureFlags mFeatureFlags;
-
-    /**
-     * True indicates internet data connection state is needed to be initiated, especially in case
-     * of phone hot restart */
-    private boolean mInitInternetDataConnectionState = true;
 
     /** The broadcast receiver. */
     private final BroadcastReceiver mIntentReceiver = new BroadcastReceiver() {
@@ -904,7 +898,8 @@ public class DataNetworkController extends Handler {
      *
      * @param enabled change in preference.
      */
-    protected void onDataDuringVoiceCallChanged(boolean enabled) {
+    protected void onDataDuringVoiceCallChanged(boolean enabled,
+            @TelephonyManager.MobileDataPolicy int policy) {
     }
 
     protected void onDataEnabledChanged(boolean enabled,
@@ -1005,11 +1000,7 @@ public class DataNetworkController extends Handler {
                                                 : EVENT_REEVALUATE_EXISTING_DATA_NETWORKS,
                                         DataEvaluationReason.DATA_ENABLED_OVERRIDE_CHANGED));
 
-                                // Attempt to evaluate if smart temporay DDS switch needs to work.
-                                if (policy == TelephonyManager
-                                        .MOBILE_DATA_POLICY_DATA_ON_NON_DEFAULT_DURING_VOICE_CALL) {
-                                    onDataDuringVoiceCallChanged(enabled);
-                                }
+                                onDataDuringVoiceCallChanged(enabled, policy);
                             }
                             @Override
                             public void onDataRoamingEnabledChanged(boolean enabled) {
@@ -1632,22 +1623,6 @@ public class DataNetworkController extends Handler {
         return evaluation.getDataDisallowedReasons();
     }
 
-    private boolean isHalVersionLessThan_1_6() {
-        return mPhone.getHalVersion()
-                .less(com.android.internal.telephony.RIL.RADIO_HAL_VERSION_1_6);
-    }
-
-    /**
-     * @return {@code true} if this network request is specific to not have APN configurable,
-     * generally representing a prioritize bandwidth or latency slicing network request.
-     */
-    private boolean isNetworkSlicingNonApnConfigurable(TelephonyNetworkRequest networkRequest) {
-        return networkRequest.hasAttribute(
-                TelephonyNetworkRequest.CAPABILITY_ATTRIBUTE_TRAFFIC_DESCRIPTOR_OS_APP_ID)
-                && !networkRequest.hasAttribute(
-                TelephonyNetworkRequest.CAPABILITY_ATTRIBUTE_APN_SETTING);
-    }
-
     /**
      * Evaluate a network request. The goal is to find a suitable {@link DataProfile} that can be
      * used to setup the data network.
@@ -1701,11 +1676,13 @@ public class DataNetworkController extends Handler {
             evaluation.addDataDisallowedReason(DataDisallowedReason.NOT_IN_SERVICE);
         }
 
-        // Add data disallowed reason when in Secure Mode
-        addDataDisallowedReasonWhenInSecureMode(evaluation);
-
         // Check SIM state
-        checkSimStateForDataEvaluation(evaluation);
+        if (mSimState != TelephonyManager.SIM_STATE_LOADED) {
+            evaluation.addDataDisallowedReason(DataDisallowedReason.SIM_NOT_READY);
+        }
+
+        // Check Qualcomm proprietary conditions
+        dataEvaluationforValueAdds(evaluation, networkRequest);
 
         // Check if carrier specific config is loaded or not.
         if (!mDataConfigManager.isConfigCarrierSpecific()) {
@@ -1870,11 +1847,6 @@ public class DataNetworkController extends Handler {
             evaluation.addDataDisallowedReason(DataDisallowedReason.DATA_THROTTLED);
         }
 
-        if(isHalVersionLessThan_1_6() && isNetworkSlicingNonApnConfigurable(networkRequest)) {
-            evaluation.addDataDisallowedReason(DataDisallowedReason.DATA_THROTTLED);
-            log("Particular slicing network request is throttled under lower 1.6 HAL.");
-        }
-
         if (!evaluation.containsDisallowedReasons()) {
             if (transport == AccessNetworkConstants.TRANSPORT_TYPE_WWAN
                     && isEsimBootStrapProvisioningActivated()
@@ -1900,27 +1872,15 @@ public class DataNetworkController extends Handler {
     }
 
     /**
-     * Add data disallow reason when device is in Secure Mode.
+     * Evaluate if data setup should be allowed with Qualcomm conditions.
      *
      * @param evaluation The evaluation result from
+     * @param networkRequest The network request to evaluate.
      * {@link #evaluateDataNetwork(DataNetwork, DataEvaluationReason)} or
      * {@link #evaluateNetworkRequest(TelephonyNetworkRequest, DataEvaluationReason)}
      */
-    protected void addDataDisallowedReasonWhenInSecureMode(DataEvaluation evaluation) {
-    }
-
-    /**
-     * Evaluate if data setup should be allowed with the current SIM state.
-     *
-     * @param evaluation The evaluation result from
-     * {@link #evaluateDataNetwork(DataNetwork, DataEvaluationReason)} or
-     * {@link #evaluateNetworkRequest(TelephonyNetworkRequest, DataEvaluationReason)}
-     */
-    protected void checkSimStateForDataEvaluation(DataEvaluation evaluation) {
-        if (mSimState != TelephonyManager.SIM_STATE_LOADED) {
-            evaluation.addDataDisallowedReason(DataDisallowedReason.SIM_NOT_READY);
-        }
-    }
+    protected void dataEvaluationforValueAdds(DataEvaluation evaluation,
+            @NonNull TelephonyNetworkRequest networkRequest) {}
 
     /**
      * Returns whether the data roaming setting should be ignored for satellite connection,
@@ -2084,11 +2044,13 @@ public class DataNetworkController extends Handler {
             return evaluation;
         }
 
-        // Add data disallowed reason when in Secure Mode
-        addDataDisallowedReasonWhenInSecureMode(evaluation);
-
         // Check SIM state
-        checkSimStateForDataEvaluation(evaluation);
+        if (mSimState != TelephonyManager.SIM_STATE_LOADED) {
+            evaluation.addDataDisallowedReason(DataDisallowedReason.SIM_NOT_READY);
+        }
+
+        // Check Qualcomm proprietary conditions
+        dataEvaluationforValueAdds(evaluation, null);
 
         // Check if device is in CDMA ECBM
         if (mPhone.isInCdmaEcm()) {
@@ -2624,23 +2586,6 @@ public class DataNetworkController extends Handler {
     }
 
     /**
-     * @return List of active cellular interfaces.
-     */
-    public List<String> getAllActiveCellularInterfaces() {
-        List<String> ifaces = mDataNetworkList.stream()
-                .filter(dataNetwork -> dataNetwork.getTransport()
-                        == AccessNetworkConstants.TRANSPORT_TYPE_WWAN)
-                .filter(dataNetwork -> dataNetwork.isConnected())
-                .map(DataNetwork::getLinkProperties)
-                .map(LinkProperties::getInterfaceName)
-                .collect(Collectors.toList());
-        for(String iface : ifaces) {
-            log("getAllActiveCellularInterfaces All Interfaces: " + iface);
-        }
-        return ifaces;
-    }
-
-    /**
      * @return {@code true} if data is dormant.
      */
     private boolean isDataDormant() {
@@ -2923,39 +2868,10 @@ public class DataNetworkController extends Handler {
             }
             mSubId = mPhone.getSubId();
             updateSubscriptionPlans();
-            if (!SubscriptionManager.isValidSubscriptionId(mSubId)) {
-                mInitInternetDataConnectionState = true;
-            }
-            initiateInternetDataConnectionState();
         }
     }
 
-    private void initiateInternetDataConnectionState() {
-        if (SubscriptionManager.isValidSubscriptionId(mSubId)) {
-            log("initiateInternetDataConnectionState on " + mSubId);
-            if (mInitInternetDataConnectionState) {
-                TelephonyNetworkRequest tnr = new TelephonyNetworkRequest(
-                        new NetworkRequest.Builder()
-                            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                            .build(), mPhone, mFeatureFlags);
-                int networkType = getDataNetworkType(AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
-                if (networkType == TelephonyManager.NETWORK_TYPE_UNKNOWN) {
-                    networkType = mServiceState.getVoiceNetworkType();
-                }
-                DataProfile dataProfile = mDataProfileManager.getDataProfileForNetworkRequest(
-                        tnr, networkType, false, false, false);
-
-                if (dataProfile != null && dataProfile.getApnSetting() != null) {
-                    mPhone.notifyDataConnection(
-                            DataNetwork.getPreciseDisconnectedDataConnectionState(
-                                    dataProfile.getApnSetting()));
-                    mInitInternetDataConnectionState = false;
-                    log("initiateInternetDataConnectionState apnSetting = "
-                            + dataProfile.getApnSetting());
-                }
-            }
-        }
-    }
+    protected void initiateInternetDataConnectionState() {}
 
     /**
      * Called when carrier config was updated.
@@ -4266,15 +4182,6 @@ public class DataNetworkController extends Handler {
     public void unregisterDataNetworkControllerCallback(
             @NonNull DataNetworkControllerCallback callback) {
         sendMessage(obtainMessage(EVENT_UNREGISTER_DATA_NETWORK_CONTROLLER_CALLBACK, callback));
-    }
-
-    /**
-     * Called when CarrierConfigs have been fetched after reading the essential SIM records.
-     */
-    public void onCarrierConfigLoadedForEssentialRecords() {
-    }
-
-    public void setEssentialRecordsLoaded(boolean isLoaded) {
     }
 
     /**

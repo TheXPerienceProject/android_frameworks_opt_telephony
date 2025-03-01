@@ -230,24 +230,7 @@ public class PhoneFactory {
                 }
 
                 for (int i = 0; i < numPhones; i++) {
-                    Phone phone = null;
-                    int phoneType = TelephonyManager.getPhoneType(networkModes[i]);
-                    TelephonyComponentFactory injectedComponentFactory =
-                            telephonyComponentFactory.inject(GsmCdmaPhone.class.getName());
-                    if (phoneType == PhoneConstants.PHONE_TYPE_GSM) {
-                        phone = injectedComponentFactory.makePhone(context,
-                                sCommandsInterfaces[i], sPhoneNotifier, i,
-                                PhoneConstants.PHONE_TYPE_GSM,
-                                TelephonyComponentFactory.getInstance(), featureFlags);
-                    } else if (phoneType == PhoneConstants.PHONE_TYPE_CDMA) {
-                        phone = injectedComponentFactory.makePhone(context,
-                                sCommandsInterfaces[i], sPhoneNotifier, i,
-                                PhoneConstants.PHONE_TYPE_CDMA_LTE,
-                                TelephonyComponentFactory.getInstance(), featureFlags);
-                    }
-                    Rlog.i(LOG_TAG, "Creating Phone with type = " + phoneType + " sub = " + i);
-
-                    sPhones[i] = phone;
+                    sPhones[i] = createPhone(context, i);
                 }
 
                 // Set the default phone in base class.

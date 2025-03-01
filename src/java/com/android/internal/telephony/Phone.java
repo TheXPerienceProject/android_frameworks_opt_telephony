@@ -1588,13 +1588,16 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
         nsm.operatorAlphaShort = network.getOperatorAlphaShort();
 
         Message msg = obtainMessage(EVENT_SET_NETWORK_MANUAL_COMPLETE, nsm);
-        mCi.setNetworkSelectionModeManual(network, msg);
+        this.setNetworkSelectionModeManual(network, msg);
         if (persistSelection) {
             updateSavedNetworkOperator(nsm);
         } else {
             clearSavedNetworkSelection();
             updateManualNetworkSelection(nsm);
         }
+    }
+
+    public void setNetworkSelectionModeManual(OperatorInfo network, Message response) {
     }
 
     /**

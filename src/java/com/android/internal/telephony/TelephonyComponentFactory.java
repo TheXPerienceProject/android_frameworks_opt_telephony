@@ -44,6 +44,8 @@ import com.android.ims.ImsManager;
 import com.android.internal.telephony.cdma.CdmaSubscriptionSourceManager;
 import com.android.internal.telephony.cdma.EriManager;
 import com.android.internal.telephony.data.AccessNetworksManager;
+import com.android.internal.telephony.data.AutoDataSwitchController;
+import com.android.internal.telephony.data.AutoDataSwitchController.AutoDataSwitchControllerCallback;
 import com.android.internal.telephony.data.DataConfigManager;
 import com.android.internal.telephony.data.DataNetwork;
 import com.android.internal.telephony.data.DataNetworkController;
@@ -77,8 +79,6 @@ import com.android.telephony.Rlog;
 
 import dalvik.system.PathClassLoader;
 
-import java.lang.reflect.Constructor;
-
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -96,12 +96,11 @@ import java.util.stream.Collectors;
  * this way makes it easier to mock them in tests.
  */
 public class TelephonyComponentFactory {
-    protected static String LOG_TAG = "TelephonyComponentFactory";
 
     private static final String TAG = TelephonyComponentFactory.class.getSimpleName();
 
     private static TelephonyComponentFactory sInstance;
-    private final TelephonyFacade mTelephonyFacade = new TelephonyFacade();
+    protected final TelephonyFacade mTelephonyFacade = new TelephonyFacade();
 
     private InjectedComponents mInjectedComponents;
 
@@ -275,7 +274,7 @@ public class TelephonyComponentFactory {
      */
     public void injectTheComponentFactory(XmlResourceParser parser) {
         if (mInjectedComponents != null) {
-            Rlog.i(TAG, "Already injected.");
+            Rlog.d(TAG, "Already injected.");
             return;
         }
 
@@ -309,7 +308,6 @@ public class TelephonyComponentFactory {
      */
     public GsmCdmaCallTracker makeGsmCdmaCallTracker(GsmCdmaPhone phone,
             @NonNull FeatureFlags featureFlags) {
-        Rlog.d(LOG_TAG, "makeGsmCdmaCallTracker");
         return new GsmCdmaCallTracker(phone, featureFlags);
     }
 
@@ -322,18 +320,15 @@ public class TelephonyComponentFactory {
      * @return The created instance
      */
     public SmsStorageMonitor makeSmsStorageMonitor(Phone phone, @NonNull FeatureFlags flags) {
-        Rlog.d(LOG_TAG, "makeSmsStorageMonitor");
         return new SmsStorageMonitor(phone, flags);
     }
 
     public SmsUsageMonitor makeSmsUsageMonitor(Context context, FeatureFlags flags) {
-        Rlog.d(LOG_TAG, "makeSmsUsageMonitor");        
         return new SmsUsageMonitor(context, flags);
     }
 
     public ServiceStateTracker makeServiceStateTracker(GsmCdmaPhone phone, CommandsInterface ci,
             @NonNull FeatureFlags featureFlags) {
-        Rlog.d(LOG_TAG, "makeServiceStateTracker");
         return new ServiceStateTracker(phone, ci, featureFlags);
     }
 
@@ -379,7 +374,6 @@ public class TelephonyComponentFactory {
     }
 
     public IccPhoneBookInterfaceManager makeIccPhoneBookInterfaceManager(Phone phone) {
-        Rlog.d(LOG_TAG, "makeIccPhoneBookInterfaceManager");
         return new IccPhoneBookInterfaceManager(phone);
     }
 
@@ -388,12 +382,10 @@ public class TelephonyComponentFactory {
      */
     public IccSmsInterfaceManager makeIccSmsInterfaceManager(Phone phone,
             @NonNull FeatureFlags featureFlags) {
-        Rlog.d(LOG_TAG, "makeIccSmsInterfaceManager");
         return new IccSmsInterfaceManager(phone, featureFlags);
     }
 
     public SmsDispatchersController makeSmsDispatchersController(Phone phone, FeatureFlags featureFlags) {
-        Rlog.d(LOG_TAG, "makeSmsDispatchersController");
         return new SmsDispatchersController(phone, phone.mSmsStorageMonitor,
                 phone.mSmsUsageMonitor, featureFlags);
     }
@@ -408,12 +400,10 @@ public class TelephonyComponentFactory {
     }
 
     public EriManager makeEriManager(Phone phone, int eriFileSource) {
-        Rlog.d(LOG_TAG, "makeEriManager");
         return new EriManager(phone, eriFileSource);
     }
 
     public WspTypeDecoder makeWspTypeDecoder(byte[] pdu) {
-        Rlog.d(LOG_TAG, "makeWspTypeDecoder");
         return new WspTypeDecoder(pdu);
     }
 
@@ -424,7 +414,6 @@ public class TelephonyComponentFactory {
             int destPort, boolean is3gpp2, boolean is3gpp2WapPdu, String address,
             String displayAddr, String messageBody, boolean isClass0, int subId,
             @InboundSmsHandler.SmsSource int smsSource) {
-        Rlog.d(LOG_TAG, "makeInboundSmsTracker");
         return new InboundSmsTracker(context, pdu, timestamp, destPort, is3gpp2, is3gpp2WapPdu,
                 address, displayAddr, messageBody, isClass0, subId, smsSource);
     }
@@ -436,7 +425,6 @@ public class TelephonyComponentFactory {
             int destPort, boolean is3gpp2, String address, String displayAddr, int referenceNumber,
             int sequenceNumber, int messageCount, boolean is3gpp2WapPdu, String messageBody,
             boolean isClass0, int subId, @InboundSmsHandler.SmsSource int smsSource) {
-        Rlog.d(LOG_TAG, "makeInboundSmsTracker");
         return new InboundSmsTracker(context, pdu, timestamp, destPort, is3gpp2, address,
                 displayAddr, referenceNumber, sequenceNumber, messageCount, is3gpp2WapPdu,
                 messageBody, isClass0, subId, smsSource);
@@ -447,7 +435,6 @@ public class TelephonyComponentFactory {
      */
     public InboundSmsTracker makeInboundSmsTracker(Context context, Cursor cursor,
             boolean isCurrentFormat3gpp2) {
-        Rlog.d(LOG_TAG, "makeInboundSmsTracker");
         return new InboundSmsTracker(context, cursor, isCurrentFormat3gpp2);
     }
 
@@ -459,7 +446,6 @@ public class TelephonyComponentFactory {
      * @deprecated Use {@link #makeImsPhoneCallTracker(ImsPhone, FeatureFlags)} instead
      */
     public ImsPhoneCallTracker makeImsPhoneCallTracker(ImsPhone imsPhone) {
-        Rlog.d(LOG_TAG, "makeImsPhoneCallTracker");
         return makeImsPhoneCallTracker(imsPhone, new FeatureFlagsImpl());
     }
 
@@ -531,7 +517,6 @@ public class TelephonyComponentFactory {
     public CdmaSubscriptionSourceManager
     getCdmaSubscriptionSourceManagerInstance(Context context, CommandsInterface ci, Handler h,
                                              int what, Object obj) {
-        Rlog.d(LOG_TAG, "getCdmaSubscriptionSourceManagerInstance");
         return CdmaSubscriptionSourceManager.getInstance(context, ci, h, what, obj);
     }
 
@@ -544,14 +529,12 @@ public class TelephonyComponentFactory {
             int phoneId, int precisePhoneType,
             TelephonyComponentFactory telephonyComponentFactory,
             @NonNull FeatureFlags featureFlags) {
-        Rlog.i(TAG, "makePhone");
         return new GsmCdmaPhone(context, ci, notifier, phoneId, precisePhoneType,
                 telephonyComponentFactory, featureFlags);
     }
 
     public PhoneSwitcher makePhoneSwitcher(int maxDataAttachModemCount, Context context,
             Looper looper, @NonNull FeatureFlags featureFlags) {
-        Rlog.i(TAG, "makePhoneSwitcher");
         return PhoneSwitcher.make(maxDataAttachModemCount, context, looper, featureFlags);
     }
 
@@ -570,7 +553,6 @@ public class TelephonyComponentFactory {
      */
     public MultiSimSettingController initMultiSimSettingController(Context c,
             @NonNull FeatureFlags featureFlags) {
-        Rlog.i(TAG, " initMultiSimSettingController ");
         return MultiSimSettingController.init(c, featureFlags);
     }
 
@@ -590,17 +572,14 @@ public class TelephonyComponentFactory {
 
     public RIL makeRIL(Context context, int preferredNetworkType,
             int cdmaSubscription, Integer instanceId, @NonNull FeatureFlags featureFlags) {
-        Rlog.d(LOG_TAG, "makeRIL");
         return new RIL(context, preferredNetworkType, cdmaSubscription, instanceId, featureFlags);
     }
 
     public void makeExtTelephonyClasses(Context context,
             Phone[] phones, CommandsInterface[] commandsInterfaces) {
-        Rlog.d(LOG_TAG, "makeExtTelephonyClasses");
     }
 
     public CarrierInfoManager makeCarrierInfoManager(Phone phone) {
-        Rlog.i(TAG, " makeCarrierInfoManager ");
         return new CarrierInfoManager();
     }
 
@@ -678,7 +657,6 @@ public class TelephonyComponentFactory {
 
     public DataConfigManager makeDataConfigManager(Phone phone, Looper looper,
             FeatureFlags featureFlags) {
-        Rlog.i(TAG, "makeDataConfigManager");
         return new DataConfigManager(phone, looper, featureFlags);
     }
 
@@ -687,7 +665,6 @@ public class TelephonyComponentFactory {
             SparseArray<DataServiceManager> dataServiceManagers,
             Looper looper, FeatureFlags featureFlags,
             DataRetryManager.DataRetryManagerCallback dataRetryManagerCallback) {
-        Rlog.i(TAG, "makeDataRetryManager");
         return new DataRetryManager(phone, dataNetworkController, dataServiceManagers,
                 looper, featureFlags, dataRetryManagerCallback);
     }
@@ -696,20 +673,17 @@ public class TelephonyComponentFactory {
             DataNetwork dataNetwork, NetworkScore score, NetworkAgentConfig config,
             NetworkProvider provider,
             TelephonyNetworkAgent.TelephonyNetworkAgentCallback callback) {
-        Rlog.i(TAG, "makeTelephonyNetworkAgent");
         return new TelephonyNetworkAgent(phone, looper, dataNetwork, score, config,
                 provider, callback);
     }
 
     public TelephonyNetworkProvider makeTelephonyNetworkProvider(@NonNull Looper looper,
             @NonNull Context context, @NonNull FeatureFlags flags) {
-        Rlog.i(TAG, "make TelephonyNetworkProvider");
         return new TelephonyNetworkProvider(looper, context, flags);
     }
 
     public SubscriptionManagerService makeSubscriptionManagerService(
             @NonNull Context context, @NonNull Looper looper, @NonNull FeatureFlags featureFlags) {
-        Rlog.i(TAG, "make SubscriptionManagerService");
         return new SubscriptionManagerService(context, looper, featureFlags);
     }
 
@@ -723,5 +697,16 @@ public class TelephonyComponentFactory {
     public NullCipherNotifier makeNullCipherNotifier(
             CellularNetworkSecuritySafetySource safetySource) {
         return NullCipherNotifier.getInstance(safetySource);
+    }
+
+    /**
+     * Create a new AutoDataSwitchController.
+     */
+    public AutoDataSwitchController makeAutoDataSwitchController(@NonNull Context context,
+            @NonNull Looper looper, @NonNull PhoneSwitcher phoneSwitcher,
+            @NonNull FeatureFlags featureFlags,
+            @NonNull AutoDataSwitchControllerCallback phoneSwitcherCallback) {
+        return new AutoDataSwitchController(context, looper, phoneSwitcher,
+            featureFlags, phoneSwitcherCallback);
     }
 }

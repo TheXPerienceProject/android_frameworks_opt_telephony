@@ -1407,14 +1407,6 @@ public interface CommandsInterface {
     void setNetworkSelectionModeManual(String operatorNumeric, int ran, Message response);
 
     /**
-     * Ask the radio to connect to the input network with specific RadioAccessNetwork
-     * and change selection mode to manual.
-     * @param network Oprator information
-     * @param response callback message.
-     */
-    void setNetworkSelectionModeManual(OperatorInfo network, Message response);
-
-    /**
      * Queries whether the current network selection mode is automatic
      * or manual
      *
@@ -2913,13 +2905,6 @@ public interface CommandsInterface {
      * @param result Callback message to receive the result.
      */
     default void isN1ModeEnabled(Message result) {}
-
-    /**
-     *  Get phone radio capability
-     *
-     *  @param result Callback message.
-     */
-    public void getEnhancedRadioCapability(Message result);
 
     /**
      * Enables or disables cellular identifier disclosure transparency.

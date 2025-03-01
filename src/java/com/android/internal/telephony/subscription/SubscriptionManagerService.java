@@ -116,6 +116,7 @@ import com.android.internal.telephony.uicc.UiccPort;
 import com.android.internal.telephony.uicc.UiccSlot;
 import com.android.internal.telephony.util.ArrayUtils;
 import com.android.internal.telephony.util.TelephonyUtils;
+import com.android.internal.telephony.util.WorkerThread;
 import com.android.telephony.Rlog;
 
 import java.io.FileDescriptor;
@@ -491,10 +492,14 @@ public class SubscriptionManagerService extends ISub.Stub {
         mUiccController = UiccController.getInstance();
         mHandler = new Handler(looper);
 
-        HandlerThread backgroundThread = new HandlerThread(LOG_TAG);
-        backgroundThread.start();
+        if (mFeatureFlags.threadShred()) {
+            mBackgroundHandler = new Handler(WorkerThread.get().getLooper());
+        } else {
+            HandlerThread backgroundThread = new HandlerThread(LOG_TAG);
+            backgroundThread.start();
 
-        mBackgroundHandler = new Handler(backgroundThread.getLooper());
+            mBackgroundHandler = new Handler(backgroundThread.getLooper());
+        }
 
         mDefaultVoiceSubId = new WatchedInt(Settings.Global.getInt(mContext.getContentResolver(),
                 Settings.Global.MULTI_SIM_VOICE_CALL_SUBSCRIPTION,
@@ -549,12 +554,22 @@ public class SubscriptionManagerService extends ISub.Stub {
         mSimState = new int[mTelephonyManager.getSupportedModemCount()];
         Arrays.fill(mSimState, TelephonyManager.SIM_STATE_UNKNOWN);
 
-        // Create a separate thread for subscription database manager. The database will be updated
-        // from a different thread.
-        HandlerThread handlerThread = new HandlerThread(LOG_TAG);
-        handlerThread.start();
-        mSubscriptionDatabaseManager = new SubscriptionDatabaseManager(context,
-                handlerThread.getLooper(), mFeatureFlags,
+        Looper dbLooper = null;
+
+        if (mFeatureFlags.threadShred()) {
+            dbLooper = WorkerThread.get().getLooper();
+        } else {
+            // Create a separate thread for subscription database manager.
+            // The database will be updated from a different thread.
+            HandlerThread handlerThread = new HandlerThread(LOG_TAG);
+            handlerThread.start();
+            dbLooper = handlerThread.getLooper();
+        }
+
+        mSubscriptionDatabaseManager = new SubscriptionDatabaseManager(
+                context,
+                dbLooper,
+                mFeatureFlags,
                 new SubscriptionDatabaseManagerCallback(mHandler::post) {
                     /**
                      * Called when database has been loaded into the cache.
@@ -3854,47 +3869,17 @@ public class SubscriptionManagerService extends ISub.Stub {
                 Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
         enforceTelephonyFeatureWithException(callingPackage, "getPhoneNumber");
 
-        if (mFeatureFlags.saferGetPhoneNumber()) {
-            checkPhoneNumberSource(source);
-            subId = checkAndGetSubId(subId);
-            if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) return "";
+        checkPhoneNumberSource(source);
+        subId = checkAndGetSubId(subId);
+        if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) return "";
 
-            final long identity = Binder.clearCallingIdentity();
-            try {
-                return getPhoneNumberFromSourceInternal(subId, source);
-            } finally {
-                Binder.restoreCallingIdentity(identity);
-            }
-        } else {
-            final long identity = Binder.clearCallingIdentity();
-            try {
-                SubscriptionInfoInternal subInfo = mSubscriptionDatabaseManager
-                        .getSubscriptionInfoInternal(subId);
-
-                if (subInfo == null) {
-                    loge("Invalid sub id " + subId + ", callingPackage=" + callingPackage);
-                    return "";
-                }
-
-                switch(source) {
-                    case SubscriptionManager.PHONE_NUMBER_SOURCE_UICC:
-                        Phone phone = PhoneFactory.getPhone(getSlotIndex(subId));
-                        if (phone != null) {
-                        return TextUtils.emptyIfNull(phone.getLine1Number());
-                        } else {
-                        return subInfo.getNumber();
-                        }
-                    case SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER:
-                        return subInfo.getNumberFromCarrier();
-                    case SubscriptionManager.PHONE_NUMBER_SOURCE_IMS:
-                        return subInfo.getNumberFromIms();
-                    default:
-                        throw new IllegalArgumentException("Invalid number source " + source);
-                }
-            } finally {
-                Binder.restoreCallingIdentity(identity);
-            }
+        final long identity = Binder.clearCallingIdentity();
+        try {
+            return getPhoneNumberFromSourceInternal(subId, source);
+        } finally {
+            Binder.restoreCallingIdentity(identity);
         }
+
     }
 
     /**
@@ -4000,50 +3985,28 @@ public class SubscriptionManagerService extends ISub.Stub {
         enforceTelephonyFeatureWithException(callingPackage,
                 "getPhoneNumberFromFirstAvailableSource");
 
-        if (mFeatureFlags.saferGetPhoneNumber()) {
-            subId = checkAndGetSubId(subId);
-            if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) return "";
+        subId = checkAndGetSubId(subId);
+        if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) return "";
 
-            final long identity = Binder.clearCallingIdentity();
-            try {
-                String number;
-                number = getPhoneNumberFromSourceInternal(
-                        subId,
-                        SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER);
-                if (!TextUtils.isEmpty(number)) return number;
+        final long identity = Binder.clearCallingIdentity();
+        try {
+            String number;
+            number = getPhoneNumberFromSourceInternal(
+                    subId,
+                    SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER);
+            if (!TextUtils.isEmpty(number)) return number;
 
-                number = getPhoneNumberFromSourceInternal(
-                        subId,
-                        SubscriptionManager.PHONE_NUMBER_SOURCE_UICC);
-                if (!TextUtils.isEmpty(number)) return number;
+            number = getPhoneNumberFromSourceInternal(
+                    subId,
+                    SubscriptionManager.PHONE_NUMBER_SOURCE_UICC);
+            if (!TextUtils.isEmpty(number)) return number;
 
-                number = getPhoneNumberFromSourceInternal(
-                        subId,
-                        SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
-                return TextUtils.emptyIfNull(number);
-            } finally {
-                Binder.restoreCallingIdentity(identity);
-            }
-        } else {
-            String numberFromCarrier = getPhoneNumber(subId,
-                    SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER, callingPackage,
-                    callingFeatureId);
-            if (!TextUtils.isEmpty(numberFromCarrier)) {
-                return numberFromCarrier;
-            }
-            String numberFromUicc = getPhoneNumber(
-                    subId, SubscriptionManager.PHONE_NUMBER_SOURCE_UICC, callingPackage,
-                    callingFeatureId);
-            if (!TextUtils.isEmpty(numberFromUicc)) {
-                return numberFromUicc;
-            }
-            String numberFromIms = getPhoneNumber(
-                    subId, SubscriptionManager.PHONE_NUMBER_SOURCE_IMS, callingPackage,
-                    callingFeatureId);
-            if (!TextUtils.isEmpty(numberFromIms)) {
-                return numberFromIms;
-            }
-            return "";
+            number = getPhoneNumberFromSourceInternal(
+                    subId,
+                    SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
+            return TextUtils.emptyIfNull(number);
+        } finally {
+            Binder.restoreCallingIdentity(identity);
         }
     }
 
