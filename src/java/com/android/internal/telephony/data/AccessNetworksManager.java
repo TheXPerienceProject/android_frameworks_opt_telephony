@@ -386,13 +386,11 @@ public class AccessNetworksManager extends Handler {
 
         @Override
         public void onReconnectQualifiedNetworkType(int apnTypes, int qualifiedNetworkType) {
-            if (mFeatureFlags.reconnectQualifiedNetwork()) {
-                log("onReconnectQualifiedNetworkType: apnTypes = ["
-                        + ApnSetting.getApnTypesStringFromBitmask(apnTypes)
-                        + "], networks = [" + AccessNetworkType.toString(qualifiedNetworkType)
-                        + "]");
-                handleQualifiedNetworksChanged(apnTypes, new int[]{qualifiedNetworkType}, true);
-            }
+            log("onReconnectQualifiedNetworkType: apnTypes = ["
+                    + ApnSetting.getApnTypesStringFromBitmask(apnTypes)
+                    + "], networks = [" + AccessNetworkType.toString(qualifiedNetworkType)
+                    + "]");
+            handleQualifiedNetworksChanged(apnTypes, new int[]{qualifiedNetworkType}, true);
         }
     }
 

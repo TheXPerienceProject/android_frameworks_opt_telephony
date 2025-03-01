@@ -351,10 +351,7 @@ public class AccessNetworksManagerTest extends TelephonyTest {
     }
 
     @Test
-    public void testCallbackForReconnectQualifiedNetworkTypeWithFlagEnabled()  throws Exception {
-        when(mFeatureFlags.reconnectQualifiedNetwork()).thenReturn(true);
-
-
+    public void testCallbackForReconnectQualifiedNetworkType()  throws Exception {
         mAccessNetworksManager.registerCallback(mMockedCallback);
 
         mQnsCallback.onReconnectQualifiedNetworkType(ApnSetting.TYPE_IMS | ApnSetting.TYPE_MMS,
@@ -374,31 +371,6 @@ public class AccessNetworksManagerTest extends TelephonyTest {
         assertThat(mAccessNetworksManager.getPreferredTransportByNetworkCapability(
                 NetworkCapabilities.NET_CAPABILITY_IMS)).isEqualTo(
                 AccessNetworkConstants.TRANSPORT_TYPE_WLAN);
-        assertThat(mAccessNetworksManager.getPreferredTransportByNetworkCapability(
-                NetworkCapabilities.NET_CAPABILITY_XCAP)).isEqualTo(
-                AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
-    }
-
-    @Test
-    public void testCallbackForReconnectQualifiedNetworkTypeWithFlagDisabled() throws Exception {
-        when(mFeatureFlags.reconnectQualifiedNetwork()).thenReturn(false);
-        mQnsCallback.onReconnectQualifiedNetworkType(ApnSetting.TYPE_IMS | ApnSetting.TYPE_MMS,
-                AccessNetworkType.IWLAN);
-        processAllMessages();
-
-        verify(mMockedCallback, never()).onPreferredTransportChanged(
-                eq(NetworkCapabilities.NET_CAPABILITY_MMS), eq(true));
-        verify(mMockedCallback, never()).onPreferredTransportChanged(
-                eq(NetworkCapabilities.NET_CAPABILITY_IMS), eq(true));
-        verify(mMockedCallback, never()).onPreferredTransportChanged(
-                eq(NetworkCapabilities.NET_CAPABILITY_XCAP), eq(true));
-        Mockito.clearInvocations(mMockedCallback);
-        assertThat(mAccessNetworksManager.getPreferredTransportByNetworkCapability(
-                NetworkCapabilities.NET_CAPABILITY_MMS)).isEqualTo(
-                AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
-        assertThat(mAccessNetworksManager.getPreferredTransportByNetworkCapability(
-                NetworkCapabilities.NET_CAPABILITY_IMS)).isEqualTo(
-                AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
         assertThat(mAccessNetworksManager.getPreferredTransportByNetworkCapability(
                 NetworkCapabilities.NET_CAPABILITY_XCAP)).isEqualTo(
                 AccessNetworkConstants.TRANSPORT_TYPE_WWAN);

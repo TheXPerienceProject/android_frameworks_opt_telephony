@@ -785,6 +785,7 @@ public class PersistAtomsStorage {
             existingStats.countOfP2PSmsAvailableNotificationRemoved
                     += stats.countOfP2PSmsAvailableNotificationRemoved;
             // Does not update isNtnOnlyCarrier due to it is a dimension field.
+            existingStats.versionOfSatelliteAccessConfig = stats.versionOfSatelliteAccessConfig;
         } else {
             mAtoms.satelliteController = insertAtRandomPlace(mAtoms.satelliteController, stats,
                     mMaxNumSatelliteStats);

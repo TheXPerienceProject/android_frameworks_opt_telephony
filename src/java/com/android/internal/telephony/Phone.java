@@ -687,9 +687,7 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
             mCi.registerForSrvccStateChanged(this, EVENT_SRVCC_STATE_CHANGED, null);
         }
         //Initialize Telephony Analytics
-        if (mFeatureFlags.enableTelephonyAnalytics()) {
-            mTelephonyAnalytics = new TelephonyAnalytics(this);
-        }
+        mTelephonyAnalytics = new TelephonyAnalytics(this);
     }
 
     /**

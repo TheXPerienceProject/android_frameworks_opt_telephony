@@ -362,4 +362,21 @@ public class SatelliteConfigParserTest extends TelephonyTest {
             }
         }
     }
+
+    @Test
+    public void testGetSatelliteConfigVersion() {
+        SatelliteConfigParser satelliteConfigParserNull = new SatelliteConfigParser((byte[]) null);
+        assertNotNull(satelliteConfigParserNull);
+        assertNull(satelliteConfigParserNull.getConfig());
+
+        SatelliteConfigParser satelliteConfigParserPlaceholder =
+                new SatelliteConfigParser("test".getBytes());
+        assertNotNull(satelliteConfigParserPlaceholder);
+        assertNull(satelliteConfigParserPlaceholder.getConfig());
+
+        SatelliteConfigParser satelliteConfigParser = new SatelliteConfigParser(mBytesProtoBuffer);
+        assertNotNull(satelliteConfigParser);
+        assertNotNull(satelliteConfigParser.getConfig());
+        assertEquals(4, satelliteConfigParser.getConfig().getSatelliteConfigDataVersion());
+    }
 }

@@ -37,8 +37,6 @@ import android.telephony.SignalStrength;
 
 import androidx.test.filters.SmallTest;
 
-import com.android.internal.telephony.flags.Flags;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -111,7 +109,6 @@ public class SignalStrengthTest {
 
     @Before
     public void setUp() {
-        mSetFlagsRule.enableFlags(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG);
     }
 
     @Test

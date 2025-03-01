@@ -571,16 +571,12 @@ public class DataStallRecoveryManager extends Handler {
     private void onInternetValidationStatusChanged(@ValidationStatus int status) {
         logl("onInternetValidationStatusChanged: " + DataUtils.validationStatusToString(status));
         final boolean isValid = status == NetworkAgent.VALIDATION_STATUS_VALID;
-        if (mFeatureFlags.dsrsDiagnosticsEnabled()) {
-            mValidationCount += 1;
-            mActionValidationCount += 1;
-        }
+        mValidationCount += 1;
+        mActionValidationCount += 1;
         setNetworkValidationState(isValid);
         if (isValid) {
-            if (mFeatureFlags.dsrsDiagnosticsEnabled()) {
-                // Broadcast intent that data stall recovered.
-                broadcastDataStallDetected(mLastAction);
-            }
+            // Broadcast intent that data stall recovered.
+            broadcastDataStallDetected(mLastAction);
             reset();
         } else if (isRecoveryNeeded(true)) {
             // Set the network as invalid, because recovery is needed
@@ -620,7 +616,7 @@ public class DataStallRecoveryManager extends Handler {
     @VisibleForTesting
     public void setRecoveryAction(@RecoveryAction int action) {
         // Reset the validation count for action change
-        if (mFeatureFlags.dsrsDiagnosticsEnabled() && mRecoveryAction != action) {
+        if (mRecoveryAction != action) {
             mActionValidationCount = 0;
         }
         mRecoveryAction = action;
@@ -702,10 +698,8 @@ public class DataStallRecoveryManager extends Handler {
         final int duration = (int) (SystemClock.elapsedRealtime() - mDataStallStartMs);
         @RecoveredReason final int reason = getRecoveredReason(mIsValidNetwork);
         final int durationOfAction = (int) getDurationOfCurrentRecoveryMs();
-        if (mFeatureFlags.dsrsDiagnosticsEnabled()) {
-            log("mValidationCount=" + mValidationCount
-                    + ", mActionValidationCount=" + mActionValidationCount);
-        }
+        log("mValidationCount=" + mValidationCount
+                + ", mActionValidationCount=" + mActionValidationCount);
 
         // Get the bundled DSRS stats.
         Bundle bundle = mStats.getDataStallRecoveryMetricsData(
