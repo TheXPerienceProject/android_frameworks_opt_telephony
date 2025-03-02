@@ -16,7 +16,7 @@
 
 /*
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -1479,7 +1479,7 @@ public class PhoneSwitcher extends Handler {
      * anyway.
      * @return {@code true} if should switch data to the phone in voice call
      */
-    private boolean shouldSwitchDataDueToInCall() {
+    protected boolean shouldSwitchDataDueToInCall() {
         Phone voicePhone = findPhoneById(mPhoneIdInVoiceCall);
         Phone defaultDataPhone = getPhoneBySubId(mPrimaryDataSubId);
         return defaultDataPhone != null // check user enabled data

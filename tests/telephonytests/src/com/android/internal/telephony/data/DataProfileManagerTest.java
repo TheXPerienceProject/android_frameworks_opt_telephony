@@ -24,7 +24,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import android.annotation.NonNull;
 import android.content.ContentValues;
@@ -1031,8 +1030,6 @@ public class DataProfileManagerTest extends TelephonyTest {
 
     @Test
     public void testGetDataProfileForSatellite() {
-        when(mFeatureFlags.carrierEnabledSatelliteFlag()).thenReturn(true);
-
         NetworkRequest request = new NetworkRequest.Builder()
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_RCS)
                 .build();
@@ -1982,7 +1979,6 @@ public class DataProfileManagerTest extends TelephonyTest {
     public void testDifferentNetworkRequestProfilesOnEsimBootStrapProvisioning() {
         Mockito.clearInvocations(mDataProfileManagerCallback);
         Mockito.clearInvocations(mMockedWwanDataServiceManager);
-        when(mFeatureFlags.carrierEnabledSatelliteFlag()).thenReturn(true);
 
         // SIM inserted
         mDataProfileManagerUT.obtainMessage(3 /* EVENT_SIM_REFRESH */).sendToTarget();
@@ -2051,7 +2047,6 @@ public class DataProfileManagerTest extends TelephonyTest {
     public void testInfrastructureProfileOnEsimBootStrapProvisioning() {
         Mockito.clearInvocations(mDataProfileManagerCallback);
         Mockito.clearInvocations(mMockedWwanDataServiceManager);
-        when(mFeatureFlags.carrierEnabledSatelliteFlag()).thenReturn(true);
 
         // SIM inserted
         mDataProfileManagerUT.obtainMessage(3 /* EVENT_SIM_REFRESH */).sendToTarget();

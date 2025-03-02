@@ -118,10 +118,8 @@ public class DisplayInfoController extends Handler {
 
         // To Support Satellite bandwidth constrained data capability status at telephony
         // display info
-        if (mFeatureFlags.carrierEnabledSatelliteFlag()) {
-            log("register for satellite network callback");
-            mNetworkTypeController.registerForSatelliteNetwork();
-        }
+        log("register for satellite network callback");
+        mNetworkTypeController.registerForSatelliteNetwork();
     }
 
     /**

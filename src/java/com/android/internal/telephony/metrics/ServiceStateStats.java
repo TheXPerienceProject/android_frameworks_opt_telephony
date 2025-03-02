@@ -21,7 +21,6 @@ import static android.telephony.TelephonyManager.DATA_CONNECTED;
 import static com.android.internal.telephony.TelephonyStatsLog.VOICE_CALL_SESSION__BEARER_AT_END__CALL_BEARER_CS;
 import static com.android.internal.telephony.TelephonyStatsLog.VOICE_CALL_SESSION__BEARER_AT_END__CALL_BEARER_IMS;
 import static com.android.internal.telephony.TelephonyStatsLog.VOICE_CALL_SESSION__BEARER_AT_END__CALL_BEARER_UNKNOWN;
-import static com.android.internal.telephony.flags.Flags.dataRatMetricEnabled;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -150,9 +149,7 @@ public class ServiceStateStats extends DataNetworkControllerCallback {
                     prevState, now, getDataServiceSwitch(prevState.mServiceState, newState));
         }
 
-        if (dataRatMetricEnabled()) {
-            writeDataRatAtom(serviceState);
-        }
+        writeDataRatAtom(serviceState);
     }
 
     /** Updates the fold state of the device for the current service state. */

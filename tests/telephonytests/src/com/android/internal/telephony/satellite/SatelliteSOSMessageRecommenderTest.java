@@ -46,6 +46,7 @@ import android.content.res.Resources;
 import android.hardware.devicestate.DeviceState;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
 import android.os.OutcomeReceiver;
 import android.os.RemoteException;
@@ -814,8 +815,9 @@ public class SatelliteSOSMessageRecommenderTest extends TelephonyTest {
             int registerForProvisionCount, int registerForCellularCount) {
         assertEquals(registerForProvisionCount,
                 mTestSatelliteController.getRegisterForSatelliteProvisionStateChangedCalls());
+        Handler handler = mTestSOSMessageRecommender.getTestHandler();
         verify(phone, times(registerForCellularCount))
-                .registerForServiceStateChanged(any(), anyInt(), any());
+                .registerForServiceStateChanged(eq(handler), anyInt(), any());
     }
 
     private void assertUnregisterForStateChangedEventsTriggered(
@@ -1151,6 +1153,10 @@ public class SatelliteSOSMessageRecommenderTest extends TelephonyTest {
                 boolean connectedViaCarrier, int subId) {
             mIsSatelliteConnectedViaCarrierWithinHysteresisTime.set(connectedViaCarrier);
             mSubIdOfSatelliteConnectedViaCarrierWithinHysteresisTime.set(subId);
+        }
+
+        public Handler getTestHandler() {
+            return this;
         }
     }
 

@@ -57,7 +57,6 @@ import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.PhoneFactory;
 import com.android.internal.telephony.ServiceStateTracker;
-import com.android.internal.telephony.flags.Flags;
 import com.android.internal.telephony.nano.PersistAtomsProto.IncomingSms;
 import com.android.internal.telephony.nano.PersistAtomsProto.OutgoingShortCodeSms;
 import com.android.internal.telephony.nano.PersistAtomsProto.OutgoingSms;
@@ -414,10 +413,6 @@ public class SmsStats {
     }
 
     private boolean isNonTerrestrialNetwork() {
-        if (!Flags.carrierEnabledSatelliteFlag()) {
-            return false;
-        }
-
         ServiceState ss = getServiceState();
         if (ss != null) {
             return ss.isUsingNonTerrestrialNetwork();

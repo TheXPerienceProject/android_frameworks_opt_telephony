@@ -415,6 +415,17 @@ public class ControllerMetricsStats {
     }
 
     /**
+     * Report a current version of satellite access config.
+     */
+    public void reportCurrentVersionOfSatelliteAccessConfig(int version) {
+        logd("reportCurrentVersionOfSatelliteAccessConfig:" + version);
+        mSatelliteStats.onSatelliteControllerMetrics(
+                new SatelliteStats.SatelliteControllerParams.Builder()
+                        .setVersionOfSatelliteAccessControl(version)
+                        .build());
+    }
+
+    /**
      * Add count when the notification for P2P SMS over satellite avaibility is shown or removed.
      */
     public void reportP2PSmsEligibilityNotificationsCount(boolean isEligible) {

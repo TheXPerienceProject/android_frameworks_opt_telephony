@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/*
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
 package com.android.internal.telephony.data;
 
 import static android.net.NetworkCapabilities.TRANSPORT_CELLULAR;
@@ -276,8 +282,8 @@ public class AutoDataSwitchController extends Handler {
          */
         private UsableState getUsableState() {
             ServiceState serviceState = mPhone.getServiceState();
-            boolean isUsingNonTerrestrialNetwork = sFeatureFlags.carrierEnabledSatelliteFlag()
-                    && (serviceState != null) && serviceState.isUsingNonTerrestrialNetwork();
+            boolean isUsingNonTerrestrialNetwork =
+                    (serviceState != null) && serviceState.isUsingNonTerrestrialNetwork();
 
             return switch (mDataRegState) {
                 case NetworkRegistrationInfo.REGISTRATION_STATE_HOME -> {
@@ -460,7 +466,7 @@ public class AutoDataSwitchController extends Handler {
     public void readDeviceResourceConfig() {
         Phone phone = PhoneFactory.getDefaultPhone();
         DataConfigManager dataConfig = phone.getDataNetworkController().getDataConfigManager();
-        mScoreTolerance =  dataConfig.getAutoDataSwitchScoreTolerance();
+        mScoreTolerance = dataConfig.getAutoDataSwitchScoreTolerance();
         mRequirePingTestBeforeSwitch = dataConfig.isPingTestBeforeAutoDataSwitchRequired();
         mAllowNddsRoaming = dataConfig.doesAutoDataSwitchAllowRoaming();
         mAutoDataSwitchAvailabilityStabilityTimeThreshold =

@@ -103,6 +103,7 @@ public class SatelliteStats {
         private final int mCountOfP2PSmsAvailableNotificationShown;
         private final int mCountOfP2PSmsAvailableNotificationRemoved;
         private static boolean sIsNtnOnlyCarrier;
+        private static int sVersionOfSatelliteAccessConfig;
 
         private SatelliteControllerParams(Builder builder) {
             this.mCountOfSatelliteServiceEnablementsSuccess =
@@ -170,9 +171,14 @@ public class SatelliteStats {
             this.mCountOfP2PSmsAvailableNotificationRemoved =
                     builder.mCountOfP2PSmsAvailableNotificationRemoved;
 
-            // Carrier ID value should be updated only when it is meaningful.
+            // Ntn only carrier value should be updated only when it is meaningful.
             if (builder.mIsNtnOnlyCarrier.isPresent()) {
                 this.sIsNtnOnlyCarrier = builder.mIsNtnOnlyCarrier.get();
+            }
+            // version satellite access config value should be updated only when it is meaningful.
+            if (builder.mVersionOfSatelliteAccessConfig.isPresent()) {
+                this.sVersionOfSatelliteAccessConfig =
+                        builder.mVersionOfSatelliteAccessConfig.get();
             }
         }
 
@@ -320,6 +326,10 @@ public class SatelliteStats {
             return sIsNtnOnlyCarrier;
         }
 
+        public static int getVersionSatelliteAccessConfig() {
+            return sVersionOfSatelliteAccessConfig;
+        }
+
         /**
          * A builder class to create {@link SatelliteControllerParams} data structure class
          */
@@ -360,6 +370,7 @@ public class SatelliteStats {
             private int mCountOfP2PSmsAvailableNotificationShown = 0;
             private int mCountOfP2PSmsAvailableNotificationRemoved = 0;
             private Optional<Boolean> mIsNtnOnlyCarrier = Optional.empty();
+            private Optional<Integer> mVersionOfSatelliteAccessConfig = Optional.empty();
 
             /**
              * Sets countOfSatelliteServiceEnablementsSuccess value of {@link SatelliteController}
@@ -719,6 +730,15 @@ public class SatelliteStats {
             }
 
             /**
+             * Sets versionOfSatelliteAccessConfig value of {@link SatelliteController} atom
+             * then returns Builder class
+             */
+            public Builder setVersionOfSatelliteAccessControl(int version) {
+                this.mVersionOfSatelliteAccessConfig = Optional.of(version);
+                return this;
+            }
+
+            /**
              * Returns ControllerParams, which contains whole component of
              * {@link SatelliteController} atom
              */
@@ -777,7 +797,7 @@ public class SatelliteStats {
                     + mCountOfP2PSmsAvailableNotificationShown
                     + ", countOfP2PSmsAvailableNotificationRemoved="
                     + mCountOfP2PSmsAvailableNotificationRemoved
-                    + ", isNtnOnlyCarrier=" + sIsNtnOnlyCarrier
+                    + ", versionOfSatelliteAccessConfig=" + sVersionOfSatelliteAccessConfig
                     + ")";
         }
     }
@@ -2701,6 +2721,7 @@ public class SatelliteStats {
         proto.countOfP2PSmsAvailableNotificationRemoved =
                 param.getCountOfP2PSmsAvailableNotificationRemoved();
         proto.isNtnOnlyCarrier = param.isNtnOnlyCarrier();
+        proto.versionOfSatelliteAccessConfig = param.getVersionSatelliteAccessConfig();
 
         mAtomsStorage.addSatelliteControllerStats(proto);
     }

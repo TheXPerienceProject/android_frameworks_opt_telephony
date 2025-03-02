@@ -434,7 +434,6 @@ public class DataNetworkTest extends TelephonyTest {
         doReturn(CarrierConfigManager.SATELLITE_DATA_SUPPORT_ONLY_RESTRICTED)
                 .when(mSatelliteController)
                 .getSatelliteDataServicePolicyForPlmn(anyInt(), anyString());
-        doReturn(true).when(mFeatureFlags).carrierEnabledSatelliteFlag();
 
         serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
                 NetworkRegistrationInfo.REGISTRATION_STATE_HOME, false/*isNtn*/);
