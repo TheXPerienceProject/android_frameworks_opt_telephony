@@ -30,7 +30,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.RegistrantList;
 import android.os.RemoteException;
-import android.telephony.DropBoxManagerLoggerBackend;
 import android.telephony.IBooleanConsumer;
 import android.telephony.IIntegerConsumer;
 import android.telephony.PersistentLogger;
@@ -255,10 +254,7 @@ public class SatelliteModemInterface {
             SatelliteController satelliteController,
             @NonNull Looper looper,
             @NonNull FeatureFlags featureFlags) {
-        if (isSatellitePersistentLoggingEnabled(context, featureFlags)) {
-            mPersistentLogger = new PersistentLogger(
-                    DropBoxManagerLoggerBackend.getInstance(context));
-        }
+        mPersistentLogger = SatelliteServiceUtils.getPersistentLogger(context);
         mContext = context;
         mDemoSimulator = DemoSimulator.make(context, satelliteController);
         mVendorListener = new SatelliteListener(false);
@@ -1435,19 +1431,6 @@ public class SatelliteModemInterface {
 
     private static void loge(@NonNull String log) {
         Rlog.e(TAG, log);
-    }
-
-    private boolean isSatellitePersistentLoggingEnabled(
-            @NonNull Context context, @NonNull FeatureFlags featureFlags) {
-        if (featureFlags.satellitePersistentLogging()) {
-            return true;
-        }
-        try {
-            return context.getResources().getBoolean(
-                    R.bool.config_dropboxmanager_persistent_logging_enabled);
-        } catch (RuntimeException e) {
-            return false;
-        }
     }
 
     private void plogd(@NonNull String log) {

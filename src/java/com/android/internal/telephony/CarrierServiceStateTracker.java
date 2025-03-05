@@ -666,7 +666,7 @@ public class CarrierServiceStateTracker extends Handler {
 
         public String getNotificationTag() {
             return EMERGENCY_NOTIFICATION_TAG;
-	}
+        }
 
         /**
          * Contains logic on sending notifications,
