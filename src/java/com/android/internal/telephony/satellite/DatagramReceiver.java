@@ -37,7 +37,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.RemoteException;
 import android.provider.Telephony;
-import android.telephony.DropBoxManagerLoggerBackend;
 import android.telephony.PersistentLogger;
 import android.telephony.Rlog;
 import android.telephony.SubscriptionManager;
@@ -152,10 +151,7 @@ public class DatagramReceiver extends Handler {
         mDatagramController = datagramController;
         mControllerMetricsStats = ControllerMetricsStats.getInstance();
         mSessionMetricsStats = SessionMetricsStats.getInstance();
-        if (isSatellitePersistentLoggingEnabled(context, featureFlags)) {
-            mPersistentLogger = new PersistentLogger(
-                    DropBoxManagerLoggerBackend.getInstance(context));
-        }
+        mPersistentLogger = SatelliteServiceUtils.getPersistentLogger(context);
         try {
             mSharedPreferences =
                     mContext.getSharedPreferences(SatelliteController.SATELLITE_SHARED_PREF,
@@ -905,19 +901,6 @@ public class DatagramReceiver extends Handler {
 
     private static void logw(@NonNull String log) {
         Rlog.w(TAG, log);
-    }
-
-    private boolean isSatellitePersistentLoggingEnabled(
-            @NonNull Context context, @NonNull FeatureFlags featureFlags) {
-        if (featureFlags.satellitePersistentLogging()) {
-            return true;
-        }
-        try {
-            return context.getResources().getBoolean(
-                    R.bool.config_dropboxmanager_persistent_logging_enabled);
-        } catch (RuntimeException e) {
-            return false;
-        }
     }
 
     private void plogd(@NonNull String log) {
