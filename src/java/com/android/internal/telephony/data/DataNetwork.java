@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+// QTI_BEGIN: 2025-02-07: Telephony: Fix for passing down network score correctly at initialization
 /*
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
+// QTI_END: 2025-02-07: Telephony: Fix for passing down network score correctly at initialization
 package com.android.internal.telephony.data;
 
 import static android.telephony.TelephonyManager.HAL_SERVICE_DATA;
@@ -100,7 +102,9 @@ import com.android.internal.telephony.RIL;
 import com.android.internal.telephony.data.AccessNetworksManager.AccessNetworksManagerCallback;
 import com.android.internal.telephony.data.DataConfigManager.DataConfigManagerCallback;
 import com.android.internal.telephony.data.DataEvaluation.DataAllowedReason;
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
 import com.android.internal.telephony.TelephonyComponentFactory;
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
 import com.android.internal.telephony.data.DataNetworkController.NetworkRequestList;
 import com.android.internal.telephony.data.DataRetryManager.DataHandoverRetryEntry;
 import com.android.internal.telephony.data.DataRetryManager.DataRetryEntry;
@@ -1083,8 +1087,10 @@ public class DataNetwork extends StateMachine {
                 && transport == AccessNetworkConstants.TRANSPORT_TYPE_WWAN;
         mDataAllowedReason = dataAllowedReason;
         dataProfile.setLastSetupTimestamp(SystemClock.elapsedRealtime());
+// QTI_BEGIN: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
         mCid.put(AccessNetworkConstants.TRANSPORT_TYPE_WWAN, INVALID_CID);
         mCid.put(AccessNetworkConstants.TRANSPORT_TYPE_WLAN, INVALID_CID);
+// QTI_END: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
         mTelephonyDisplayInfo = mPhone.getDisplayInfoController().getTelephonyDisplayInfo();
         mTcpBufferSizes = mDataConfigManager.getTcpConfigString(mTelephonyDisplayInfo);
 
@@ -1197,10 +1203,14 @@ public class DataNetwork extends StateMachine {
         logl("mNetworkScore: isPrimary=" + mNetworkScore.isTransportPrimary()
                 + ", keepConnectedReason=" + mNetworkScore.getKeepConnectedReason());
 
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
         return TelephonyComponentFactory.getInstance().inject(
                 TelephonyNetworkAgent.class.getName()).makeTelephonyNetworkAgent(
                 mPhone, getHandler().getLooper(), this,
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
+// QTI_BEGIN: 2025-02-07: Telephony: Fix for passing down network score correctly at initialization
                 mNetworkScore, configBuilder.build(), provider,
+// QTI_END: 2025-02-07: Telephony: Fix for passing down network score correctly at initialization
                 new TelephonyNetworkAgentCallback(getHandler()::post) {
                     @Override
                     public void onValidationStatus(@ValidationStatus int status,
@@ -2168,6 +2178,7 @@ public class DataNetwork extends StateMachine {
             int preferredDataPhoneId = PhoneSwitcher.getInstance().getPreferredDataPhoneId();
             if (preferredDataPhoneId != SubscriptionManager.INVALID_PHONE_INDEX
                     && preferredDataPhoneId != mPhone.getPhoneId()) {
+// QTI_BEGIN: 2024-07-16: Telephony: Fix dangling data network issue
                 if (isConnecting()) {
                     // Suppose response isn't received, straight tear down this session immediately.
                     log("tearDown after data call succeeds, or fails directly");
@@ -2177,6 +2188,7 @@ public class DataNetwork extends StateMachine {
                     log("Unregistering TNA-" + mNetworkAgent.getId());
                     mNetworkAgent.unregister();
                 }
+// QTI_END: 2024-07-16: Telephony: Fix dangling data network issue
             }
         }
     }
@@ -2547,9 +2559,11 @@ public class DataNetwork extends StateMachine {
                 // the MMS capability from this cellular network. This will allow IWLAN to be
                 // brought up for MMS later.
                 if (dataProfile != null && !dataProfile.getApn().equals(mDataProfile.getApn())) {
+// QTI_BEGIN: 2024-08-21: Telephony: Show correct APN name for MMS when IWLAN available
                     log("Found a different apn name " + dataProfile.getApn()
                             + " that can serve MMS on IWLAN."
                             + " Current apn name " + mDataProfile.getApn());
+// QTI_END: 2024-08-21: Telephony: Show correct APN name for MMS when IWLAN available
                     builder.removeCapability(NetworkCapabilities.NET_CAPABILITY_MMS);
                 }
             }
@@ -2873,7 +2887,9 @@ public class DataNetwork extends StateMachine {
                 || !newSessions.containsAll(mQosBearerSessions)) {
             mDataNetworkCallback.onQosSessionsChanged(response.getQosBearerSessions());
         }
+// QTI_BEGIN: 2022-12-07: Telephony: Enable extension of a few data classes for QoS
         updateQosBearerSessions(response.getQosBearerSessions());
+// QTI_END: 2022-12-07: Telephony: Enable extension of a few data classes for QoS
 
         if (!linkProperties.equals(mLinkProperties)) {
             // If the new link properties is not compatible (e.g. IP changes, interface changes),
@@ -2897,6 +2913,7 @@ public class DataNetwork extends StateMachine {
         updateValidationStatus(response.getNetworkValidationStatus());
     }
 
+// QTI_BEGIN: 2022-12-07: Telephony: Enable extension of a few data classes for QoS
     /**
      * Update QoS bearer sessions based on the latest list of {@link QosBearerSession}.
      *
@@ -2911,6 +2928,7 @@ public class DataNetwork extends StateMachine {
         }
     }
 
+// QTI_END: 2022-12-07: Telephony: Enable extension of a few data classes for QoS
     /**
      * If the {@link DataCallResponse} contains invalid info, triggers an anomaly report.
      *
@@ -3109,10 +3127,12 @@ public class DataNetwork extends StateMachine {
                 validateDataCallResponse(response, -1 /*setupRegState setup only*/);
                 mDataCallResponse = response;
                 if (response.getLinkStatus() != DataCallResponse.LINK_STATUS_INACTIVE) {
+// QTI_BEGIN: 2022-12-07: Telephony: Enable extension of a few data classes for QoS
                     DataCallResponse dataCallResponse = mDataServiceManagers.get(mTransport)
                             .appendQosParamsToDataCallResponseIfNeeded(
                             mCid.get(mTransport), mDataProfile, response);
                     updateDataNetwork(dataCallResponse);
+// QTI_END: 2022-12-07: Telephony: Enable extension of a few data classes for QoS
                     notifyPreciseDataConnectionState();
                 } else {
                     log("onDataStateChanged: PDN inactive reported by "

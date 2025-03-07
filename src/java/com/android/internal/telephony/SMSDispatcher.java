@@ -52,7 +52,9 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+// QTI_BEGIN: 2018-03-13: Telephony: Add 7bit Ascii support for long message
 import android.os.PersistableBundle;
+// QTI_END: 2018-03-13: Telephony: Add 7bit Ascii support for long message
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.provider.Settings;
@@ -62,7 +64,9 @@ import android.service.carrier.CarrierMessagingService;
 import android.service.carrier.CarrierMessagingServiceWrapper;
 import android.service.carrier.CarrierMessagingServiceWrapper.CarrierMessagingCallback;
 import android.telephony.AnomalyReporter;
+// QTI_BEGIN: 2018-03-13: Telephony: Add 7bit Ascii support for long message
 import android.telephony.CarrierConfigManager;
+// QTI_END: 2018-03-13: Telephony: Add 7bit Ascii support for long message
 import android.telephony.PhoneNumberUtils;
 import android.telephony.ServiceState;
 import android.telephony.SmsManager;
@@ -88,7 +92,9 @@ import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.telephony.GsmAlphabet.TextEncodingDetails;
 import com.android.internal.telephony.analytics.TelephonyAnalytics;
 import com.android.internal.telephony.analytics.TelephonyAnalytics.SmsMmsAnalytics;
+// QTI_BEGIN: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
 import com.android.internal.telephony.SmsUsageMonitor.SmsAuthorizationCallback;
+// QTI_END: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
 import com.android.internal.telephony.cdma.sms.UserData;
 import com.android.internal.telephony.flags.Flags;
 import com.android.internal.telephony.subscription.SubscriptionInfoInternal;
@@ -131,7 +137,9 @@ public abstract class SMSDispatcher extends Handler {
     protected static final int EVENT_SEND_SMS_COMPLETE = 2;
 
     /** Retry sending a previously failed SMS message */
+// QTI_BEGIN: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
     protected static final int EVENT_SEND_RETRY = 3;
+// QTI_END: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
 
     /** Confirmation required for sending a large number of messages. */
     private static final int EVENT_SEND_LIMIT_REACHED_CONFIRMATION = 4;
@@ -192,7 +200,9 @@ public abstract class SMSDispatcher extends Handler {
     protected final LocalLog mSmsOutgoingErrorCodes = new LocalLog(10);
 
     /** Maximum number of times to retry sending a failed SMS. */
+// QTI_BEGIN: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
     protected static final int MAX_SEND_RETRIES = 3;
+// QTI_END: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
 
     /** Retransmitted Flag as specified in section 6.3.1.2 in TS 124011
      * true:  RP-SMMA Retried once and no more transmissions are permitted
@@ -450,10 +460,12 @@ public abstract class SMSDispatcher extends Handler {
                  */
                 mMessageRef = getTpmrValueFromSIM();
                 if (mMessageRef == -1) {
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
                     SubscriptionInfoInternal subInfo = SubscriptionManagerService.getInstance()
                             .getSubscriptionInfoInternal(msg.arg1);
                     if (subInfo != null) {
                         mMessageRef = subInfo.getLastUsedTPMessageReference();
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
                     }
                 }
                 break;
@@ -476,8 +488,10 @@ public abstract class SMSDispatcher extends Handler {
         updateSIMLastTPMRValue(mMessageRef);
         final long identity = Binder.clearCallingIdentity();
         try {
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
             SubscriptionManagerService.getInstance()
                     .setLastUsedTPMessageReference(getSubId(), mMessageRef);
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
         } catch (SecurityException e) {
             Rlog.e(TAG, "Security Exception caused on messageRef updation to DB " + e.getMessage());
         } finally {
@@ -1593,6 +1607,7 @@ public abstract class SMSDispatcher extends Handler {
      * @param callingPkg the calling package name
      * @param persistMessage whether to save the sent message into SMS DB for a
      *  non-default SMS app.
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
      *
      * @param priority Priority level of the message
      *  Refer specification See 3GPP2 C.S0015-B, v2.0, table 4.5.9-1
@@ -1611,6 +1626,7 @@ public abstract class SMSDispatcher extends Handler {
      *  Validity Period(Minimum) -> 5 mins
      *  Validity Period(Maximum) -> 635040 mins(i.e.63 weeks).
      *  Any Other values included Negative considered as Invalid Validity Period of the message.
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
      * @param messageId An id that uniquely identifies the message requested to be sent.
      *                 Used for logging and diagnostics purposes. The id may be NULL.
      */
@@ -1790,8 +1806,10 @@ public abstract class SMSDispatcher extends Handler {
     }
 
     protected abstract SmsMessageBase.SubmitPduBase getSubmitPdu(String scAddr, String destAddr,
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
             String message, boolean statusReportRequested, SmsHeader smsHeader,
             int priority, int validityPeriod);
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
 
     protected abstract SmsMessageBase.SubmitPduBase getSubmitPdu(String scAddr, String destAddr,
             int destPort, byte[] message, boolean statusReportRequested);
@@ -1899,6 +1917,7 @@ public abstract class SMSDispatcher extends Handler {
      * @param callingPkg the calling package name
      * @param persistMessage whether to save the sent message into SMS DB for a
      *   non-default SMS app.
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
      * @param priority Priority level of the message
      *  Refer specification See 3GPP2 C.S0015-B, v2.0, table 4.5.9-1
      *  ---------------------------------
@@ -1916,6 +1935,7 @@ public abstract class SMSDispatcher extends Handler {
      *  Validity Period(Minimum) -> 5 mins
      *  Validity Period(Maximum) -> 635040 mins(i.e.63 weeks).
      *  Any Other values included Negative considered as Invalid Validity Period of the message.
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
      */
     @VisibleForTesting(visibility = VisibleForTesting.Visibility.PROTECTED)
     public void sendMultipartText(String destAddr, String scAddr,
@@ -1983,7 +2003,9 @@ public abstract class SMSDispatcher extends Handler {
             trackers[i] =
                 getNewSubmitPduTracker(callingPkg, callingUser, destAddr, scAddr, parts.get(i),
                         smsHeader, encoding, sentIntent, deliveryIntent, (i == (msgCount - 1)),
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
                         unsentPartCount, anyPartFailed, messageUri,
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
                         fullMessageText, priority, expectMore, validityPeriod, messageId,
                         messageRef, uniqueMessageId);
             if (trackers[i] == null) {
@@ -2027,9 +2049,11 @@ public abstract class SMSDispatcher extends Handler {
             uData.payloadStr = message;
             uData.userDataHeader = smsHeader;
             if (encoding == SmsConstants.ENCODING_7BIT) {
+// QTI_BEGIN: 2018-03-13: Telephony: Add 7bit Ascii support for long message
                 uData.msgEncoding = isAscii7bitSupportedForLongMessage()
                         ? UserData.ENCODING_7BIT_ASCII : UserData.ENCODING_GSM_7BIT_ALPHABET;
                 Rlog.d(TAG, "Message encoding for proper 7 bit: " + uData.msgEncoding);
+// QTI_END: 2018-03-13: Telephony: Add 7bit Ascii support for long message
             } else { // assume UTF-16
                 uData.msgEncoding = UserData.ENCODING_UNICODE_16;
             }
@@ -2042,7 +2066,9 @@ public abstract class SMSDispatcher extends Handler {
             //TODO FIX
             SmsMessageBase.SubmitPduBase submitPdu =
                     com.android.internal.telephony.cdma.SmsMessage.getSubmitPdu(destinationAddress,
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
                             uData, (deliveryIntent != null) && lastPart, priority);
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
 
             if (submitPdu != null) {
                 HashMap map = getSmsTrackerMap(destinationAddress, scAddress,
@@ -2220,14 +2246,18 @@ public abstract class SMSDispatcher extends Handler {
                                 tracker.onFailed(mContext, SmsManager.RESULT_ERROR_GENERIC_FAILURE,
                                         SmsUsageMonitor.ERROR_CODE_BLOCKED);
                             }
+// QTI_BEGIN: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
                         }
+// QTI_END: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
                     };
                    mSmsDispatchersController.getUsageMonitor().authorizeOutgoingSms(tracker.mAppInfo,
                             tracker.mDestAddress,tracker.mFullMessageText, callback, this);
                 } else {
                     sendSms(tracker);
                 }
+// QTI_BEGIN: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
             }
+// QTI_END: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
         }
 
         if (mPhone.hasCalling() && mTelephonyManager.isEmergencyNumber(trackers[0].mDestAddress)) {
@@ -2554,12 +2584,16 @@ public abstract class SMSDispatcher extends Handler {
         // Tag indicating that this SMS is being handled by the ImsSmsDispatcher. This tracker
         // should not try to use SMS over IMS over the RIL interface in this case when falling back.
         public boolean mUsesImsServiceForIms;
+// QTI_BEGIN: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
         public boolean mIsFallBackRetry;
+// QTI_END: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
         @UnsupportedAppUsage
         public int mMessageRef;
         public boolean mExpectMore;
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
         public int mValidityPeriod;
         public int mPriority;
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
         String mFormat;
 
         @UnsupportedAppUsage
@@ -2616,8 +2650,10 @@ public abstract class SMSDispatcher extends Handler {
         private SmsTracker(HashMap<String, Object> data, PendingIntent sentIntent,
                 PendingIntent deliveryIntent, PackageInfo appInfo, String destAddr, String format,
                 AtomicInteger unsentPartCount, AtomicBoolean anyPartFailed, Uri messageUri,
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
                 SmsHeader smsHeader, boolean expectMore, String fullMessageText, int subId,
                 boolean isText, boolean persistMessage, int userId, int priority,
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
                 int validityPeriod, boolean isForVvm, long messageId, int carrierId,
                 int messageRef, boolean skipShortCodeDestAddrCheck,
                 long uniqueMessageId) {
@@ -2628,7 +2664,9 @@ public abstract class SMSDispatcher extends Handler {
             mAppInfo = appInfo;
             mDestAddress = destAddr;
             mFormat = format;
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
             mExpectMore = expectMore;
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
             mImsRetry = 0;
             mUsesImsServiceForIms = false;
             mMessageRef = messageRef;
@@ -2641,9 +2679,13 @@ public abstract class SMSDispatcher extends Handler {
             mIsText = isText;
             mPersistMessage = persistMessage;
             mUserId = userId;
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
             mPriority = priority;
             mValidityPeriod = validityPeriod;
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
+// QTI_BEGIN: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
             mIsFallBackRetry = false;
+// QTI_END: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
             mIsForVvm = isForVvm;
             mMessageId = messageId;
             mCarrierId = carrierId;
@@ -3005,7 +3047,9 @@ public abstract class SMSDispatcher extends Handler {
         // and before displaying the number to the user if confirmation is required.
         String destAddr = PhoneNumberUtils.extractNetworkPortion((String) data.get("destAddr"));
         return new SmsTracker(data, sentIntent, deliveryIntent, appInfo, destAddr, format,
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
                 unsentPartCount, anyPartFailed, messageUri, smsHeader, expectMore,
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
                 fullMessageText, getSubId(), isText, persistMessage, callingUser, priority,
                 validityPeriod, isForVvm, messageId, mPhone.getCarrierId(), messageRef,
                 skipShortCodeCheck, uniqueMessageId);
@@ -3022,8 +3066,10 @@ public abstract class SMSDispatcher extends Handler {
                 persistMessage, SMS_MESSAGE_PRIORITY_NOT_SPECIFIED,
                 SMS_MESSAGE_PERIOD_NOT_SPECIFIED,
                 isForVvm, messageId, messageRef, false, uniqueMessageId);
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
     }
 
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
     protected SmsTracker getSmsTracker(String callingPackage, int callingUser,
             HashMap<String, Object> data, PendingIntent sentIntent, PendingIntent deliveryIntent,
             String format, Uri messageUri, boolean expectMore, String fullMessageText,
@@ -3209,24 +3255,34 @@ public abstract class SMSDispatcher extends Handler {
     protected boolean isCdmaMo() {
         return mSmsDispatchersController.isCdmaMo();
     }
+// QTI_BEGIN: 2018-03-13: Telephony: Add 7bit Ascii support for long message
 
     private boolean isAscii7bitSupportedForLongMessage() {
+// QTI_END: 2018-03-13: Telephony: Add 7bit Ascii support for long message
         //TODO: Do not rely on calling identity here, we should store UID & clear identity earlier.
         long token = Binder.clearCallingIdentity();
+// QTI_BEGIN: 2018-03-13: Telephony: Add 7bit Ascii support for long message
         try {
+// QTI_END: 2018-03-13: Telephony: Add 7bit Ascii support for long message
             CarrierConfigManager configManager = (CarrierConfigManager) mContext.getSystemService(
                     Context.CARRIER_CONFIG_SERVICE);
             PersistableBundle pb = null;
+// QTI_BEGIN: 2018-03-13: Telephony: Add 7bit Ascii support for long message
             pb = configManager.getConfigForSubId(mPhone.getSubId());
+// QTI_END: 2018-03-13: Telephony: Add 7bit Ascii support for long message
             if (pb != null) {
                 return pb.getBoolean(CarrierConfigManager
                         .KEY_ASCII_7_BIT_SUPPORT_FOR_LONG_MESSAGE_BOOL);
             }
             return false;
+// QTI_BEGIN: 2018-03-13: Telephony: Add 7bit Ascii support for long message
         } finally {
+// QTI_END: 2018-03-13: Telephony: Add 7bit Ascii support for long message
             Binder.restoreCallingIdentity(token);
+// QTI_BEGIN: 2018-03-13: Telephony: Add 7bit Ascii support for long message
         }
     }
+// QTI_END: 2018-03-13: Telephony: Add 7bit Ascii support for long message
 
     /**
      * Dump local logs

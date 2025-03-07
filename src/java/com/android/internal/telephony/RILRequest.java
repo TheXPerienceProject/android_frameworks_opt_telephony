@@ -211,7 +211,9 @@ public class RILRequest {
     }
 
     @UnsupportedAppUsage
+// QTI_BEGIN: 2020-04-06: Telephony: Modify access specifiers of members for vendor use
     public String serialString() {
+// QTI_END: 2020-04-06: Telephony: Modify access specifiers of members for vendor use
         //Cheesy way to do %04d
         StringBuilder sb = new StringBuilder(8);
         String sn;

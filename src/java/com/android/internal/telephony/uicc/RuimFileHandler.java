@@ -64,13 +64,19 @@ public final class RuimFileHandler extends IccFileHandler {
         case EF_CSIM_IMSIM:
         case EF_CSIM_CDMAHOME:
         case EF_CSIM_EPRL:
+// QTI_BEGIN: 2018-03-14: Telephony: Define EF MSPL/MLPL/PRL values and paths
         case EF_CSIM_PRL:
+// QTI_END: 2018-03-14: Telephony: Define EF MSPL/MLPL/PRL values and paths
         case EF_CSIM_MIPUPP:
+// QTI_BEGIN: 2018-03-14: Telephony: Define EF MSPL/MLPL/PRL values and paths
         case EF_RUIM_ID:
+// QTI_END: 2018-03-14: Telephony: Define EF MSPL/MLPL/PRL values and paths
             return MF_SIM + DF_CDMA;
+// QTI_BEGIN: 2018-03-14: Telephony: Define EF MSPL/MLPL/PRL values and paths
         case EF_CSIM_MSPL:
         case EF_CSIM_MLPL:
             return MF_SIM + DF_TELECOM + DF_MMSS;
+// QTI_END: 2018-03-14: Telephony: Define EF MSPL/MLPL/PRL values and paths
         }
         return getCommonIccEFPath(efid);
     }

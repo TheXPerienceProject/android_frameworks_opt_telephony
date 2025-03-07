@@ -124,10 +124,12 @@ public class ImsRttTextHandler extends Handler {
                     return;
                 }
                 mRttTextStream = (Connection.RttTextStream) msg.obj;
+// QTI_BEGIN: 2018-03-09: Telephony: IMS: RTT feature changes
                 if (mRttTextStream == null) {
                     Rlog.e(LOG_TAG, "RTT text stream is null");
                     return;
                 }
+// QTI_END: 2018-03-09: Telephony: IMS: RTT feature changes
                 mReaderThread = new InCallReaderThread(mRttTextStream);
                 mReaderThread.start();
                 break;
@@ -137,11 +139,15 @@ public class ImsRttTextHandler extends Handler {
                     return;
                 }
                 String messageToIncall = (String) msg.obj;
+// QTI_BEGIN: 2018-03-09: Telephony: IMS: RTT feature changes
                 if (mRttTextStream == null) {
+// QTI_END: 2018-03-09: Telephony: IMS: RTT feature changes
                     Rlog.e(LOG_TAG, "RTT text stream is null. Writing to in-call buffer.");
                     mBufferedTextToIncall.append(messageToIncall);
+// QTI_BEGIN: 2018-03-09: Telephony: IMS: RTT feature changes
                     return;
                 }
+// QTI_END: 2018-03-09: Telephony: IMS: RTT feature changes
                 try {
                     mRttTextStream.write(messageToIncall);
                 } catch (IOException e) {

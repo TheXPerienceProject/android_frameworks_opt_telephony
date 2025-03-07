@@ -35,7 +35,9 @@ public class CallStateException extends Exception
     public static final int ERROR_CALLING_DISABLED = 5;
     public static final int ERROR_TOO_MANY_CALLS = 6;
     public static final int ERROR_OTASP_PROVISIONING_IN_PROCESS = 7;
+// QTI_BEGIN: 2022-05-10: Telephony: Add Secure Mode specific CallStateException
     public static final int ERROR_DEVICE_IN_SECURE_MODE = 9;
+// QTI_END: 2022-05-10: Telephony: Add Secure Mode specific CallStateException
     public static final int ERROR_FDN_BLOCKED = 10;
 
     public

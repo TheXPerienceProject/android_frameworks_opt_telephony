@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+// QTI_BEGIN: 2025-02-26: Telephony: Fix license marking
 /*
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
+// QTI_END: 2025-02-26: Telephony: Fix license marking
 package com.android.internal.telephony.uicc;
 
 import static android.telephony.TelephonyManager.UNINITIALIZED_CARD_ID;
@@ -667,11 +669,15 @@ public class UiccController extends Handler {
                         //DSDS -> SS config change, PhoneId 1 is not valid.
                         //If UiccCard is Still Present Corresponding phone Id 1,
                         //Dispose UiccCard.
+// QTI_BEGIN: 2024-02-22: Telephony: Fix NPE caused by call on uninitialized UICC slot
                         if (DBG) log("UICC slot null for phoneId " + phoneId);
+// QTI_END: 2024-02-22: Telephony: Fix NPE caused by call on uninitialized UICC slot
                         uiccSlot = mUiccSlots[phoneId];
+// QTI_BEGIN: 2024-02-22: Telephony: Fix NPE caused by call on uninitialized UICC slot
                         if (uiccSlot != null) {
                             uiccSlot.onRadioStateUnavailable(INVALID_PHONE_ID);
                         }
+// QTI_END: 2024-02-22: Telephony: Fix NPE caused by call on uninitialized UICC slot
                     }
                     mIccChangedRegistrants.notifyRegistrants(new AsyncResult(null, phoneId, null));
                     break;
@@ -859,7 +865,9 @@ public class UiccController extends Handler {
             }
             Rlog.d(LOG_TAG, "Broadcasting intent ACTION_SIM_CARD_STATE_CHANGED "
                     + TelephonyManager.simStateToString(state) + " for phone: " + phoneId
+// QTI_BEGIN: 2025-02-10: Telephony: Decouple Qualcomm value adds
                     + " slot: " + slotId + " port: " + portIndex + " sub: " + subId);
+// QTI_END: 2025-02-10: Telephony: Decouple Qualcomm value adds
             if (mFeatureFlags.hsumBroadcast()) {
                 mContext.sendBroadcastAsUser(intent, UserHandle.ALL,
                         Manifest.permission.READ_PRIVILEGED_PHONE_STATE);

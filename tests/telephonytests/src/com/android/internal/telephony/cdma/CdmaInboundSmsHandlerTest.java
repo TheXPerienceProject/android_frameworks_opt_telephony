@@ -21,7 +21,9 @@ import static com.android.internal.telephony.TelephonyTestUtils.waitForMs;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+// QTI_BEGIN: 2018-06-05: Telephony: UT: Fix UT failures
 import static org.junit.Assert.assertNotNull;
+// QTI_END: 2018-06-05: Telephony: UT: Fix UT failures
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.nullable;
@@ -57,7 +59,9 @@ import com.android.internal.telephony.TelephonyTest;
 import com.android.internal.telephony.cdma.sms.SmsEnvelope;
 import com.android.internal.util.IState;
 import com.android.internal.util.StateMachine;
+// QTI_BEGIN: 2018-03-22: Telephony: SMS: Parsing of MMS notification carried by SMS
 import com.android.internal.util.HexDump;
+// QTI_END: 2018-03-22: Telephony: SMS: Parsing of MMS notification carried by SMS
 
 import org.junit.After;
 import org.junit.Before;
@@ -271,6 +275,7 @@ public class CdmaInboundSmsHandlerTest extends TelephonyTest {
         verify(mContext, never()).sendBroadcast(any(Intent.class));
         assertEquals("IdleState", getCurrentState().getName());
     }
+// QTI_BEGIN: 2018-03-22: Telephony: SMS: Parsing of MMS notification carried by SMS
 
     @Test
     @MediumTest
@@ -283,8 +288,11 @@ public class CdmaInboundSmsHandlerTest extends TelephonyTest {
         mCdmaInboundSmsHandler.sendMessage(InboundSmsHandler.EVENT_NEW_SMS,
                 new AsyncResult(null, mSmsMessage, null));
         waitForMs(200);
+// QTI_END: 2018-03-22: Telephony: SMS: Parsing of MMS notification carried by SMS
         assertEquals(msg.getTeleService(), SmsEnvelope.TELESERVICE_FDEA_WAP);
+// QTI_BEGIN: 2018-03-22: Telephony: SMS: Parsing of MMS notification carried by SMS
         assertEquals("Test standard SMS", msg.getMessageBody());
         assertNotNull(msg.getUserData());
     }
+// QTI_END: 2018-03-22: Telephony: SMS: Parsing of MMS notification carried by SMS
 }

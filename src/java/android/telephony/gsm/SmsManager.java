@@ -76,7 +76,9 @@ import java.util.ArrayList;
     public final void sendTextMessage(
             String destinationAddress, String scAddress, String text,
             PendingIntent sentIntent, PendingIntent deliveryIntent) {
+// QTI_BEGIN: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
         android.util.SeempLog.record_str(75, destinationAddress);
+// QTI_END: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
         mSmsMgrProxy.sendTextMessage(destinationAddress, scAddress, text,
                 sentIntent, deliveryIntent);
     }
@@ -129,7 +131,9 @@ import java.util.ArrayList;
     public final void sendMultipartTextMessage(
             String destinationAddress, String scAddress, ArrayList<String> parts,
             ArrayList<PendingIntent> sentIntents, ArrayList<PendingIntent> deliveryIntents) {
+// QTI_BEGIN: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
         android.util.SeempLog.record_str(77, destinationAddress);
+// QTI_END: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
         mSmsMgrProxy.sendMultipartTextMessage(destinationAddress, scAddress, parts,
                 sentIntents, deliveryIntents);
     }
@@ -163,7 +167,9 @@ import java.util.ArrayList;
     public final void sendDataMessage(
             String destinationAddress, String scAddress, short destinationPort,
             byte[] data, PendingIntent sentIntent, PendingIntent deliveryIntent) {
+// QTI_BEGIN: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
         android.util.SeempLog.record_str(73, destinationAddress);
+// QTI_END: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
         mSmsMgrProxy.sendDataMessage(destinationAddress, scAddress, destinationPort,
                 data, sentIntent, deliveryIntent);
     }
@@ -181,7 +187,9 @@ import java.util.ArrayList;
      */
     @Deprecated
     public final boolean copyMessageToSim(byte[] smsc, byte[] pdu, int status) {
+// QTI_BEGIN: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
         android.util.SeempLog.record(82);
+// QTI_END: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
         return mSmsMgrProxy.copyMessageToIcc(smsc, pdu, status);
     }
 
@@ -195,7 +203,9 @@ import java.util.ArrayList;
      */
     @Deprecated
     public final boolean deleteMessageFromSim(int messageIndex) {
+// QTI_BEGIN: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
         android.util.SeempLog.record(83);
+// QTI_END: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
         return mSmsMgrProxy.deleteMessageFromIcc(messageIndex);
     }
 
@@ -213,7 +223,9 @@ import java.util.ArrayList;
      */
     @Deprecated
     public final boolean updateMessageOnSim(int messageIndex, int newStatus, byte[] pdu) {
+// QTI_BEGIN: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
         android.util.SeempLog.record(84);
+// QTI_END: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
         return mSmsMgrProxy.updateMessageOnIcc(messageIndex, newStatus, pdu);
     }
 
@@ -225,7 +237,9 @@ import java.util.ArrayList;
      */
     @Deprecated
     public final ArrayList<android.telephony.SmsMessage> getAllMessagesFromSim() {
+// QTI_BEGIN: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
         android.util.SeempLog.record(85);
+// QTI_END: 2018-04-04: Secure Systems: SEEMP: framework instrumentation and SMS security
         return android.telephony.SmsManager.getDefault().getAllMessagesFromIcc();
     }
 

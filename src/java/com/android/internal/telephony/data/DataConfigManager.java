@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+// QTI_BEGIN: 2025-02-26: Telephony: Fix license marking
 /*
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
+// QTI_END: 2025-02-26: Telephony: Fix license marking
 package com.android.internal.telephony.data;
 
 import android.annotation.CallbackExecutor;
@@ -274,9 +276,13 @@ public class DataConfigManager extends Handler {
     private boolean mIsApnConfigAnomalyReportEnabled;
 
     @NonNull
+// QTI_BEGIN: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
     protected final Phone mPhone;
+// QTI_END: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
     @NonNull
+// QTI_BEGIN: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
     protected String mLogTag;
+// QTI_END: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
     @NonNull
     private final FeatureFlags mFeatureFlags;
     @Nullable
@@ -1406,12 +1412,14 @@ public class DataConfigManager extends Handler {
                 .KEY_CARRIER_DATA_CALL_APN_RETRY_AFTER_DISCONNECT_LONG);
     }
 
+// QTI_BEGIN: 2022-03-07: Telephony: Use essential records for data call on new stack
     /**
      * Called when CarrierConfigs have been fetched after reading the essential SIM records.
      */
     public void onCarrierConfigLoadedForEssentialRecords() {
     }
 
+// QTI_END: 2022-03-07: Telephony: Use essential records for data call on new stack
     /**
      * Get the data config network type for the given network type
      *
@@ -1556,7 +1564,9 @@ public class DataConfigManager extends Handler {
      * Log debug messages.
      * @param s debug messages
      */
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
     protected void log(@NonNull String s) {
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
         Rlog.d(mLogTag, s);
     }
 
@@ -1564,7 +1574,9 @@ public class DataConfigManager extends Handler {
      * Log error messages.
      * @param s error messages
      */
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
     protected void loge(@NonNull String s) {
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
         Rlog.e(mLogTag, s);
     }
 

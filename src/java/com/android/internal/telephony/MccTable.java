@@ -345,12 +345,14 @@ public final class MccTable {
         FALLBACKS.put(Locale.ENGLISH, Locale.US);
     }
 
+// QTI_BEGIN: 2018-03-26: Telephony: Update proper country code to WifiService.
     private static boolean isInvalidOperatorNumeric(String operatorNumeric) {
         return operatorNumeric == null
                 || operatorNumeric.length() < 5
                 || operatorNumeric.startsWith("000");
     }
 
+// QTI_END: 2018-03-26: Telephony: Update proper country code to WifiService.
     static {
         sTable = new ArrayList<MccEntry>(240);
 

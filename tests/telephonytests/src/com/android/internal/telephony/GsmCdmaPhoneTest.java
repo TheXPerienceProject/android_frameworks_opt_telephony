@@ -1005,7 +1005,9 @@ public class GsmCdmaPhoneTest extends TelephonyTest {
         doReturn(imsi).when(mSimRecords).getIMSI();
         mPhoneUT.getCallForwardingOption(CF_REASON_UNCONDITIONAL, null);
         verify(mSimulatedCommandsVerifier).queryCallForwardStatus(
+// QTI_BEGIN: 2018-06-05: Telephony: UT: Fix UT failures
                 eq(CF_REASON_UNCONDITIONAL), anyInt(),
+// QTI_END: 2018-06-05: Telephony: UT: Fix UT failures
                 nullable(String.class), nullable(Message.class));
         processAllMessages();
         verify(mSimRecords).setVoiceCallForwardingFlag(anyInt(), anyBoolean(),
@@ -1045,6 +1047,7 @@ public class GsmCdmaPhoneTest extends TelephonyTest {
         verify(mSimRecords).setVoiceCallForwardingFlag(anyInt(), anyBoolean(), eq(cfNumber));
     }
 
+// QTI_BEGIN: 2018-04-09: Telephony: IMS: Add UT interface to query CF setting for service class.
     @Test
     public void testSetVideoCallForwardingPreference() {
         mPhoneUT.setVideoCallForwardingPreference(false);
@@ -1056,6 +1059,7 @@ public class GsmCdmaPhoneTest extends TelephonyTest {
         assertTrue(cfPref);
     }
 
+// QTI_END: 2018-04-09: Telephony: IMS: Add UT interface to query CF setting for service class.
     /**
      * GsmCdmaPhone handles a lot of messages. This function verifies behavior for messages that are
      * received when obj is created and that are received on phone type switch
@@ -1180,7 +1184,9 @@ public class GsmCdmaPhoneTest extends TelephonyTest {
                 .getSubId(anyInt());
         assertEquals(false, mPhoneUT.getCallForwardingIndicator());
 
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
         doReturn(true).when(mPhoneUT).isActiveSubId(anyInt());
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
         // valid subId, sharedPreference not present
         int subId1 = 0;
         int subId2 = 1;
@@ -1384,10 +1390,14 @@ public class GsmCdmaPhoneTest extends TelephonyTest {
         doReturn(iccId).when(mUiccSlot).getIccId(anyInt());
         Message.obtain(mPhoneUT, EVENT_ICC_CHANGED, null).sendToTarget();
         processAllMessages();
+// QTI_BEGIN: 2020-09-14: Telephony: Fix FrameworksTelephonyTests UT failures
         // TODO: Clean code from google.
         // Bug id: 154781677
+// QTI_END: 2020-09-14: Telephony: Fix FrameworksTelephonyTests UT failures
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
         // verify(mSubscriptionManagerService).getAllSubInfoList(anyString(),
         //        nullable(String.class));
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
         verify(mMockCi, never()).enableUiccApplications(anyBoolean(), any());
     }
 

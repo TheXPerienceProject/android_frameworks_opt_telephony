@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+// QTI_BEGIN: 2025-02-26: Telephony: Fix license marking
 /*
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
+// QTI_END: 2025-02-26: Telephony: Fix license marking
 package com.android.internal.telephony.subscription;
 
 import static android.content.pm.PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION;
@@ -864,21 +866,27 @@ public class SubscriptionManagerService extends ISub.Stub {
     }
 
     /**
+// QTI_BEGIN: 2024-02-09: Telephony: Revert "Fix deactivated eSIM disappearing from SIMs list"
      * @return The list of ICCIDs from the inserted physical SIMs.
+// QTI_END: 2024-02-09: Telephony: Revert "Fix deactivated eSIM disappearing from SIMs list"
      */
     @NonNull
+// QTI_BEGIN: 2024-02-09: Telephony: Revert "Fix deactivated eSIM disappearing from SIMs list"
     private List<String> getIccIdsOfInsertedPhysicalSims() {
+// QTI_END: 2024-02-09: Telephony: Revert "Fix deactivated eSIM disappearing from SIMs list"
         List<String> iccidList = new ArrayList<>();
         UiccSlot[] uiccSlots = mUiccController.getUiccSlots();
         if (uiccSlots == null) return iccidList;
 
         for (UiccSlot uiccSlot : uiccSlots) {
             if (uiccSlot != null && uiccSlot.getCardState() != null
+// QTI_BEGIN: 2024-02-09: Telephony: Revert "Fix deactivated eSIM disappearing from SIMs list"
                     && uiccSlot.getCardState().isCardPresent() && !uiccSlot.isEuicc()) {
                 // Non euicc slots will have single port, so use default port index.
                 String iccId = uiccSlot.getIccId(TelephonyManager.DEFAULT_PORT_INDEX);
                 if (!TextUtils.isEmpty(iccId)) {
                     iccidList.add(IccUtils.stripTrailingFs(iccId));
+// QTI_END: 2024-02-09: Telephony: Revert "Fix deactivated eSIM disappearing from SIMs list"
                 }
             }
         }
@@ -1409,7 +1417,9 @@ public class SubscriptionManagerService extends ISub.Stub {
      * @return {@code true} if all the need-to-be-loaded subscriptions from SIM slots are already
      * loaded. {@code false} if more than one are still being loaded.
      */
+// QTI_BEGIN: 2023-07-10: Telephony: Align legacy code to SubscriptionManagerService design
     public boolean areAllSubscriptionsLoaded() {
+// QTI_END: 2023-07-10: Telephony: Align legacy code to SubscriptionManagerService design
         for (int phoneId = 0; phoneId < mTelephonyManager.getActiveModemCount(); phoneId++) {
             UiccSlot slot = mUiccController.getUiccSlotForPhone(phoneId);
             if (slot == null) {
@@ -1449,7 +1459,9 @@ public class SubscriptionManagerService extends ISub.Stub {
      *
      * @param phoneId The phone id (i.e. Logical SIM slot index)
      */
+// QTI_BEGIN: 2023-07-10: Telephony: Align legacy code to SubscriptionManagerService design
     public void updateSubscription(int phoneId) {
+// QTI_END: 2023-07-10: Telephony: Align legacy code to SubscriptionManagerService design
         int simState = mSimState[phoneId];
         log("updateSubscription: phoneId=" + phoneId + ", simState="
                 + TelephonyManager.simStateToString(simState));
@@ -1469,9 +1481,16 @@ public class SubscriptionManagerService extends ISub.Stub {
 
             if (!isSatelliteEnabledOrBeingEnabled) {
               if (!isDsdsToSsConfigEnabled()) {
+// QTI_BEGIN: 2024-02-09: Telephony: Revert "Fix deactivated eSIM disappearing from SIMs list"
                 // Re-enable the pSIM when it's removed, so it will be in enabled state when it gets
+// QTI_END: 2024-02-09: Telephony: Revert "Fix deactivated eSIM disappearing from SIMs list"
+// QTI_BEGIN: 2023-06-12: Telephony: Add dsds_to_ss property check.
                 // re-inserted again. (pre-U behavior)
+// QTI_END: 2023-06-12: Telephony: Add dsds_to_ss property check.
+// QTI_BEGIN: 2024-02-09: Telephony: Revert "Fix deactivated eSIM disappearing from SIMs list"
                 List<String> iccIds = getIccIdsOfInsertedPhysicalSims();
+// QTI_END: 2024-02-09: Telephony: Revert "Fix deactivated eSIM disappearing from SIMs list"
+// QTI_BEGIN: 2023-06-12: Telephony: Add dsds_to_ss property check.
                 mSubscriptionDatabaseManager.getAllSubscriptions().stream()
                         .filter(subInfo -> !iccIds.contains(subInfo.getIccId())
                                 && !subInfo.isEmbedded())
@@ -1484,8 +1503,11 @@ public class SubscriptionManagerService extends ISub.Stub {
                             mSubscriptionDatabaseManager.setPortIndex(subId,
                                     TelephonyManager.INVALID_PORT_INDEX);
                         });
+// QTI_END: 2023-06-12: Telephony: Add dsds_to_ss property check.
               }
+// QTI_BEGIN: 2023-06-12: Telephony: Add dsds_to_ss property check.
             }
+// QTI_END: 2023-06-12: Telephony: Add dsds_to_ss property check.
 
             if (mSlotIndexToSubId.containsKey(phoneId)) {
                 markSubscriptionsInactive(phoneId);
@@ -1649,11 +1671,13 @@ public class SubscriptionManagerService extends ISub.Stub {
         if (areAllSubscriptionsLoaded()) {
             log("Notify all subscriptions loaded.");
             MultiSimSettingController.getInstance().notifyAllSubscriptionLoaded();
+// QTI_BEGIN: 2023-04-10: Telephony: Fix data call set-up issue
 
             PhoneSwitcher phoneSwitcher = PhoneSwitcher.getInstance();
             if (phoneSwitcher != null) {
                 phoneSwitcher.notifySubInfoReady();
             }
+// QTI_END: 2023-04-10: Telephony: Fix data call set-up issue
         }
 
         updateGroupDisabled();
@@ -1697,10 +1721,12 @@ public class SubscriptionManagerService extends ISub.Stub {
         }
     }
 
+// QTI_BEGIN: 2023-06-12: Telephony: Add dsds_to_ss property check.
     public boolean isDsdsToSsConfigEnabled() {
         return false;
     }
 
+// QTI_END: 2023-06-12: Telephony: Add dsds_to_ss property check.
     /**
      * Calculate the usage setting based on the carrier request.
      *
@@ -2231,7 +2257,9 @@ public class SubscriptionManagerService extends ISub.Stub {
         // they are in inactive slot or programmatically disabled, they are still considered
         // available. In this case we get their iccid from slot info and include their
         // subscriptionInfos.
+// QTI_BEGIN: 2024-02-09: Telephony: Revert "Fix deactivated eSIM disappearing from SIMs list"
         List<String> iccIds = getIccIdsOfInsertedPhysicalSims();
+// QTI_END: 2024-02-09: Telephony: Revert "Fix deactivated eSIM disappearing from SIMs list"
 
         return mSubscriptionDatabaseManager.getAllSubscriptions().stream()
                 .filter(subInfo -> subInfo.isActive() || iccIds.contains(subInfo.getIccId())
@@ -2384,14 +2412,18 @@ public class SubscriptionManagerService extends ISub.Stub {
      * subscription type.
      * @param subscriptionType the type of subscription to be removed.
      *
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
      * @return {@code true} if succeeded, otherwise {@code false}.
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
      *
      * @throws NullPointerException if {@code uniqueId} is {@code null}.
      * @throws SecurityException if callers do not hold the required permission.
      */
     @Override
     @RequiresPermission(Manifest.permission.MODIFY_PHONE_STATE)
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
     public boolean removeSubInfo(@NonNull String uniqueId, int subscriptionType) {
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
         enforcePermissions("removeSubInfo", Manifest.permission.MODIFY_PHONE_STATE);
 
         logl("removeSubInfo: uniqueId=" + SubscriptionInfo.getPrintableId(uniqueId) + ", "
@@ -2406,15 +2438,21 @@ public class SubscriptionManagerService extends ISub.Stub {
                     .getSubscriptionInfoInternalByIccId(uniqueId);
             if (subInfo == null) {
                 loge("Cannot find subscription with uniqueId " + uniqueId);
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
                 return false;
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
             }
             if (subInfo.getSubscriptionType() != subscriptionType) {
                 loge("The subscription type does not match.");
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
                 return false;
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
             }
             mSlotIndexToSubId.remove(subInfo.getSimSlotIndex());
             mSubscriptionDatabaseManager.removeSubscriptionInfo(subInfo.getSubscriptionId());
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
             return true;
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
         } finally {
             Binder.restoreCallingIdentity(identity);
         }
@@ -3080,7 +3118,9 @@ public class SubscriptionManagerService extends ISub.Stub {
     /**
      * Update default sub id.
      */
+// QTI_BEGIN: 2023-07-10: Telephony: Align legacy code to SubscriptionManagerService design
     public void updateDefaultSubId() {
+// QTI_END: 2023-07-10: Telephony: Align legacy code to SubscriptionManagerService design
         int subId;
         boolean isVoiceCapable = mTelephonyManager.isVoiceCapable();
 
@@ -3213,9 +3253,11 @@ public class SubscriptionManagerService extends ISub.Stub {
         final long token = Binder.clearCallingIdentity();
         try {
             if (mDefaultDataSubId.set(subId)) {
+// QTI_BEGIN: 2025-02-18: Telephony: Add isFlexMapSupportNeeded method. am: ffd2270edd am: ffd2270edd
                 if (isFlexMapSupportNeeded()) {
                     remapRafIfApplicable();
                 }
+// QTI_END: 2025-02-18: Telephony: Add isFlexMapSupportNeeded method. am: ffd2270edd am: ffd2270edd
                 MultiSimSettingController.getInstance().notifyDefaultDataSubChanged();
 
                 broadcastSubId(TelephonyIntents.ACTION_DEFAULT_DATA_SUBSCRIPTION_CHANGED,
@@ -3233,10 +3275,12 @@ public class SubscriptionManagerService extends ISub.Stub {
         }
     }
 
+// QTI_BEGIN: 2025-02-18: Telephony: Add isFlexMapSupportNeeded method. am: ffd2270edd am: ffd2270edd
     public boolean isFlexMapSupportNeeded() {
         return false;
     }
 
+// QTI_END: 2025-02-18: Telephony: Add isFlexMapSupportNeeded method. am: ffd2270edd am: ffd2270edd
     /**
      * Remap Radio Access Family if needed.
      */
@@ -3438,7 +3482,9 @@ public class SubscriptionManagerService extends ISub.Stub {
      */
     @Override
     @RequiresPermission(Manifest.permission.MODIFY_PHONE_STATE)
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
     public void setSubscriptionProperty(int subId, @NonNull String columnName,
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
             @NonNull String value) {
         enforcePermissions("setSubscriptionProperty", Manifest.permission.MODIFY_PHONE_STATE);
 

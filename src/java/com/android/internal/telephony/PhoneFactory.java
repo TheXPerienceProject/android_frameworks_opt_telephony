@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+// QTI_BEGIN: 2024-11-14: Telephony: Inject TelephonyNetworkProvider class
 /*
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
+// QTI_END: 2024-11-14: Telephony: Inject TelephonyNetworkProvider class
 package com.android.internal.telephony;
 
 import static android.telephony.TelephonyManager.HAL_SERVICE_RADIO;
@@ -171,8 +173,10 @@ public class PhoneFactory {
                 sMetricsCollector = new MetricsCollector(context, sFeatureFlags);
 
                 sPhoneNotifier = new DefaultPhoneNotifier(context, featureFlags);
+// QTI_BEGIN: 2018-01-31: Telephony: Enable vendor Telephony plugin
                 TelephonyComponentFactory telephonyComponentFactory
                         = TelephonyComponentFactory.getInstance();
+// QTI_END: 2018-01-31: Telephony: Enable vendor Telephony plugin
 
                 int cdmaSubscription = CdmaSubscriptionSourceManager.getDefault(context);
                 Rlog.i(LOG_TAG, "Cdma Subscription set to " + cdmaSubscription);
@@ -192,7 +196,9 @@ public class PhoneFactory {
                     networkModes[i] = RILConstants.PREFERRED_NETWORK_MODE;
 
                     Rlog.i(LOG_TAG, "Network Mode set to " + Integer.toString(networkModes[i]));
+// QTI_BEGIN: 2019-02-11: Telephony: Start using inject framework support
                     sCommandsInterfaces[i] = telephonyComponentFactory.inject(RIL.class.getName()).
+// QTI_END: 2019-02-11: Telephony: Start using inject framework support
                             makeRIL(context,
                                     RadioAccessFamily.getRafFromNetworkType(networkModes[i]),
                                     cdmaSubscription, i, featureFlags);
@@ -215,10 +221,14 @@ public class PhoneFactory {
                 // call getInstance()
                 sUiccController = UiccController.make(context, featureFlags);
 
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
                 Rlog.i(LOG_TAG, "Creating SubscriptionManagerService");
                 sSubscriptionManagerService = TelephonyComponentFactory.getInstance().inject(
                         SubscriptionManagerService.class.getName())
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
+// QTI_BEGIN: 2024-08-21: Telephony: Pass FeatureFlags to makeSubscriptionManagerService
                         .makeSubscriptionManagerService(context, Looper.myLooper(), featureFlags);
+// QTI_END: 2024-08-21: Telephony: Pass FeatureFlags to makeSubscriptionManagerService
 
                 TelephonyComponentFactory.getInstance().inject(MultiSimSettingController.class.
                         getName()).initMultiSimSettingController(context, featureFlags);
@@ -230,7 +240,9 @@ public class PhoneFactory {
                 }
 
                 for (int i = 0; i < numPhones; i++) {
+// QTI_BEGIN: 2025-02-03: Telephony: Decouple Qualcomm value adds.
                     sPhones[i] = createPhone(context, i);
+// QTI_END: 2025-02-03: Telephony: Decouple Qualcomm value adds.
                 }
 
                 // Set the default phone in base class.
@@ -299,8 +311,10 @@ public class PhoneFactory {
                         TelephonyNetworkProvider.class.getName())
                         .makeTelephonyNetworkProvider(Looper.myLooper(),
                         context, featureFlags);
+// QTI_BEGIN: 2019-02-11: Telephony: Start using inject framework support
                 telephonyComponentFactory.inject(TelephonyComponentFactory.class.getName()).
                         makeExtTelephonyClasses(context, sPhones, sCommandsInterfaces);
+// QTI_END: 2019-02-11: Telephony: Start using inject framework support
             }
         }
     }
@@ -326,9 +340,11 @@ public class PhoneFactory {
 
             int cdmaSubscription = CdmaSubscriptionSourceManager.getDefault(context);
             for (int i = prevActiveModemCount; i < activeModemCount; i++) {
+// QTI_BEGIN: 2021-05-11: Telephony: Inject RIL instance when notified of sim switch
                 sCommandsInterfaces[i] = TelephonyComponentFactory.getInstance().inject(
                         RIL.class.getName()).
                         makeRIL(context, RadioAccessFamily.getRafFromNetworkType(
+// QTI_END: 2021-05-11: Telephony: Inject RIL instance when notified of sim switch
                         RILConstants.PREFERRED_NETWORK_MODE),
                         cdmaSubscription, i, sFeatureFlags);
                 sPhones[i] = createPhone(context, i);
@@ -418,7 +434,9 @@ public class PhoneFactory {
         if (getPhone(phoneId) == null) {
             Rlog.d(LOG_TAG, "Invalid phoneId return default network mode ");
             return RadioAccessFamily.getRafFromNetworkType(RILConstants.PREFERRED_NETWORK_MODE);
+// QTI_BEGIN: 2018-03-03: Telephony: MSIM: Add support to configure Default Network mode for each slot
         }
+// QTI_END: 2018-03-03: Telephony: MSIM: Add support to configure Default Network mode for each slot
         int networkType = (int) getPhone(phoneId).getAllowedNetworkTypes(
                 TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_USER);
         Rlog.d(LOG_TAG, "calculatePreferredNetworkType: phoneId = " + phoneId + " networkType = "
@@ -429,7 +447,9 @@ public class PhoneFactory {
     /* Gets the default subscription */
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
     public static int getDefaultSubscription() {
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
         return SubscriptionManagerService.getInstance().getDefaultSubId();
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
     }
 
     /* Returns User SMS Prompt property,  enabled or not */
@@ -457,7 +477,9 @@ public class PhoneFactory {
     }
 
     /**
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
      * Get the instance of {@link SmsController}.
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
      */
     public static SmsController getSmsController() {
         synchronized (sLockProxyPhones) {

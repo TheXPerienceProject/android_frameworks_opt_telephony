@@ -142,7 +142,9 @@ public class SmsDispatchersController extends Handler {
 
     private SMSDispatcher mCdmaDispatcher = null;
     private SMSDispatcher mGsmDispatcher;
+// QTI_BEGIN: 2023-01-26: Telephony: Make SmsDispatchersController injectable
     protected ImsSmsDispatcher mImsSmsDispatcher;
+// QTI_END: 2023-01-26: Telephony: Make SmsDispatchersController injectable
 
     private GsmInboundSmsHandler mGsmInboundSmsHandler;
     private CdmaInboundSmsHandler mCdmaInboundSmsHandler = null;
@@ -717,10 +719,14 @@ public class SmsDispatchersController extends Handler {
 
     private void setImsSmsFormat(int format) {
         switch (format) {
+// QTI_BEGIN: 2023-02-07: Telephony: Revert "Update correct IMS format"
             case PhoneConstants.PHONE_TYPE_GSM:
+// QTI_END: 2023-02-07: Telephony: Revert "Update correct IMS format"
                 mImsSmsFormat = SmsConstants.FORMAT_3GPP;
                 break;
+// QTI_BEGIN: 2023-02-07: Telephony: Revert "Update correct IMS format"
             case PhoneConstants.PHONE_TYPE_CDMA:
+// QTI_END: 2023-02-07: Telephony: Revert "Update correct IMS format"
                 mImsSmsFormat = SmsConstants.FORMAT_3GPP2;
                 break;
             default:
@@ -854,7 +860,9 @@ public class SmsDispatchersController extends Handler {
                 // available now, retry this failed tracker using IMS Service.
                 retryUsingImsService = true;
             }
+// QTI_BEGIN: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
         }
+// QTI_END: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
 
         sendRetrySms(tracker, retryUsingImsService);
     }
@@ -910,14 +918,20 @@ public class SmsDispatchersController extends Handler {
                 Rlog.d(TAG, "sms failed was text with length: "
                         + (text == null ? null : text.length()));
 
+// QTI_BEGIN: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
                 if (isCdmaFormat(newFormat)) {
+// QTI_END: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
                     pdu = com.android.internal.telephony.cdma.SmsMessage.getSubmitPdu(
                             scAddr, destAddr, text, (tracker.mDeliveryIntent != null), null);
+// QTI_BEGIN: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
                 } else {
+// QTI_END: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
                     pdu = com.android.internal.telephony.gsm.SmsMessage.getSubmitPdu(
                             scAddr, destAddr, text, (tracker.mDeliveryIntent != null), null,
                             0, 0, 0, -1, tracker.mMessageRef);
+// QTI_BEGIN: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
                 }
+// QTI_END: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
             } else if (map.containsKey("data")) {
                 byte[] data = (byte[]) map.get("data");
                 Integer destPort = (Integer) map.get("destPort");
@@ -948,7 +962,9 @@ public class SmsDispatchersController extends Handler {
             map.put("smsc", pdu.encodedScAddress);
             map.put("pdu", pdu.encodedMessage);
             tracker.mFormat = newFormat;
+// QTI_BEGIN: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
         }
+// QTI_END: 2018-06-29: Telephony: Fix SMS over IMS retry issues.
 
         SMSDispatcher dispatcher =
                 retryUsingImsService

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+// QTI_BEGIN: 2022-09-20: Telephony: CAG and SNPN feature
 /*
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
@@ -21,6 +22,7 @@
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
+// QTI_END: 2022-09-20: Telephony: CAG and SNPN feature
 package com.android.internal.telephony;
 
 import static android.telephony.TelephonyManager.HAL_SERVICE_DATA;
@@ -58,7 +60,9 @@ import android.os.PowerManager.WakeLock;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemClock;
+// QTI_BEGIN: 2021-02-25: Telephony: Fix isCellularSupported check in RIL
 import android.os.SystemProperties;
+// QTI_END: 2021-02-25: Telephony: Fix isCellularSupported check in RIL
 import android.os.Trace;
 import android.os.WorkSource;
 import android.provider.Settings;
@@ -247,13 +251,17 @@ public class RIL extends BaseCommands implements CommandsInterface {
     private final SparseArray<Set<Integer>> mDisabledRadioServices = new SparseArray<>();
 
     /* default work source which will blame phone process */
+// QTI_BEGIN: 2018-01-31: Telephony: Enable vendor Telephony plugin
     protected WorkSource mRILDefaultWorkSource;
+// QTI_END: 2018-01-31: Telephony: Enable vendor Telephony plugin
 
     /* Worksource containing all applications causing wakelock to be held */
     private WorkSource mActiveWakelockWorkSource;
 
     /** Telephony metrics instance for logging metrics event */
+// QTI_BEGIN: 2018-08-01: Telephony: CDMA MO SMS follow on DC feature
     protected TelephonyMetrics mMetrics = TelephonyMetrics.getInstance();
+// QTI_END: 2018-08-01: Telephony: CDMA MO SMS follow on DC feature
     /** Radio bug detector instance */
     private RadioBugDetector mRadioBugDetector = null;
 
@@ -1112,9 +1120,11 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
         TelephonyManager tm = (TelephonyManager) context.getSystemService(
                 Context.TELEPHONY_SERVICE);
+// QTI_BEGIN: 2021-02-25: Telephony: Fix isCellularSupported check in RIL
         boolean noRil = SystemProperties.getBoolean("ro.radio.noril", false);
         mIsCellularSupported = !noRil &&
                 (tm.isVoiceCapable() || tm.isSmsCapable() || tm.isDataCapable());
+// QTI_END: 2021-02-25: Telephony: Fix isCellularSupported check in RIL
 
         mRadioResponse = new RadioResponse(this);
         mRadioIndication = new RadioIndication(this);
@@ -1308,7 +1318,9 @@ public class RIL extends BaseCommands implements CommandsInterface {
         }
     }
 
+// QTI_BEGIN: 2020-04-06: Telephony: Modify access specifiers of members for vendor use
     protected RILRequest obtainRequest(int request, Message result, WorkSource workSource) {
+// QTI_END: 2020-04-06: Telephony: Modify access specifiers of members for vendor use
         RILRequest rr = RILRequest.obtain(request, result, workSource);
         addRequest(rr);
         return rr;
@@ -1321,12 +1333,14 @@ public class RIL extends BaseCommands implements CommandsInterface {
         return rr;
     }
 
+// QTI_BEGIN: 2018-01-31: Telephony: Enable vendor Telephony plugin
     protected int obtainRequestSerial(int request, Message result, WorkSource workSource) {
         RILRequest rr = RILRequest.obtain(request, result, workSource);
         addRequest(rr);
         return rr.mSerial;
     }
 
+// QTI_END: 2018-01-31: Telephony: Enable vendor Telephony plugin
     protected void handleRadioProxyExceptionForRR(int service, String caller, Exception e) {
         riljLoge(caller + ": " + e);
         e.printStackTrace();
@@ -3370,7 +3384,9 @@ public class RIL extends BaseCommands implements CommandsInterface {
         });
     }
 
+// QTI_BEGIN: 2018-08-01: Telephony: CDMA MO SMS follow on DC feature
     @Override
+// QTI_END: 2018-08-01: Telephony: CDMA MO SMS follow on DC feature
     public void sendCdmaSMSExpectMore(byte[] pdu, Message result) {
         if (mFeatureFlags.cleanupCdma()) return;
 
@@ -3396,8 +3412,10 @@ public class RIL extends BaseCommands implements CommandsInterface {
                         getOutgoingSmsMessageId(result));
             }
         });
+// QTI_BEGIN: 2018-08-01: Telephony: CDMA MO SMS follow on DC feature
     }
 
+// QTI_END: 2018-08-01: Telephony: CDMA MO SMS follow on DC feature
     @Override
     public void sendCdmaSms(byte[] pdu, Message result) {
         if (mFeatureFlags.cleanupCdma()) return;
@@ -5618,6 +5636,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
         return rr;
     }
 
+// QTI_BEGIN: 2018-01-31: Telephony: Enable vendor Telephony plugin
     protected Message getMessageFromRequest(Object request) {
         RILRequest rr = (RILRequest)request;
         Message result = null;
@@ -5627,6 +5646,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
         return result;
     }
 
+// QTI_END: 2018-01-31: Telephony: Enable vendor Telephony plugin
     /**
      * This is a helper function to be called at the end of all RadioResponse callbacks.
      * It takes care of sending error response, logging, decrementing wakelock if needed, and
@@ -5723,11 +5743,13 @@ public class RIL extends BaseCommands implements CommandsInterface {
         }
     }
 
+// QTI_BEGIN: 2018-01-31: Telephony: Enable vendor Telephony plugin
     protected void processResponseDone(Object request, RadioResponseInfo responseInfo, Object ret) {
         RILRequest rr = (RILRequest)request;
         processResponseDone(rr, responseInfo, ret);
     }
 
+// QTI_END: 2018-01-31: Telephony: Enable vendor Telephony plugin
     /**
      * Function to send ack and acquire related wakelock
      */

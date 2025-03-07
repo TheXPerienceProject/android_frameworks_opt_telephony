@@ -932,7 +932,9 @@ public final class ImsPhoneMmiCode extends Handler implements MmiCode {
                 }
 
                 if (isInterrogate()) {
+// QTI_BEGIN: 2018-04-09: Telephony: IMS: Add UT interface to query CF setting for service class.
                     mPhone.getCallForwardingOption(reason, serviceClass,
+// QTI_END: 2018-04-09: Telephony: IMS: Add UT interface to query CF setting for service class.
                             obtainMessage(EVENT_QUERY_CF_COMPLETE, this));
                 } else {
                     int cfAction;
@@ -1122,7 +1124,9 @@ public final class ImsPhoneMmiCode extends Handler implements MmiCode {
                 }
             } else if (mSc != null && mSc.equals(SC_WAIT)) {
                 // sia = basic service group
+// QTI_BEGIN: 2019-05-02: Telephony: IMS: Use Sia as service class for call waiting MMI operations
                 int serviceClass = siToServiceClass(mSia);
+// QTI_END: 2019-05-02: Telephony: IMS: Use Sia as service class for call waiting MMI operations
 
                 if (isActivate() || isDeactivate()) {
                     if (serviceClass == SERVICE_CLASS_NONE
@@ -1298,11 +1302,14 @@ public final class ImsPhoneMmiCode extends Handler implements MmiCode {
                 ar = (AsyncResult) (msg.obj);
 
                 /*
+// QTI_BEGIN: 2018-04-09: Telephony: IMS: Add UT interface to query CF setting for service class.
                 * msg.arg1 = 1 means to set unconditional voice/video call forwarding
                 * msg.arg2 = 1 means to enable voice/video call forwarding
+// QTI_END: 2018-04-09: Telephony: IMS: Add UT interface to query CF setting for service class.
                 */
                 if ((ar.exception == null) && (msg.arg1 == 1)) {
                     boolean cffEnabled = (msg.arg2 == 1);
+// QTI_BEGIN: 2018-04-09: Telephony: IMS: Add UT interface to query CF setting for service class.
                     /*
                     * As per 3GPP TS 29002 MAP Specification : Section 17.7.10,
                     * the BearerServiceCode for "allDataCircuitAsynchronous" is '01010000'.
@@ -1314,6 +1321,7 @@ public final class ImsPhoneMmiCode extends Handler implements MmiCode {
                         mPhone.setVideoCallForwardingPreference(cffEnabled);
                         mPhone.notifyCallForwardingIndicator();
                     } else if (mIccRecords != null) {
+// QTI_END: 2018-04-09: Telephony: IMS: Add UT interface to query CF setting for service class.
                         mPhone.setVoiceCallForwardingFlag(mIccRecords,
                                 1, cffEnabled, mDialingNumber);
                     }
@@ -1339,7 +1347,9 @@ public final class ImsPhoneMmiCode extends Handler implements MmiCode {
                     mState = State.FAILED;
                     mMessage = getErrorMessage(ar);
 
+// QTI_BEGIN: 2020-05-22: Telephony: IMS: USSD over IMS
                     mPhone.onUssdComplete(this, (CommandException) ar.exception);
+// QTI_END: 2020-05-22: Telephony: IMS: USSD over IMS
                 }
 
                 // Note that unlike most everything else, the USSD complete
@@ -1714,11 +1724,15 @@ public final class ImsPhoneMmiCode extends Handler implements MmiCode {
                 if (ssInfo != null) {
                     Rlog.d(LOG_TAG,
                             "onSuppSvcQueryComplete: ImsSsInfo mStatus = " + ssInfo.getStatus());
+// QTI_BEGIN: 2018-05-02: Telephony: IMS: Adding support for TIR/TIP permanent provisioning
                     if (ssInfo.getProvisionStatus() == ImsSsInfo.SERVICE_NOT_PROVISIONED) {
+// QTI_END: 2018-05-02: Telephony: IMS: Adding support for TIR/TIP permanent provisioning
                         sb.append(mContext.getText(
                                 com.android.internal.R.string.serviceNotProvisioned));
+// QTI_BEGIN: 2018-05-02: Telephony: IMS: Adding support for TIR/TIP permanent provisioning
                         mState = State.COMPLETE;
                     } else if (ssInfo.getStatus() == ImsSsInfo.DISABLED) {
+// QTI_END: 2018-05-02: Telephony: IMS: Adding support for TIR/TIP permanent provisioning
                         sb.append(mContext.getText(com.android.internal.R.string.serviceDisabled));
                         mState = State.COMPLETE;
                     } else if (ssInfo.getStatus() == ImsSsInfo.ENABLED) {
@@ -2029,6 +2043,7 @@ public final class ImsPhoneMmiCode extends Handler implements MmiCode {
                         Rlog.d(LOG_TAG, "setVoiceCallForwardingFlag done from SS Info.");
                         //Only CF status is set here as part of activation/registration,
                         //number is not available until interrogation.
+// QTI_BEGIN: 2018-04-09: Telephony: IMS: Add UT interface to query CF setting for service class.
                         if (ssData.serviceClass == (SERVICE_CLASS_PACKET
                                     + SERVICE_CLASS_DATA_SYNC)) {
                             Rlog.d(LOG_TAG, "setVideoCallForwardingFlag done from SS Info.");
@@ -2038,6 +2053,7 @@ public final class ImsPhoneMmiCode extends Handler implements MmiCode {
                             Rlog.d(LOG_TAG, "setVoiceCallForwardingFlag done from SS Info.");
                             mPhone.setVoiceCallForwardingFlag(1, cffEnabled, null);
                         }
+// QTI_END: 2018-04-09: Telephony: IMS: Add UT interface to query CF setting for service class.
                     } else {
                         Rlog.e(LOG_TAG, "setCallForwardingFlag aborted. sim records is null.");
                     }
