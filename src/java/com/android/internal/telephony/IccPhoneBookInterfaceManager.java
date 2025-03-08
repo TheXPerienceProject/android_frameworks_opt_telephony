@@ -17,34 +17,48 @@
 package com.android.internal.telephony;
 
 import android.compat.annotation.UnsupportedAppUsage;
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 import android.content.ContentValues;
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 import android.content.pm.PackageManager;
 import android.os.AsyncResult;
 import android.os.Build;
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 import android.os.HandlerThread;
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 import android.text.TextUtils;
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
 import com.android.internal.telephony.uicc.AdnCapacity;
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
 import com.android.internal.telephony.uicc.AdnRecord;
 import com.android.internal.telephony.uicc.AdnRecordCache;
 import com.android.internal.telephony.uicc.IccCardApplicationStatus.AppType;
 import com.android.internal.telephony.uicc.IccConstants;
 import com.android.internal.telephony.uicc.IccFileHandler;
 import com.android.internal.telephony.uicc.IccRecords;
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
 import com.android.internal.telephony.uicc.SimPhonebookRecordCache;
 import com.android.internal.telephony.uicc.UiccController;
 import com.android.internal.telephony.uicc.UiccProfile;
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
 import com.android.telephony.Rlog;
 
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
 import java.util.List;
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
  * IccPhoneBookInterfaceManager to provide an inter-process communication to
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
  * access ADN-like SIM records.
  */
 public class IccPhoneBookInterfaceManager {
@@ -56,7 +70,9 @@ public class IccPhoneBookInterfaceManager {
     protected Phone mPhone;
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
     protected AdnRecordCache mAdnCache;
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
     protected SimPhonebookRecordCache mSimPbRecordCache;
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
 
     protected static final int EVENT_GET_SIZE_DONE = 1;
     protected static final int EVENT_LOAD_DONE = 2;
@@ -68,7 +84,9 @@ public class IccPhoneBookInterfaceManager {
     }
 
     @UnsupportedAppUsage
+// QTI_BEGIN: 2019-08-07: Telephony: Revert "Move main thread in IccPBIM to other thread to fix deadlock."
     protected Handler mBaseHandler = new Handler() {
+// QTI_END: 2019-08-07: Telephony: Revert "Move main thread in IccPBIM to other thread to fix deadlock."
         @Override
         public void handleMessage(Message msg) {
             AsyncResult ar = (AsyncResult) msg.obj;
@@ -127,13 +145,17 @@ public class IccPhoneBookInterfaceManager {
         if (r != null) {
             mAdnCache = r.getAdnCache();
         }
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
 
         mSimPbRecordCache = new SimPhonebookRecordCache(
                 phone.getContext(), phone.getPhoneId(), phone.mCi);
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
     }
 
     public void dispose() {
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
         mSimPbRecordCache.dispose();
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
     }
 
     public void updateIccRecords(IccRecords iccRecords) {
@@ -154,6 +176,7 @@ public class IccPhoneBookInterfaceManager {
         Rlog.e(LOG_TAG, "[IccPbInterfaceManager] " + msg);
     }
 
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
     private AdnRecord generateAdnRecordWithOldTagByContentValues(ContentValues values) {
         if (values == null) {
             return null;
@@ -168,8 +191,10 @@ public class IccPhoneBookInterfaceManager {
         return new AdnRecord(oldTag, oldPhoneNumber, oldEmailArray, oldAnrArray);
     }
 
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
     private AdnRecord generateAdnRecordWithNewTagByContentValues(
             int efId, int recordNumber, ContentValues values) {
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
         if (values == null) {
             return null;
         }
@@ -180,51 +205,71 @@ public class IccPhoneBookInterfaceManager {
         String[] newEmailArray = TextUtils.isEmpty(newEmail)
                 ? null : getEmailStringArray(newEmail);
         String[] newAnrArray = TextUtils.isEmpty(newAnr) ? null : getAnrStringArray(newAnr);
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
         return new AdnRecord(
                 efId, recordNumber, newTag, newPhoneNumber, newEmailArray, newAnrArray);
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
     }
 
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
     /**
      * Replace oldAdn with newAdn in ADN-like record in EF
      *
      * getAdnRecordsInEf must be called at least once before this function,
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
      * otherwise an error will be returned.
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
      * throws SecurityException if no WRITE_CONTACTS permission
      *
      * @param efid must be one among EF_ADN, EF_FDN, and EF_SDN
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
      * @param values old adn tag,  phone number, email and anr to be replaced
      *        new adn tag,  phone number, email and anr to be stored
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
      * @param pin2 required to update EF_FDN, otherwise must be null
      * @return true for success
      */
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
     public boolean updateAdnRecordsInEfBySearchForSubscriber(int efid, ContentValues values,
             String pin2) {
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
 
         if (mPhone.getContext().checkCallingOrSelfPermission(
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
                 android.Manifest.permission.WRITE_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
             throw new SecurityException("Requires android.permission.WRITE_CONTACTS permission");
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
         }
 
         efid = updateEfForIccType(efid);
 
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
         if (DBG) {
             logd("updateAdnRecordsWithContentValuesInEfBySearch: efid=" + efid + ", values = " +
                 values + ", pin2=" + pin2);
         }
 
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
         checkThread();
         Request updateRequest = new Request();
         synchronized (updateRequest) {
             Message response = mBaseHandler.obtainMessage(EVENT_UPDATE_DONE, updateRequest);
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
             AdnRecord oldAdn = generateAdnRecordWithOldTagByContentValues(values);
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
             if (usesPbCache(efid)) {
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
                 AdnRecord newAdn =
                         generateAdnRecordWithNewTagByContentValues(IccConstants.EF_ADN, 0, values);
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
                 mSimPbRecordCache.updateSimPbAdnBySearch(oldAdn, newAdn, response);
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
                 waitForResult(updateRequest);
                 return (boolean) updateRequest.mResult;
             } else {
                 AdnRecord newAdn = generateAdnRecordWithNewTagByContentValues(efid, 0, values);
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
                 if (mAdnCache != null) {
                     mAdnCache.updateAdnBySearch(efid, oldAdn, newAdn, pin2, response);
                     waitForResult(updateRequest);
@@ -233,6 +278,7 @@ public class IccPhoneBookInterfaceManager {
                     loge("Failure while trying to update by search due to uninitialised adncache");
                     return false;
                 }
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
             }
         }
     }
@@ -248,14 +294,18 @@ public class IccPhoneBookInterfaceManager {
      * @param efid must be one among EF_ADN, EF_FDN, and EF_SDN
      * @param newTag adn tag to be stored
      * @param newPhoneNumber adn number to be stored
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
      *        Set both newTag and newPhoneNumber to "" means to replace the old
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
      *        record with empty one, aka, delete old record
      * @param index is 1-based adn record index to be updated
      * @param pin2 required to update EF_FDN, otherwise must be null
      * @return true for success
      */
     public boolean
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
     updateAdnRecordsInEfByIndex(int efid, ContentValues values, int index, String pin2) {
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
 
         if (mPhone.getContext().checkCallingOrSelfPermission(
                 android.Manifest.permission.WRITE_CONTACTS)
@@ -263,24 +313,31 @@ public class IccPhoneBookInterfaceManager {
             throw new SecurityException(
                     "Requires android.permission.WRITE_CONTACTS permission");
         }
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
         if (DBG) {
             logd("updateAdnRecordsInEfByIndex: efid=" + efid + ", values = " +
                 values + " index=" + index + ", pin2=" + pin2);
         }
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
 
         checkThread();
         Request updateRequest = new Request();
         synchronized (updateRequest) {
             Message response = mBaseHandler.obtainMessage(EVENT_UPDATE_DONE, updateRequest);
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
             if (usesPbCache(efid)) {
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
                 AdnRecord newAdn =
                         generateAdnRecordWithNewTagByContentValues(IccConstants.EF_ADN,
                         index, values);
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
                 mSimPbRecordCache.updateSimPbAdnByRecordId(index, newAdn, response);
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
                 waitForResult(updateRequest);
                 return (boolean) updateRequest.mResult;
             } else {
                 AdnRecord newAdn = generateAdnRecordWithNewTagByContentValues(efid, index, values);
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
                 if (mAdnCache != null) {
                     mAdnCache.updateAdnByIndex(efid, newAdn, index, pin2, response);
                     waitForResult(updateRequest);
@@ -289,6 +346,7 @@ public class IccPhoneBookInterfaceManager {
                     loge("Failure while trying to update by index due to uninitialised adncache");
                     return false;
                 }
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
             }
         }
     }
@@ -348,11 +406,14 @@ public class IccPhoneBookInterfaceManager {
         Request loadRequest = new Request();
         synchronized (loadRequest) {
             Message response = mBaseHandler.obtainMessage(EVENT_LOAD_DONE, loadRequest);
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
             if (usesPbCache(efid)) {
                 mSimPbRecordCache.requestLoadAllPbRecords(response);
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
                 waitForResult(loadRequest);
                 return (List<AdnRecord>) loadRequest.mResult;
             } else {
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
                 if (mAdnCache != null) {
                     mAdnCache.requestLoadAllAdnLike(efid,
                             mAdnCache.extensionEfForEf(efid), response);
@@ -362,6 +423,7 @@ public class IccPhoneBookInterfaceManager {
                     loge("Failure while trying to load from SIM due to uninitialised adncache");
                     return null;
                 }
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
             }
         }
     }
@@ -389,7 +451,9 @@ public class IccPhoneBookInterfaceManager {
     }
 
     @UnsupportedAppUsage
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     protected int updateEfForIccType(int efid) {
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         // Check if we are trying to read ADN records
         if (efid == IccConstants.EF_ADN) {
             if (mPhone.getCurrentUiccAppType() == AppType.APPTYPE_USIM) {
@@ -398,6 +462,7 @@ public class IccPhoneBookInterfaceManager {
         }
         return efid;
     }
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 
     protected String[] getStringArray(String str) {
         if (str != null) {
@@ -406,21 +471,39 @@ public class IccPhoneBookInterfaceManager {
         return null;
     }
 
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
     private String[] getEmailStringArray(String str) {
         return str != null ? str.split(",") : null;
     }
 
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     protected String[] getAnrStringArray(String str) {
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
         return str != null ? str.split(":") : null;
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     }
 
     /**
      * Get the capacity of ADN records
      *
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
      * @return AdnCapacity
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
      */
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
     public AdnCapacity getAdnRecordsCapacity() {
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         if (DBG) logd("getAdnRecordsCapacity" );
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
         if (mPhone.getContext().checkCallingOrSelfPermission(
                 android.Manifest.permission.READ_CONTACTS)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -442,7 +525,9 @@ public class IccPhoneBookInterfaceManager {
                     loge("Adn capacity is null");
                     return null;
                 }
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
 
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
                 if (DBG) logd("getAdnRecordsCapacity on slot " + phoneId
                         + ": max adn=" + capacity.getMaxAdnCount()
                         + ", used adn=" + capacity.getUsedAdnCount()
@@ -461,11 +546,18 @@ public class IccPhoneBookInterfaceManager {
         } else {
             logd("sim state is not ready when getAdnRecordsCapacity.");
         }
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
+// QTI_BEGIN: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
         return null;
+// QTI_END: 2021-05-18: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     }
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 
+// QTI_BEGIN: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs
     private boolean usesPbCache(int efid) {
         return mSimPbRecordCache.isEnabled() &&
                     (efid == IccConstants.EF_PBR || efid == IccConstants.EF_ADN);
     }
 }
+// QTI_END: 2021-05-19: Telephony: Optimize SIM phonebook feature with new batch APIs

@@ -180,12 +180,15 @@ public interface CallFailCause {
      * modem/network.
      */
     int RADIO_RELEASE_ABNORMAL                           = 259;
+// QTI_BEGIN: 2018-09-15: Telephony: Handle CallFailCause ACCESS_CLASS_BLOCKED
     //Access class blocked - TS 31.121 5.2.1
     int ACCESS_CLASS_BLOCKED = 260;
 
+// QTI_END: 2018-09-15: Telephony: Handle CallFailCause ACCESS_CLASS_BLOCKED
     /** Call failed/dropped because of a network detach. */
     int NETWORK_DETACH                                   = 261;
 
+// QTI_BEGIN: 2018-04-11: Telephony: Add CallFailCause values for clear code.
     // Supplementary new disconnect type
     int NO_ROUTE_TO_DESTINATION = 3;
     int CALL_FAIL_NO_USER_RESPONDING = 18;
@@ -205,6 +208,7 @@ public interface CallFailCause {
     int INFORMATION_ELEMENT_NON_EXISTENT = 99;
     int RECOVERY_ON_TIMER_EXPIRED = 102;
 
+// QTI_END: 2018-04-11: Telephony: Add CallFailCause values for clear code.
     //Emergency Redial
     int EMERGENCY_TEMP_FAILURE = 325;
     int EMERGENCY_PERM_FAILURE = 326;

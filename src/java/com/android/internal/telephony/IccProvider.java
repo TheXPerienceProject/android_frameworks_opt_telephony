@@ -53,7 +53,9 @@ public class IccProvider extends ContentProvider {
         "name",
         "number",
         "emails",
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         "anrs",
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         "_id"
     };
 
@@ -66,23 +68,41 @@ public class IccProvider extends ContentProvider {
     protected static final int ADN_ALL = 7;
 
     @VisibleForTesting
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     public static final String STR_TAG = "tag";
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     @VisibleForTesting
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     public static final String STR_NUMBER = "number";
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     @VisibleForTesting
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     public static final String STR_EMAILS = "emails";
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     @VisibleForTesting
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     public static final String STR_ANRS = "anrs";
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     @VisibleForTesting
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     public static final String STR_NEW_TAG = "newTag";
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     @VisibleForTesting
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     public static final String STR_NEW_NUMBER = "newNumber";
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     @VisibleForTesting
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     public static final String STR_NEW_EMAILS = "newEmails";
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     @VisibleForTesting
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     public static final String STR_NEW_ANRS = "newAnrs";
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     @VisibleForTesting
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     public static final String STR_PIN2 = "pin2";
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 
     private static final UriMatcher URL_MATCHER =
                             new UriMatcher(UriMatcher.NO_MATCH);
@@ -226,16 +246,20 @@ public class IccProvider extends ContentProvider {
         String number = initialValues.getAsString(STR_NUMBER);
         String emails = initialValues.getAsString(STR_EMAILS);
         String anrs = initialValues.getAsString(STR_ANRS);
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         ContentValues values = new ContentValues();
         values.put(STR_TAG,"");
         values.put(STR_NUMBER,"");
         values.put(STR_EMAILS,"");
         values.put(STR_ANRS,"");
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         values.put(STR_NEW_TAG, tag);
         values.put(STR_NEW_NUMBER, number);
         values.put(STR_NEW_EMAILS, emails);
         values.put(STR_NEW_ANRS, anrs);
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         boolean success = updateIccRecordInEf(efType, values, pin2, subId);
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 
         if (!success) {
             return null;
@@ -328,11 +352,15 @@ public class IccProvider extends ContentProvider {
         // parse where clause
         String tag = null;
         String number = null;
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         String emails = null;
         String anrs = null;
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         String pin2 = null;
 
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         String[] tokens = where.split(" AND ");
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         int n = tokens.length;
 
         while (--n >= 0) {
@@ -353,28 +381,36 @@ public class IccProvider extends ContentProvider {
             } else if (STR_NUMBER.equals(key)) {
                 number = normalizeValue(val);
             } else if (STR_EMAILS.equals(key)) {
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
                 emails = normalizeValue(val);
             } else if (STR_ANRS.equals(key)) {
                 anrs = normalizeValue(val);
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
             } else if (STR_PIN2.equals(key)) {
                 pin2 = normalizeValue(val);
             }
         }
 
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         ContentValues values = new ContentValues();
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         values.put(STR_TAG, tag);
         values.put(STR_NUMBER, number);
         values.put(STR_EMAILS, emails);
         values.put(STR_ANRS, anrs);
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         values.put(STR_NEW_TAG,"");
         values.put(STR_NEW_NUMBER,"");
         values.put(STR_NEW_EMAILS,"");
         values.put(STR_NEW_ANRS,"");
         if ((efType == FDN) && TextUtils.isEmpty(pin2)) {
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
             return 0;
         }
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         if (DBG) log("delete mvalues= " + values);
         boolean success = updateIccRecordInEf(efType, values, pin2, subId);
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         if (!success) {
             return 0;
         }
@@ -420,7 +456,9 @@ public class IccProvider extends ContentProvider {
                         "Cannot insert into URL: " + url);
         }
 
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         boolean success = updateIccRecordInEf(efType, values, pin2, subId);
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 
         if (!success) {
             return 0;
@@ -454,7 +492,9 @@ public class IccProvider extends ContentProvider {
             // Load the results
             final int N = adnRecords.size();
             final MatrixCursor cursor = new MatrixCursor(ADDRESS_BOOK_COLUMN_NAMES, N);
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
             log("adnRecords.size=" + N);
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
             for (int i = 0; i < N ; i++) {
                 loadRecord(adnRecords.get(i), cursor, i);
             }
@@ -467,9 +507,13 @@ public class IccProvider extends ContentProvider {
     }
 
     private boolean
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     updateIccRecordInEf(int efType, ContentValues values, String pin2, int subId) {
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         boolean success = false;
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         if (DBG) log("updateIccRecordInEf: efType=" + efType +
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
                 ", values: [ "+ values + "  ], subId:" + subId);
         try {
             IIccPhoneBook iccIpb = IIccPhoneBook.Stub.asInterface(
@@ -478,9 +522,13 @@ public class IccProvider extends ContentProvider {
                             .getIccPhoneBookServiceRegisterer()
                             .get());
             if (iccIpb != null) {
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
                 success = iccIpb
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
                         .updateAdnRecordsInEfBySearchForSubscriber(
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
                             subId, efType, values, pin2);
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
             }
         } catch (RemoteException ex) {
             // ignore it
@@ -500,7 +548,9 @@ public class IccProvider extends ContentProvider {
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
     private void loadRecord(AdnRecord record, MatrixCursor cursor, int id) {
         if (!record.isEmpty()) {
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
             Object[] contact = new Object[5];
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
             String alphaTag = record.getAlphaTag();
             String number = record.getNumber();
             if (DBG) log("loadRecord: " + alphaTag + ", " + Rlog.pii(TAG, number));
@@ -519,6 +569,7 @@ public class IccProvider extends ContentProvider {
             }
 
             String[] anrs = record.getAdditionalNumbers();
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
             if (anrs != null) {
                 StringBuilder anrString = new StringBuilder();
                 for (String anr : anrs) {
@@ -530,6 +581,7 @@ public class IccProvider extends ContentProvider {
             }
 
             contact[4] = id;
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
             cursor.addRow(contact);
         }
     }

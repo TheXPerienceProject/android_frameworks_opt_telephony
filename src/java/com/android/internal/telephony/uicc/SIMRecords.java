@@ -669,7 +669,9 @@ public class SIMRecords extends IccRecords {
                 /* IO events */
                 case EVENT_GET_IMSI_DONE:
                     isRecordLoadResponse = true;
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
                     mEssentialRecordsToLoad -= 1;
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
                     ar = (AsyncResult) msg.obj;
 
                     if (ar.exception != null) {
@@ -776,7 +778,9 @@ public class SIMRecords extends IccRecords {
 
                 case EVENT_GET_MSISDN_DONE:
                     isRecordLoadResponse = true;
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
                     mEssentialRecordsToLoad -= 1;
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
 
                     ar = (AsyncResult) msg.obj;
 
@@ -851,7 +855,9 @@ public class SIMRecords extends IccRecords {
 
                 case EVENT_GET_ICCID_DONE:
                     isRecordLoadResponse = true;
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
                     mEssentialRecordsToLoad -= 1;
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
 
                     ar = (AsyncResult) msg.obj;
                     data = (byte[]) ar.result;
@@ -868,8 +874,10 @@ public class SIMRecords extends IccRecords {
 
                 case EVENT_GET_AD_DONE:
                     isRecordLoadResponse = true;
+// QTI_BEGIN: 2020-01-23: Telephony: Fix data call issue due to improper mnc length
                     mEssentialRecordsToLoad -= 1;
 
+// QTI_END: 2020-01-23: Telephony: Fix data call issue due to improper mnc length
                     mMncLength = UNKNOWN;
                     try {
                         if (!mCarrierTestOverride.isInTestMode()) {
@@ -906,7 +914,9 @@ public class SIMRecords extends IccRecords {
 
                 case EVENT_GET_SPN_DONE:
                     isRecordLoadResponse = true;
+// QTI_BEGIN: 2020-03-05: Telephony: Fetch SPN before initiating data attach
                     mEssentialRecordsToLoad -= 1;
+// QTI_END: 2020-03-05: Telephony: Fetch SPN before initiating data attach
                     ar = (AsyncResult) msg.obj;
                     getSpnFsm(false, ar);
                     break;
@@ -1164,7 +1174,9 @@ public class SIMRecords extends IccRecords {
 
                 case EVENT_GET_GID1_DONE:
                     isRecordLoadResponse = true;
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
                     mEssentialRecordsToLoad -= 1;
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
 
                     ar = (AsyncResult) msg.obj;
                     data = (byte[]) ar.result;
@@ -1183,7 +1195,9 @@ public class SIMRecords extends IccRecords {
 
                 case EVENT_GET_GID2_DONE:
                     isRecordLoadResponse = true;
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
                     mEssentialRecordsToLoad -= 1;
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
                     ar = (AsyncResult) msg.obj;
                     data = (byte[]) ar.result;
 
@@ -1396,10 +1410,12 @@ public class SIMRecords extends IccRecords {
         }
 
         public void onRecordLoaded(AsyncResult ar) {
+// QTI_BEGIN: 2020-05-07: Telephony: Fix data call issue due to SPN load failure
             if (ar.exception != null) {
                 loge("Record Load Exception: " + ar.exception);
                 return;
             }
+// QTI_END: 2020-05-07: Telephony: Fix data call issue due to SPN load failure
             mEfPl = (byte[]) ar.result;
             if (DBG) log("EF_PL=" + IccUtils.bytesToHexString(mEfPl));
         }
@@ -1411,10 +1427,12 @@ public class SIMRecords extends IccRecords {
         }
 
         public void onRecordLoaded(AsyncResult ar) {
+// QTI_BEGIN: 2020-05-07: Telephony: Fix data call issue due to SPN load failure
             if (ar.exception != null) {
                 loge("Record Load Exception: " + ar.exception);
                 return;
             }
+// QTI_END: 2020-05-07: Telephony: Fix data call issue due to SPN load failure
             mEfLi = (byte[]) ar.result;
             if (DBG) log("EF_LI=" + IccUtils.bytesToHexString(mEfLi));
         }
@@ -1446,7 +1464,9 @@ public class SIMRecords extends IccRecords {
                 break;
             case EF_MSISDN:
                 mRecordsToLoad++;
+// QTI_BEGIN: 2020-04-14: Telephony: Fix wrong decreasing the ref count of the essential record in SIM refreshing
                 mEssentialRecordsToLoad++;
+// QTI_END: 2020-04-14: Telephony: Fix wrong decreasing the ref count of the essential record in SIM refreshing
                 log("SIM Refresh called for EF_MSISDN");
                 new AdnRecordLoader(mFh).loadFromEF(EF_MSISDN, getExtFromEf(EF_MSISDN), 1,
                         obtainMessage(EVENT_GET_MSISDN_DONE));
@@ -1529,18 +1549,24 @@ public class SIMRecords extends IccRecords {
         mRecordsToLoad -= 1;
         if (DBG) log("onRecordLoaded " + mRecordsToLoad + " requested: " + mRecordsRequested);
 
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
         if (getEssentialRecordsLoaded() && !mEssentialRecordsListenerNotified) {
             onAllEssentialRecordsLoaded();
         }
 
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
         if (getRecordsLoaded()) {
             onAllRecordsLoaded();
         } else if (getLockedRecordsLoaded() || getNetworkLockedRecordsLoaded()) {
             onLockedAllRecordsLoaded();
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
         }else if (mRecordsToLoad < 0 || mEssentialRecordsToLoad < 0) {
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
             loge("recordsToLoad <0, programmer error suspected");
             mRecordsToLoad = 0;
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
             mEssentialRecordsToLoad = 0;
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
         }
     }
 
@@ -1584,30 +1610,41 @@ public class SIMRecords extends IccRecords {
     }
 
     @Override
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
     protected void onAllEssentialRecordsLoaded() {
         if (DBG) log("Essential record load complete");
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
 
         String operator = getOperatorNumeric();
         if (!TextUtils.isEmpty(operator)) {
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
             log("onAllEssentialRecordsLoaded set 'gsm.sim.operator.numeric' to operator='" +
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
                     operator + "'");
             mTelephonyManager.setSimOperatorNumericForPhone(
                     mParentApp.getPhoneId(), operator);
         } else {
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
             log("onAllEssentialRecordsLoaded empty 'gsm.sim.operator.numeric' skipping");
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
         }
 
         String imsi = getIMSI();
 
         if (!TextUtils.isEmpty(imsi) && imsi.length() >= 3) {
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
             log("onEssentialAllRecordsLoaded set mcc imsi" + (VDBG ? ("=" + imsi) : ""));
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
             mTelephonyManager.setSimCountryIsoForPhone(
                     mParentApp.getPhoneId(), MccTable.countryCodeForMcc(imsi.substring(0, 3)));
         } else {
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
             log("onEssentialAllRecordsLoaded empty imsi skipping setting mcc");
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
         }
 
         setVoiceMailByCountry(operator);
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
         mEssentialRecordsListenerNotified = true;
         mEssentialRecordsLoadedRegistrants.notifyRegistrants(new AsyncResult(null, null, null));
     }
@@ -1619,6 +1656,7 @@ public class SIMRecords extends IccRecords {
         setSimLanguageFromEF();
         setVoiceCallForwardingFlagFromSimRecords();
 
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
         mLoaded.set(true);
         mRecordsLoadedRegistrants.notifyRegistrants(new AsyncResult(null, null, null));
     }
@@ -1674,7 +1712,9 @@ public class SIMRecords extends IccRecords {
 
         mFh.loadEFTransparent(EF_ICCID, obtainMessage(EVENT_GET_ICCID_DONE));
         mRecordsToLoad++;
+// QTI_BEGIN: 2020-02-25: Telephony: Fix SIM can't get loaded after unlocking
         mEssentialRecordsToLoad++;
+// QTI_END: 2020-02-25: Telephony: Fix SIM can't get loaded after unlocking
     }
 
     private void loadEfLiAndEfPl() {
@@ -1697,24 +1737,33 @@ public class SIMRecords extends IccRecords {
         mRecordsToLoad++;
     }
 
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
     private void fetchEssentialSimRecords() {
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
+// QTI_BEGIN: 2020-02-25: Telephony: Fix SIM can't get loaded after unlocking
         if (DBG) log("fetchEssentialSimRecords: mRecordsToLoad = " + mRecordsToLoad
                 + " mEssentialRecordsToLoad = " + mEssentialRecordsToLoad);
         mEssentialRecordsListenerNotified = false;
+// QTI_END: 2020-02-25: Telephony: Fix SIM can't get loaded after unlocking
 
         mCi.getIMSIForApp(mParentApp.getAid(), obtainMessage(EVENT_GET_IMSI_DONE));
         mRecordsToLoad++;
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
         mEssentialRecordsToLoad++;
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
 
         mFh.loadEFTransparent(EF_ICCID, obtainMessage(EVENT_GET_ICCID_DONE));
         mRecordsToLoad++;
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
         mEssentialRecordsToLoad++;
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
 
         // FIXME should examine EF[MSISDN]'s capability configuration
         // to determine which is the voice/data/fax line
         new AdnRecordLoader(mFh).loadFromEF(EF_MSISDN, getExtFromEf(EF_MSISDN), 1,
                     obtainMessage(EVENT_GET_MSISDN_DONE));
         mRecordsToLoad++;
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
         mEssentialRecordsToLoad++;
 
         mFh.loadEFTransparent(EF_GID1, obtainMessage(EVENT_GET_GID1_DONE));
@@ -1725,22 +1774,31 @@ public class SIMRecords extends IccRecords {
         mRecordsToLoad++;
         mEssentialRecordsToLoad++;
 
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
+// QTI_BEGIN: 2020-01-23: Telephony: Fix data call issue due to improper mnc length
         mFh.loadEFTransparent(EF_AD, obtainMessage(EVENT_GET_AD_DONE));
         mRecordsToLoad++;
         mEssentialRecordsToLoad++;
 
+// QTI_END: 2020-01-23: Telephony: Fix data call issue due to improper mnc length
+// QTI_BEGIN: 2020-03-05: Telephony: Fetch SPN before initiating data attach
         getSpnFsm(true, null);
+// QTI_END: 2020-03-05: Telephony: Fetch SPN before initiating data attach
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
         if (DBG) log("fetchEssentialSimRecords " + mRecordsToLoad +
                 " requested: " + mRecordsRequested);
     }
 
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
     protected void fetchSimRecords() {
         mRecordsRequested = true;
 
         fetchEssentialSimRecords();
 
         if (DBG) log("fetchSimRecords " + mRecordsToLoad);
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
 
         // Record number is subscriber profile
         mFh.loadEFLinearFixed(EF_MBI, 1, obtainMessage(EVENT_GET_MBI_DONE));
@@ -1800,7 +1858,9 @@ public class SIMRecords extends IccRecords {
         mRecordsToLoad++;
 
         loadEfLiAndEfPl();
+// QTI_BEGIN: 2018-03-08: Telephony: Get SIM card capacity of SMS
         mFh.getEFLinearRecordSize(EF_SMS, obtainMessage(EVENT_GET_SMS_RECORD_SIZE_DONE));
+// QTI_END: 2018-03-08: Telephony: Get SIM card capacity of SMS
         mRecordsToLoad++;
 
         mFh.loadEFLinearFixed(EF_PSISMSC, 1, obtainMessage(EVENT_GET_PSISMSC_DONE));
@@ -1897,7 +1957,9 @@ public class SIMRecords extends IccRecords {
                 mFh.loadEFTransparent(EF_SPN,
                         obtainMessage(EVENT_GET_SPN_DONE));
                 mRecordsToLoad++;
+// QTI_BEGIN: 2020-03-05: Telephony: Fetch SPN before initiating data attach
                 mEssentialRecordsToLoad++;
+// QTI_END: 2020-03-05: Telephony: Fetch SPN before initiating data attach
 
                 mSpnState = GetSpnFsmState.READ_SPN_3GPP;
                 break;
@@ -1934,7 +1996,9 @@ public class SIMRecords extends IccRecords {
                     mFh.loadEFTransparent( EF_SPN_CPHS,
                             obtainMessage(EVENT_GET_SPN_DONE));
                     mRecordsToLoad++;
+// QTI_BEGIN: 2020-03-05: Telephony: Fetch SPN before initiating data attach
                     mEssentialRecordsToLoad++;
+// QTI_END: 2020-03-05: Telephony: Fetch SPN before initiating data attach
 
                     mCarrierNameDisplayCondition = DEFAULT_CARRIER_NAME_DISPLAY_CONDITION;
                 }
@@ -1969,7 +2033,9 @@ public class SIMRecords extends IccRecords {
                     mFh.loadEFTransparent(
                             EF_SPN_SHORT_CPHS, obtainMessage(EVENT_GET_SPN_DONE));
                     mRecordsToLoad++;
+// QTI_BEGIN: 2020-03-05: Telephony: Fetch SPN before initiating data attach
                     mEssentialRecordsToLoad++;
+// QTI_END: 2020-03-05: Telephony: Fetch SPN before initiating data attach
                 }
                 break;
             case READ_SPN_SHORT_CPHS:

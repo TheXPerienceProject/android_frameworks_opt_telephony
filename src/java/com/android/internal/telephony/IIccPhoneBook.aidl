@@ -16,8 +16,10 @@
 
 package com.android.internal.telephony;
 
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 import android.content.ContentValues;
 
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 import com.android.internal.telephony.uicc.AdnCapacity;
 import com.android.internal.telephony.uicc.AdnRecord;
 
@@ -71,6 +73,7 @@ interface IIccPhoneBook {
             String newTag, String newPhoneNumber,
             String pin2);
 
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     /**
      * Replace oldAdn with newAdn in ADN-like record in EF
      *
@@ -83,9 +86,12 @@ interface IIccPhoneBook {
      * @param pin2 required to update EF_FDN, otherwise must be null
      * @return true for success
      */
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     boolean updateAdnRecordsInEfBySearchForSubscriber(int subId,
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
             int efid, in ContentValues values, String pin2);
 
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     /**
      * Update an ADN-like EF record by record index
      *
@@ -127,18 +133,26 @@ interface IIccPhoneBook {
     @UnsupportedAppUsage
     int[] getAdnRecordsSizeForSubscriber(int subId, int efid);
 
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     /**
      * Get the capacity of ADN records
      *
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
      * @return AdnCapacity
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
      */
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     AdnCapacity getAdnRecordsCapacity();
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 
     /**
      * Get the capacity of ADN records
      *
      * @param subId user preferred subId
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
      * @return AdnCapacity
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
      */
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     AdnCapacity getAdnRecordsCapacityForSubscriber(int subId);
 }

@@ -53,7 +53,9 @@ public class CarrierTestOverride {
        </carrierTestOverrides>
      */
     static final String DATA_CARRIER_TEST_OVERRIDE_PATH =
+// QTI_BEGIN: 2021-09-27: Telephony: Carrier Test Override Multisim Support.
             "/user_de/0/com.android.phone/files/carrier_test_conf_sim";
+// QTI_END: 2021-09-27: Telephony: Carrier Test Override Multisim Support.
     static final String CARRIER_TEST_XML_HEADER = "carrierTestOverrides";
     static final String CARRIER_TEST_XML_SUBHEADER = "carrierTestOverride";
     static final String CARRIER_TEST_XML_ITEM_KEY = "key";
@@ -69,9 +71,13 @@ public class CarrierTestOverride {
 
     private HashMap<String, String> mCarrierTestParamMap;
 
+// QTI_BEGIN: 2021-09-27: Telephony: Carrier Test Override Multisim Support.
     CarrierTestOverride(int phoneId) {
+// QTI_END: 2021-09-27: Telephony: Carrier Test Override Multisim Support.
         mCarrierTestParamMap = new HashMap<String, String>();
+// QTI_BEGIN: 2021-09-27: Telephony: Carrier Test Override Multisim Support.
         loadCarrierTestOverrides(phoneId);
+// QTI_END: 2021-09-27: Telephony: Carrier Test Override Multisim Support.
     }
 
     boolean isInTestMode() {
@@ -169,12 +175,16 @@ public class CarrierTestOverride {
         mCarrierTestParamMap.put(CARRIER_TEST_XML_ITEM_KEY_STRING_SPN, spn);
     }
 
+// QTI_BEGIN: 2021-09-27: Telephony: Carrier Test Override Multisim Support.
     private void loadCarrierTestOverrides(int phoneId) {
+// QTI_END: 2021-09-27: Telephony: Carrier Test Override Multisim Support.
 
         FileReader carrierTestConfigReader;
+// QTI_BEGIN: 2021-09-27: Telephony: Carrier Test Override Multisim Support.
         String filePath = DATA_CARRIER_TEST_OVERRIDE_PATH + Integer.toString(phoneId) + ".xml";
         Rlog.d(LOG_TAG, "File path : " + filePath);
         File carrierTestConfigFile = new File(Environment.getDataDirectory(), filePath);
+// QTI_END: 2021-09-27: Telephony: Carrier Test Override Multisim Support.
 
         try {
             carrierTestConfigReader = new FileReader(carrierTestConfigFile);

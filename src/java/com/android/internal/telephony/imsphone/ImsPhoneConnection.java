@@ -270,8 +270,10 @@ public class ImsPhoneConnection extends Connection implements
 
         mDialString = dialString;
 
+// QTI_BEGIN: 2020-03-27: Telephony: Ims: Clean-up old ConfURI implementation
         mAddress = PhoneNumberUtils.extractNetworkPortionAlt(dialString);
         mPostDialString = PhoneNumberUtils.extractPostDialPortion(dialString);
+// QTI_END: 2020-03-27: Telephony: Ims: Clean-up old ConfURI implementation
 
         //mIndex = -1;
 
@@ -359,22 +361,34 @@ public class ImsPhoneConnection extends Connection implements
         capabilities = removeCapability(capabilities,
                 Connection.Capability.SUPPORTS_VT_LOCAL_BIDIRECTIONAL);
 
+// QTI_BEGIN: 2019-05-17: Telephony: Revert "IMS: Update capabilities based on call type"
         if (!mIsLocalVideoCapable) {
             Rlog.i(LOG_TAG, "applyLocalCallCapabilities - disabling video (overidden)");
             return capabilities;
         }
+// QTI_END: 2019-05-17: Telephony: Revert "IMS: Update capabilities based on call type"
         switch (localProfile.mCallType) {
+// QTI_BEGIN: 2019-03-14: Telephony: IMS: Update capabilities based on call type
             case ImsCallProfile.CALL_TYPE_VT:
+// QTI_END: 2019-03-14: Telephony: IMS: Update capabilities based on call type
+// QTI_BEGIN: 2019-05-17: Telephony: Revert "IMS: Update capabilities based on call type"
                 // Fall-through
             case ImsCallProfile.CALL_TYPE_VIDEO_N_VOICE:
+// QTI_END: 2019-05-17: Telephony: Revert "IMS: Update capabilities based on call type"
+// QTI_BEGIN: 2019-03-14: Telephony: IMS: Update capabilities based on call type
                 capabilities = addCapability(capabilities,
                         Connection.Capability.SUPPORTS_VT_LOCAL_BIDIRECTIONAL);
                 break;
             case ImsCallProfile.CALL_TYPE_VT_NODIR:
+// QTI_END: 2019-03-14: Telephony: IMS: Update capabilities based on call type
+// QTI_BEGIN: 2019-05-17: Telephony: Revert "IMS: Update capabilities based on call type"
                 capabilities = removeCapability(capabilities,
                         Connection.Capability.SUPPORTS_DOWNGRADE_TO_VOICE_LOCAL);
+// QTI_END: 2019-05-17: Telephony: Revert "IMS: Update capabilities based on call type"
+// QTI_BEGIN: 2019-03-14: Telephony: IMS: Update capabilities based on call type
                 break;
         }
+// QTI_END: 2019-03-14: Telephony: IMS: Update capabilities based on call type
         return capabilities;
     }
 
@@ -386,25 +400,39 @@ public class ImsPhoneConnection extends Connection implements
                 Connection.Capability.SUPPORTS_RTT_REMOTE);
 
         switch (remoteProfile.mCallType) {
+// QTI_BEGIN: 2019-03-14: Telephony: IMS: Update capabilities based on call type
             case ImsCallProfile.CALL_TYPE_VT:
+// QTI_END: 2019-03-14: Telephony: IMS: Update capabilities based on call type
+// QTI_BEGIN: 2019-05-17: Telephony: Revert "IMS: Update capabilities based on call type"
                 // fall-through
             case ImsCallProfile.CALL_TYPE_VIDEO_N_VOICE:
+// QTI_END: 2019-05-17: Telephony: Revert "IMS: Update capabilities based on call type"
+// QTI_BEGIN: 2019-03-14: Telephony: IMS: Update capabilities based on call type
                 capabilities = addCapability(capabilities,
                         Connection.Capability.SUPPORTS_VT_REMOTE_BIDIRECTIONAL);
                 break;
             case ImsCallProfile.CALL_TYPE_VT_NODIR:
+// QTI_END: 2019-03-14: Telephony: IMS: Update capabilities based on call type
+// QTI_BEGIN: 2019-05-17: Telephony: Revert "IMS: Update capabilities based on call type"
                 capabilities = removeCapability(capabilities,
                         Connection.Capability.SUPPORTS_DOWNGRADE_TO_VOICE_REMOTE);
+// QTI_END: 2019-05-17: Telephony: Revert "IMS: Update capabilities based on call type"
+// QTI_BEGIN: 2019-03-14: Telephony: IMS: Update capabilities based on call type
                 break;
+// QTI_END: 2019-03-14: Telephony: IMS: Update capabilities based on call type
         }
+// QTI_BEGIN: 2018-05-21: Telephony: IMS: Propagate RTT capability of the called party to UI
 
         if (remoteProfile.getMediaProfile().getRttMode() == ImsStreamMediaProfile.RTT_MODE_FULL) {
+// QTI_END: 2018-05-21: Telephony: IMS: Propagate RTT capability of the called party to UI
             capabilities = addCapability(capabilities, Connection.Capability.SUPPORTS_RTT_REMOTE);
         }
 
         if (remoteProfile.getMediaProfile().getRttMode() == ImsStreamMediaProfile.RTT_MODE_FULL) {
+// QTI_BEGIN: 2018-05-21: Telephony: IMS: Propagate RTT capability of the called party to UI
             capabilities = addCapability(capabilities, Connection.Capability.SUPPORTS_RTT_REMOTE);
         }
+// QTI_END: 2018-05-21: Telephony: IMS: Propagate RTT capability of the called party to UI
         return capabilities;
     }
 
@@ -503,6 +531,7 @@ public class ImsPhoneConnection extends Connection implements
         }
     }
 
+// QTI_BEGIN: 2022-03-03: Telephony: Fix ordering of calls when initiating ECT from UI.
     private boolean canTransfer(ImsPhoneConnection connection) {
         ImsCall bgImsCall = connection != null ? connection.getImsCall() : null;
         return (mImsCall != null && mParent != null
@@ -511,8 +540,10 @@ public class ImsPhoneConnection extends Connection implements
                 && connection.mParent.getState() == ImsPhoneCall.State.HOLDING);
     }
 
+// QTI_END: 2022-03-03: Telephony: Fix ordering of calls when initiating ECT from UI.
     @Override
     public void consultativeTransfer(Connection other) throws CallStateException {
+// QTI_BEGIN: 2022-03-03: Telephony: Fix ordering of calls when initiating ECT from UI.
         ImsPhoneConnection bgConnection = (ImsPhoneConnection) other;
         ImsCall bgImsCall = bgConnection != null ? bgConnection.getImsCall() : null;
 
@@ -520,11 +551,14 @@ public class ImsPhoneConnection extends Connection implements
             throw new CallStateException("no valid ims call to transfer");
         }
 
+// QTI_END: 2022-03-03: Telephony: Fix ordering of calls when initiating ECT from UI.
         try {
+// QTI_BEGIN: 2022-03-03: Telephony: Fix ordering of calls when initiating ECT from UI.
             // Per 3GPP TS 24.629 - A.2, the signalling for a consultative transfer should send the
             // REFER on the background held call with the foreground call specified as the
             // destination.
             bgImsCall.consultativeTransfer(mImsCall);
+// QTI_END: 2022-03-03: Telephony: Fix ordering of calls when initiating ECT from UI.
         } catch (ImsException e) {
             throw new CallStateException("cannot transfer call");
         }
@@ -1138,6 +1172,7 @@ public class ImsPhoneConnection extends Connection implements
                 changed = true;
             }
 
+// QTI_BEGIN: 2018-04-03: Telephony: IMS-VT: Set whether video is enabled locally or not.
             if (!mOwner.isViLteDataMetered()) {
                 Rlog.v(LOG_TAG, "data is not metered");
             } else {
@@ -1147,6 +1182,7 @@ public class ImsPhoneConnection extends Connection implements
                 }
             }
 
+// QTI_END: 2018-04-03: Telephony: IMS-VT: Set whether video is enabled locally or not.
             boolean mediaAttributesChanged = false;
 
             // Metrics for audio codec

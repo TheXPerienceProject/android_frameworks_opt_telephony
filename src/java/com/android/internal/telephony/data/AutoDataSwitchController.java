@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+// QTI_BEGIN: 2025-02-26: Telephony: Fix license marking
 /*
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
+// QTI_END: 2025-02-26: Telephony: Fix license marking
 package com.android.internal.telephony.data;
 
 import static android.net.NetworkCapabilities.TRANSPORT_CELLULAR;
@@ -57,7 +59,9 @@ import android.util.LocalLog;
 
 import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.PhoneFactory;
+// QTI_BEGIN: 2024-09-04: Telephony: Fix to update AutoDataSwitch threshold values
 import com.android.internal.telephony.data.DataConfigManager.DataConfigManagerCallback;
+// QTI_END: 2024-09-04: Telephony: Fix to update AutoDataSwitch threshold values
 import com.android.internal.telephony.flags.FeatureFlags;
 import com.android.internal.telephony.flags.FeatureFlagsImpl;
 import com.android.internal.telephony.subscription.SubscriptionInfoInternal;
@@ -496,7 +500,9 @@ public class AutoDataSwitchController extends Handler {
      * Read the default device config from any default phone because the resource config are per
      * device. No need to register callback for the same reason.
      */
+// QTI_BEGIN: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
     public void readDeviceResourceConfig() {
+// QTI_END: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
         Phone phone = PhoneFactory.getDefaultPhone();
         DataConfigManager dataConfig = phone.getDataNetworkController().getDataConfigManager();
         mScoreTolerance = dataConfig.getAutoDataSwitchScoreTolerance();

@@ -48,7 +48,9 @@ public class AdnRecord implements Parcelable {
     String mNumber = null;
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
     String[] mEmails;
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     String[] mAdditionalNumbers = null;
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
     int mExtRecord = 0xff;
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
@@ -91,7 +93,9 @@ public class AdnRecord implements Parcelable {
             String alphaTag;
             String number;
             String[] emails;
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
             String[] additionalNumbers;
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 
             efid = source.readInt();
             recordNumber = source.readInt();
@@ -100,7 +104,9 @@ public class AdnRecord implements Parcelable {
             emails = source.createStringArray();
             additionalNumbers = source.createStringArray();
 
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
             return new AdnRecord(efid, recordNumber, alphaTag, number, emails, additionalNumbers);
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         }
 
         @Override
@@ -175,10 +181,12 @@ public class AdnRecord implements Parcelable {
         this(0, 0, alphaTag, number, emails);
     }
 
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     public AdnRecord(String alphaTag, String number, String[] emails, String[] additionalNumbers) {
         this(0, 0, alphaTag, number, emails, additionalNumbers);
     }
 
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
     public AdnRecord (int efid, int recordNumber, String alphaTag, String number, String[] emails) {
         this.mEfid = efid;
@@ -186,6 +194,7 @@ public class AdnRecord implements Parcelable {
         this.mAlphaTag = alphaTag;
         this.mNumber = number;
         this.mEmails = emails;
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         this.mAdditionalNumbers = null;
     }
 
@@ -197,6 +206,7 @@ public class AdnRecord implements Parcelable {
         this.mNumber = number;
         this.mEmails = emails;
         this.mAdditionalNumbers = additionalNumbers;
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     }
 
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
@@ -206,7 +216,9 @@ public class AdnRecord implements Parcelable {
         this.mAlphaTag = alphaTag;
         this.mNumber = number;
         this.mEmails = null;
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         this.mAdditionalNumbers = null;
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     }
 
     //***** Instance Methods
@@ -246,19 +258,25 @@ public class AdnRecord implements Parcelable {
         this.mEmails = emails;
     }
 
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     public String[] getAdditionalNumbers() {
         return mAdditionalNumbers;
     }
 
     public void setAdditionalNumbers(String[] additionalNumbers) {
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         mAdditionalNumbers = additionalNumbers;
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     }
 
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     @Override
     public String toString() {
         return "ADN Record '" + mAlphaTag + "' '" + Rlog.pii(LOG_TAG, mNumber) + " "
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
                 + Rlog.pii(LOG_TAG, mEmails) + " "
                 + Rlog.pii(LOG_TAG, mAdditionalNumbers) + "'";
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     }
 
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
@@ -285,12 +303,14 @@ public class AdnRecord implements Parcelable {
         return (s1.equals(s2));
     }
 
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     /** Help function for ANR/EMAIL array compare. */
     private static boolean arrayCompareNullEqualsEmpty(String s1[], String s2[]) {
         if (s1 == s2) {
             return true;
         }
 
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         s1 = ArrayUtils.emptyIfNull(s1, String.class);
         s2 = ArrayUtils.emptyIfNull(s2, String.class);
 
@@ -299,11 +319,15 @@ public class AdnRecord implements Parcelable {
 
         if (src.size() != dest.size()) {
             return false;
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         }
 
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         return src.containsAll(dest);
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     }
 
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     public boolean isEqual(AdnRecord adn) {
         return ( stringCompareNullEqualsEmpty(mAlphaTag, adn.mAlphaTag) &&
                 stringCompareNullEqualsEmpty(mNumber, adn.mNumber) &&
@@ -325,7 +349,9 @@ public class AdnRecord implements Parcelable {
         dest.writeString(mAlphaTag);
         dest.writeString(mNumber);
         dest.writeStringArray(mEmails);
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         dest.writeStringArray(mAdditionalNumbers);
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
     }
 
     /**
@@ -366,15 +392,21 @@ public class AdnRecord implements Parcelable {
             return null;
         } else {
             if (!TextUtils.isEmpty(mNumber)) {
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
                 bcdNumber = PhoneNumberUtils.numberToCalledPartyBCD(
                         mNumber, PhoneNumberUtils.BCD_EXTENDED_TYPE_EF_ADN);
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
                 System.arraycopy(bcdNumber, 0, adnString,
                         footerOffset + ADN_TON_AND_NPI, bcdNumber.length);
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
 
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
                 adnString[footerOffset + ADN_BCD_NUMBER_LENGTH]
                         = (byte) (bcdNumber.length);
             }
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
             adnString[footerOffset + ADN_CAPABILITY_ID]
                     = (byte) 0xFF; // Capability Id
             adnString[footerOffset + ADN_EXTENSION_ID]
@@ -459,13 +491,17 @@ public class AdnRecord implements Parcelable {
             mExtRecord = 0xff & record[record.length - 1];
 
             mEmails = null;
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
             mAdditionalNumbers = null;
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         } catch (RuntimeException ex) {
             Rlog.w(LOG_TAG, "Error parsing AdnRecord", ex);
             mNumber = "";
             mAlphaTag = "";
             mEmails = null;
+// QTI_BEGIN: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
             mAdditionalNumbers = null;
+// QTI_END: 2018-03-08: Telephony: SimPhoneBook: Add ANR/EMAIL support for USIM phonebook.
         }
     }
 }

@@ -96,7 +96,9 @@ import com.android.internal.telephony.Call;
 import com.android.internal.telephony.CallStateException;
 import com.android.internal.telephony.CommandsInterface;
 import com.android.internal.telephony.Connection;
+// QTI_BEGIN: 2019-04-16: Telephony: Handle ECBM mode for both the SUBs to place calls in ECBM mode
 import com.android.internal.telephony.EcbmHandler;
+// QTI_END: 2019-04-16: Telephony: Handle ECBM mode for both the SUBs to place calls in ECBM mode
 import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.TelephonyIntents;
@@ -131,7 +133,9 @@ public class ImsPhoneTest extends TelephonyTest {
     Connection mConnection;
     ImsUtInterface mImsUtInterface;
     private FeatureFlags mFeatureFlags;
+// QTI_BEGIN: 2020-09-14: Telephony: Fix FrameworksTelephonyTests UT failures
     EcbmHandler mEcbmHandler;
+// QTI_END: 2020-09-14: Telephony: Fix FrameworksTelephonyTests UT failures
 
     private final Executor mExecutor = Runnable::run;
 
@@ -184,11 +188,15 @@ public class ImsPhoneTest extends TelephonyTest {
         mImsPhoneUT.setImsStats(mImsStats);
         doReturn(mImsUtInterface).when(mImsCT).getUtInterface();
         // When the mock GsmCdmaPhone gets setIsInEcbm called, ensure isInEcm matches.
+// QTI_BEGIN: 2020-09-14: Telephony: Fix FrameworksTelephonyTests UT failures
         // TODO: Move this to a separate test class for EcbmHandler
+// QTI_END: 2020-09-14: Telephony: Fix FrameworksTelephonyTests UT failures
         doAnswer(invocation -> {
             mIsPhoneUtInEcm = (Boolean) invocation.getArguments()[0];
             return null;
+// QTI_BEGIN: 2020-09-14: Telephony: Fix FrameworksTelephonyTests UT failures
         }).when(mEcbmHandler).setIsInEcm(anyBoolean());
+// QTI_END: 2020-09-14: Telephony: Fix FrameworksTelephonyTests UT failures
         doAnswer(invocation -> mIsPhoneUtInEcm).when(mPhone).isInEcm();
 
         mBundle = mContextFixture.getCarrierConfigBundle();
@@ -644,14 +652,18 @@ public class ImsPhoneTest extends TelephonyTest {
     }
 
     @Test
+// QTI_BEGIN: 2020-07-15: Telephony: Fix FrameworksTelephonyTests UT failures
     @Ignore
     // TODO: Move this to a separate test class for EcbmHandler
+// QTI_END: 2020-07-15: Telephony: Fix FrameworksTelephonyTests UT failures
     public void testEcbm() throws Exception {
         EcbmHandler.getInstance().setOnEcbModeExitResponse(mTestHandler,
                 EVENT_EMERGENCY_CALLBACK_MODE_EXIT, null);
 
+// QTI_BEGIN: 2019-04-16: Telephony: Handle ECBM mode for both the SUBs to place calls in ECBM mode
         ImsEcbmStateListener imsEcbmStateListener =
                 EcbmHandler.getInstance().getImsEcbmStateListener(mPhone.getPhoneId());
+// QTI_END: 2019-04-16: Telephony: Handle ECBM mode for both the SUBs to place calls in ECBM mode
         imsEcbmStateListener.onECBMEntered();
         verify(EcbmHandler.getInstance()).setIsInEcm(true);
 
@@ -794,7 +806,9 @@ public class ImsPhoneTest extends TelephonyTest {
     @Test
     @SmallTest
     public void testRoamingToAirplanModeIwlanInService() throws Exception {
+// QTI_BEGIN: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
         doReturn(true).when(mAccessNetworksManager).isInLegacyMode();
+// QTI_END: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
         doReturn(PhoneConstants.State.IDLE).when(mImsCT).getState();
         doReturn(true).when(mPhone).isRadioOn();
 
@@ -822,7 +836,9 @@ public class ImsPhoneTest extends TelephonyTest {
     @Test
     @SmallTest
     public void testRoamingToOutOfService() throws Exception {
+// QTI_BEGIN: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
         doReturn(true).when(mAccessNetworksManager).isInLegacyMode();
+// QTI_END: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
         doReturn(PhoneConstants.State.IDLE).when(mImsCT).getState();
         doReturn(true).when(mPhone).isRadioOn();
 
@@ -845,6 +861,7 @@ public class ImsPhoneTest extends TelephonyTest {
         verify(mImsManager, times(1)).setWfcMode(anyInt(), anyBoolean());
     }
 
+// QTI_BEGIN: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
     @Test
     @SmallTest
     public void testRoamingChangeForLteInLegacyMode() throws Exception {
@@ -922,6 +939,7 @@ public class ImsPhoneTest extends TelephonyTest {
         verify(mImsManager, times(1)).setWfcMode(anyInt(), anyBoolean());
     }
 
+// QTI_END: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
     @Test
     @SmallTest
     public void testSetWfcModeInRoaming() throws Exception {
@@ -1118,7 +1136,9 @@ public class ImsPhoneTest extends TelephonyTest {
         };
         mImsPhoneUT.setPhoneNumberForSourceIms(associatedUris);
 
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
         verify(mSubscriptionManagerService).setNumberFromIms(subId, "+447539447777");
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
 
         // 2. 1st invalid and 2nd valid: 2nd is set.
         associatedUris = new Uri[] {
@@ -1127,7 +1147,9 @@ public class ImsPhoneTest extends TelephonyTest {
         };
         mImsPhoneUT.setPhoneNumberForSourceIms(associatedUris);
 
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
         verify(mSubscriptionManagerService).setNumberFromIms(subId, "+447539446666");
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
 
         // 3. 1st sip-uri is not phone number and 2nd valid: 2nd is set.
         associatedUris = new Uri[] {
@@ -1137,7 +1159,9 @@ public class ImsPhoneTest extends TelephonyTest {
         };
         mImsPhoneUT.setPhoneNumberForSourceIms(associatedUris);
 
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
         verify(mSubscriptionManagerService).setNumberFromIms(subId, "+447539446677");
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
 
         // Clean up
         mContextFixture.addCallingOrSelfPermission("");
@@ -1163,24 +1187,32 @@ public class ImsPhoneTest extends TelephonyTest {
         };
         mImsPhoneUT.setPhoneNumberForSourceIms(associatedUris);
 
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
         verify(mSubscriptionManagerService, never()).setNumberFromIms(anyInt(), anyString());
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
 
         // 2. no URI; do not set
         associatedUris = new Uri[] {};
         mImsPhoneUT.setPhoneNumberForSourceIms(associatedUris);
 
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
         verify(mSubscriptionManagerService, never()).setNumberFromIms(anyInt(), anyString());
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
 
         // 3. null URI; do not set
         associatedUris = new Uri[] { null };
         mImsPhoneUT.setPhoneNumberForSourceIms(associatedUris);
 
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
         verify(mSubscriptionManagerService, never()).setNumberFromIms(anyInt(), anyString());
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
 
         // 4. null pointer; do not set
         mImsPhoneUT.setPhoneNumberForSourceIms(null);
 
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
         verify(mSubscriptionManagerService, never()).setNumberFromIms(anyInt(), anyString());
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
 
         // Clean up
         mContextFixture.addCallingOrSelfPermission("");

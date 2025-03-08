@@ -26,10 +26,14 @@ import android.os.Message;
 import android.os.PersistableBundle;
 import android.telephony.CarrierConfigManager;
 import android.telephony.ServiceState;
+// QTI_BEGIN: 2020-04-22: Telephony: CS: VoWiFi Dual Voice Call feature for CS Voice
 import android.telephony.TelephonyManager;
+// QTI_END: 2020-04-22: Telephony: CS: VoWiFi Dual Voice Call feature for CS Voice
+// QTI_BEGIN: 2025-01-28: Telephony: Check for simultaneous calling restriction
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
+// QTI_END: 2025-01-28: Telephony: Check for simultaneous calling restriction
 import android.text.TextUtils;
 
 import com.android.internal.telephony.flags.FeatureFlags;
@@ -281,7 +285,10 @@ public abstract class CallTracker extends Handler {
                 == ServiceState.ROAMING_TYPE_INTERNATIONAL;
     }
 
+// QTI_BEGIN: 2020-04-22: Telephony: CS: VoWiFi Dual Voice Call feature for CS Voice
     /**
+// QTI_END: 2020-04-22: Telephony: CS: VoWiFi Dual Voice Call feature for CS Voice
+// QTI_BEGIN: 2025-01-28: Telephony: Check for simultaneous calling restriction
      * Determines whether incoming call is a pseudo-DSDA call.
      * Returns false immediately for:
      *     1. SINGLE SIM configuration
@@ -290,9 +297,13 @@ public abstract class CallTracker extends Handler {
      * Returns true if
      *     1. If the SUB which receives the incoming call does not have any other calls
      *        and the other SUB has calls, otherwise returns false
+// QTI_END: 2025-01-28: Telephony: Check for simultaneous calling restriction
+// QTI_BEGIN: 2020-04-22: Telephony: CS: VoWiFi Dual Voice Call feature for CS Voice
      */
     protected boolean isPseudoDsdaCall() {
         TelephonyManager telephony = TelephonyManager.from(getPhone().getContext());
+// QTI_END: 2020-04-22: Telephony: CS: VoWiFi Dual Voice Call feature for CS Voice
+// QTI_BEGIN: 2025-01-28: Telephony: Check for simultaneous calling restriction
         if (telephony.getActiveModemCount() <= PhoneConstants.MAX_PHONE_COUNT_SINGLE_SIM) {
             return false;
         }
@@ -364,11 +375,14 @@ public abstract class CallTracker extends Handler {
             if (pa.getSimultaneousCallingRestriction().contains(ringingAccount)) {
                 log("contains phone account in simultaneous calling restriction");
                 return true;
+// QTI_END: 2025-01-28: Telephony: Check for simultaneous calling restriction
+// QTI_BEGIN: 2020-04-22: Telephony: CS: VoWiFi Dual Voice Call feature for CS Voice
             }
         }
         return false;
     }
 
+// QTI_END: 2020-04-22: Telephony: CS: VoWiFi Dual Voice Call feature for CS Voice
     private boolean compareGid1(Phone phone, String serviceGid1) {
         String gid1 = phone.getGroupIdLevel1();
         int gid_length = serviceGid1.length();

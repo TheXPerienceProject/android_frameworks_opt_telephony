@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+// QTI_BEGIN: 2022-09-20: Telephony: CAG and SNPN feature
 /*
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
@@ -21,6 +22,7 @@
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
+// QTI_END: 2022-09-20: Telephony: CAG and SNPN feature
 package com.android.internal.telephony.test;
 
 import android.compat.annotation.UnsupportedAppUsage;
@@ -186,7 +188,9 @@ public class SimulatedCommands extends BaseCommands
     private SetupDataCallResult mSetupDataCallResult;
     private boolean mIsRadioPowerFailResponse = false;
     private boolean mIsReportSmsMemoryStatusFailResponse = false;
+// QTI_BEGIN: 2018-03-28: Telephony: UT: Add changes to enable UT of telephony-fwk git
     private String smscAddress;
+// QTI_END: 2018-03-28: Telephony: UT: Add changes to enable UT of telephony-fwk git
 
     public boolean mSetRadioPowerForEmergencyCall;
     public boolean mSetRadioPowerAsSelectedPhoneForEmergencyCall;
@@ -1042,7 +1046,9 @@ public class SimulatedCommands extends BaseCommands
      */
     @Override
     public void startDtmf(char c, Message result) {
+// QTI_BEGIN: 2018-03-28: Telephony: UT: Add changes to enable UT of telephony-fwk git
         SimulatedCommandsVerifier.getInstance().startDtmf(c, result);
+// QTI_END: 2018-03-28: Telephony: UT: Add changes to enable UT of telephony-fwk git
         resultSuccess(result, null);
     }
 
@@ -1221,7 +1227,9 @@ public class SimulatedCommands extends BaseCommands
 
     @Override
     public void getSmscAddress(Message result) {
+// QTI_BEGIN: 2018-03-28: Telephony: UT: Add changes to enable UT of telephony-fwk git
         SimulatedCommandsVerifier.getInstance().getSmscAddress(result);
+// QTI_END: 2018-03-28: Telephony: UT: Add changes to enable UT of telephony-fwk git
         if (mSendGetSmscAddressResponse) {
             resultSuccess(result, smscAddress);
         }
@@ -1229,9 +1237,11 @@ public class SimulatedCommands extends BaseCommands
 
     @Override
     public void setSmscAddress(String address, Message result) {
+// QTI_BEGIN: 2018-03-28: Telephony: UT: Add changes to enable UT of telephony-fwk git
         smscAddress = address;
         resultSuccess(result, null);
         SimulatedCommandsVerifier.getInstance().setSmscAddress(address, result);
+// QTI_END: 2018-03-28: Telephony: UT: Add changes to enable UT of telephony-fwk git
     }
 
     @Override
@@ -1825,13 +1835,17 @@ public class SimulatedCommands extends BaseCommands
         resultSuccess(response, null);
     }
 
+// QTI_BEGIN: 2018-08-01: Telephony: CDMA MO SMS follow on DC feature
     /**
      * {@inheritDoc}
      */
     @Override
+// QTI_END: 2018-08-01: Telephony: CDMA MO SMS follow on DC feature
     public void sendCdmaSMSExpectMore(byte[] pdu, Message response){
+// QTI_BEGIN: 2018-08-01: Telephony: CDMA MO SMS follow on DC feature
     }
 
+// QTI_END: 2018-08-01: Telephony: CDMA MO SMS follow on DC feature
     @Override
     public void setCdmaBroadcastActivation(boolean activate, Message response) {
         SimulatedCommandsVerifier.getInstance().setCdmaBroadcastActivation(activate, response);

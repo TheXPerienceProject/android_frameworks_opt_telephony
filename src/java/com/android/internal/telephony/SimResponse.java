@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+// QTI_BEGIN: 2025-02-26: Telephony: Fix license marking
 /*
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
+// QTI_END: 2025-02-26: Telephony: Fix license marking
 package com.android.internal.telephony;
 
 import static android.telephony.TelephonyManager.HAL_SERVICE_SIM;
@@ -27,13 +29,17 @@ import static android.telephony.TelephonyManager.HAL_SERVICE_SIM;
 import android.hardware.radio.RadioError;
 import android.hardware.radio.RadioResponseInfo;
 import android.hardware.radio.sim.IRadioSimResponse;
+// QTI_BEGIN: 2023-04-10: Telephony: Handle PersoSubState temporarily unlocked for FR76912
 import android.os.SystemProperties;
+// QTI_END: 2023-04-10: Telephony: Handle PersoSubState temporarily unlocked for FR76912
 import android.telephony.CarrierRestrictionRules;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 
 import com.android.internal.telephony.uicc.AdnCapacity;
+// QTI_BEGIN: 2023-04-10: Telephony: Handle PersoSubState temporarily unlocked for FR76912
 import com.android.internal.telephony.uicc.IccCardApplicationStatus;
+// QTI_END: 2023-04-10: Telephony: Handle PersoSubState temporarily unlocked for FR76912
 import com.android.internal.telephony.uicc.IccCardStatus;
 import com.android.internal.telephony.uicc.IccIoResult;
 
@@ -45,9 +51,11 @@ import java.util.ArrayList;
 public class SimResponse extends IRadioSimResponse.Stub {
     private final RIL mRil;
 
+// QTI_BEGIN: 2023-04-10: Telephony: Handle PersoSubState temporarily unlocked for FR76912
     private static final String PROPERTY_PERSO_UNLOCK_TEMP_FEATURE =
             "persist.vendor.radio.temp_unlock_feature";
 
+// QTI_END: 2023-04-10: Telephony: Handle PersoSubState temporarily unlocked for FR76912
     public SimResponse(RIL ril) {
         mRil = ril;
     }
@@ -213,8 +221,12 @@ public class SimResponse extends IRadioSimResponse.Stub {
             IccCardStatus iccCardStatus = RILUtils.convertHalCardStatus(cardStatus);
             mRil.riljLog("responseIccCardStatus: from AIDL: " + iccCardStatus);
             if (responseInfo.error == RadioError.NONE) {
+// QTI_BEGIN: 2023-04-10: Telephony: Handle PersoSubState temporarily unlocked for FR76912
                 // Handle PersoSubState moving to Temporary/Permanent Unlocked.
+// QTI_END: 2023-04-10: Telephony: Handle PersoSubState temporarily unlocked for FR76912
+// QTI_BEGIN: 2025-02-10: Telephony: Decouple Qualcomm value adds
                 QtiSimUtils.updatePersoTempUnlockStatusIfRequired(iccCardStatus);
+// QTI_END: 2025-02-10: Telephony: Decouple Qualcomm value adds
                 RadioResponse.sendMessageResponse(rr.mResult, iccCardStatus);
             }
             mRil.processResponseDone(rr, responseInfo, iccCardStatus);

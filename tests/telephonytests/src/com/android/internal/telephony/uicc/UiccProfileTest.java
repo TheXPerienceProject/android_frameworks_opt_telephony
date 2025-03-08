@@ -495,10 +495,12 @@ public class UiccProfileTest extends TelephonyTest {
 
         testWithCsimApp();
 
+// QTI_BEGIN: 2020-09-14: Telephony: Fix FrameworksTelephonyTests UT failures
         // CDMA is supported and CSIM app is not ready, so state should be LOADED
         // TODO: Google has provided the fix.
         // Refactor UT and dev code on Android S
         assertEquals(State.LOADED, mUiccProfile.getState());
+// QTI_END: 2020-09-14: Telephony: Fix FrameworksTelephonyTests UT failures
     }
 
     @Test

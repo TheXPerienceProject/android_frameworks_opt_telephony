@@ -184,10 +184,12 @@ public class NetworkRegistrationManager extends Handler {
                 // Remote exception means that the binder already died.
                 logd("RemoteException " + exception);
             }
+// QTI_BEGIN: 2019-11-13: Telephony: Fix data call can't be applied after Phone restart in APM on under IWLAN
             // After service is connected, need to info network changed.
             // In general, it is used to fix some corner cases, e.g. IWLAN can't be queried
             // after phone restarted under APM-ON.
             mRegStateChangeRegistrants.notifyRegistrants();
+// QTI_END: 2019-11-13: Telephony: Fix data call can't be applied after Phone restart in APM on under IWLAN
         }
 
         @Override

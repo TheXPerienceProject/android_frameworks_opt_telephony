@@ -117,6 +117,7 @@ public class CdmaSmsTest extends AndroidTestCase {
         assertEquals(CdmaSmsAddress.parse("f\u0080oo bar"), null);
     }
 
+// QTI_BEGIN: 2018-02-09: Telephony: SMS: Add UT case for getting recipient address of SubmitPdu
     @SmallTest
     public void testRecipientAddress() throws Exception {
         String pdu = "011a0000001002080d0003100160010610262d5ab500040401448888";
@@ -125,6 +126,7 @@ public class CdmaSmsTest extends AndroidTestCase {
         assertEquals("12222", sms.getRecipientAddress());
     }
 
+// QTI_END: 2018-02-09: Telephony: SMS: Add UT case for getting recipient address of SubmitPdu
     @SmallTest
     public void testUserData7bitGsm() throws Exception {
         String pdu = "00031040900112488ea794e074d69e1b7392c270326cde9e98";
@@ -273,6 +275,7 @@ public class CdmaSmsTest extends AndroidTestCase {
         assertEquals(userData.payloadStr, revBearerData.userData.payloadStr);
     }
 
+// QTI_BEGIN: 2018-03-13: Telephony: Add 7bit Ascii support for long message
     @SmallTest
     public void testUserData7BitAsciiFeedback() throws Exception {
         BearerData bearerData = new BearerData();
@@ -311,6 +314,7 @@ public class CdmaSmsTest extends AndroidTestCase {
         assertEquals(userData.payloadStr, revBearerData.userData.payloadStr);
     }
 
+// QTI_END: 2018-03-13: Telephony: Add 7bit Ascii support for long message
     @SmallTest
     public void testMonolithicOne() throws Exception {
         String pdu = "0003200010010410168d2002010503060812011101590501c706069706180000000701c108" +
@@ -1067,6 +1071,7 @@ public class CdmaSmsTest extends AndroidTestCase {
         assertNotNull(bearerData.userData.payload);
     }
 
+// QTI_BEGIN: 2018-03-13: Telephony: Add 7bit Ascii support for long message
     @SmallTest
     public void testCdmaSmsAddressDigitalMode() throws Exception {
         String str_test;
@@ -1074,7 +1079,11 @@ public class CdmaSmsTest extends AndroidTestCase {
 
         str_test = "+00123456789";
         sms_addr = CdmaSmsAddress.parse(str_test);
+// QTI_END: 2018-03-13: Telephony: Add 7bit Ascii support for long message
+// QTI_BEGIN: 2018-06-05: Telephony: UT: Fix UT failures
         assertEquals(CdmaSmsAddress.DIGIT_MODE_8BIT_CHAR, sms_addr.digitMode);
+// QTI_END: 2018-06-05: Telephony: UT: Fix UT failures
+// QTI_BEGIN: 2018-03-13: Telephony: Add 7bit Ascii support for long message
 
         str_test = "test@test.com";
         sms_addr = CdmaSmsAddress.parse(str_test);
@@ -1092,4 +1101,5 @@ public class CdmaSmsTest extends AndroidTestCase {
         sms_addr = CdmaSmsAddress.parse(str_test);
         assertEquals(CdmaSmsAddress.DIGIT_MODE_8BIT_CHAR, sms_addr.digitMode);
     }
+// QTI_END: 2018-03-13: Telephony: Add 7bit Ascii support for long message
 }

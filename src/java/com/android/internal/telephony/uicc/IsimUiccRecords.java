@@ -136,17 +136,25 @@ public class IsimUiccRecords extends IccRecords implements IsimRecords {
         }
     }
 
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
     private void fetchEssentialIsimRecords() {
         //NOP: No essential ISim records identified.
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
+// QTI_BEGIN: 2020-02-25: Telephony: Fix SIM can't get loaded after unlocking
         mEssentialRecordsListenerNotified = false;
+// QTI_END: 2020-02-25: Telephony: Fix SIM can't get loaded after unlocking
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
     }
 
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
     protected void fetchIsimRecords() {
         mRecordsRequested = true;
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
         if (DBG) log("fetchIsimRecords " + mRecordsToLoad);
 
         fetchEssentialIsimRecords();
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
 
         mFh.loadEFTransparent(EF_IMPI, obtainMessage(
                 IccRecords.EVENT_GET_ICC_RECORD_DONE, new EfIsimImpiLoaded()));
@@ -197,10 +205,12 @@ public class IsimUiccRecords extends IccRecords implements IsimRecords {
             return "EF_ISIM_IMPI";
         }
         public void onRecordLoaded(AsyncResult ar) {
+// QTI_BEGIN: 2020-05-07: Telephony: Fix data call issue due to SPN load failure
             if (ar.exception != null) {
                 loge("Record Load Exception: " + ar.exception);
                 return;
             }
+// QTI_END: 2020-05-07: Telephony: Fix data call issue due to SPN load failure
             byte[] data = (byte[]) ar.result;
             mIsimImpi = isimTlvToString(data);
             if (DUMP_RECORDS) log("EF_IMPI=" + mIsimImpi);
@@ -212,10 +222,12 @@ public class IsimUiccRecords extends IccRecords implements IsimRecords {
             return "EF_ISIM_IMPU";
         }
         public void onRecordLoaded(AsyncResult ar) {
+// QTI_BEGIN: 2020-05-07: Telephony: Fix data call issue due to SPN load failure
             if (ar.exception != null) {
                 loge("Record Load Exception: " + ar.exception);
                 return;
             }
+// QTI_END: 2020-05-07: Telephony: Fix data call issue due to SPN load failure
             ArrayList<byte[]> impuList = (ArrayList<byte[]>) ar.result;
             if (DBG) log("EF_IMPU record count: " + impuList.size());
             mIsimImpu = new String[impuList.size()];
@@ -233,10 +245,12 @@ public class IsimUiccRecords extends IccRecords implements IsimRecords {
             return "EF_ISIM_DOMAIN";
         }
         public void onRecordLoaded(AsyncResult ar) {
+// QTI_BEGIN: 2020-05-07: Telephony: Fix data call issue due to SPN load failure
             if (ar.exception != null) {
                 loge("Record Load Exception: " + ar.exception);
                 return;
             }
+// QTI_END: 2020-05-07: Telephony: Fix data call issue due to SPN load failure
             byte[] data = (byte[]) ar.result;
             mIsimDomain = isimTlvToString(data);
             if (DUMP_RECORDS) log("EF_DOMAIN=" + mIsimDomain);
@@ -248,10 +262,12 @@ public class IsimUiccRecords extends IccRecords implements IsimRecords {
             return "EF_ISIM_IST";
         }
         public void onRecordLoaded(AsyncResult ar) {
+// QTI_BEGIN: 2020-05-07: Telephony: Fix data call issue due to SPN load failure
             if (ar.exception != null) {
                 loge("Record Load Exception: " + ar.exception);
                 return;
             }
+// QTI_END: 2020-05-07: Telephony: Fix data call issue due to SPN load failure
             byte[] data = (byte[]) ar.result;
             mIsimIst = IccUtils.bytesToHexString(data);
             if (DUMP_RECORDS) log("EF_IST=" + mIsimIst);
@@ -284,10 +300,12 @@ public class IsimUiccRecords extends IccRecords implements IsimRecords {
             return "EF_ISIM_PCSCF";
         }
         public void onRecordLoaded(AsyncResult ar) {
+// QTI_BEGIN: 2020-05-07: Telephony: Fix data call issue due to SPN load failure
             if (ar.exception != null) {
                 loge("Record Load Exception: " + ar.exception);
                 return;
             }
+// QTI_END: 2020-05-07: Telephony: Fix data call issue due to SPN load failure
             ArrayList<byte[]> pcscflist = (ArrayList<byte[]>) ar.result;
             if (DBG) log("EF_PCSCF record count: " + pcscflist.size());
             mIsimPcscf = new String[pcscflist.size()];
@@ -351,18 +369,24 @@ public class IsimUiccRecords extends IccRecords implements IsimRecords {
         mRecordsToLoad -= 1;
         if (DBG) log("onRecordLoaded " + mRecordsToLoad + " requested: " + mRecordsRequested);
 
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
         if (getEssentialRecordsLoaded() && !mEssentialRecordsListenerNotified) {
             onAllEssentialRecordsLoaded();
         }
 
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
         if (getRecordsLoaded()) {
             onAllRecordsLoaded();
         } else if (getLockedRecordsLoaded() || getNetworkLockedRecordsLoaded()) {
             onLockedAllRecordsLoaded();
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
         } else if (mRecordsToLoad < 0 || mEssentialRecordsToLoad < 0) {
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
             loge("recordsToLoad <0, programmer error suspected");
             mRecordsToLoad = 0;
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
             mEssentialRecordsToLoad = 0;
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
         }
     }
 
@@ -379,6 +403,7 @@ public class IsimUiccRecords extends IccRecords implements IsimRecords {
         }
     }
 
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
     @Override
     protected void onAllEssentialRecordsLoaded() {
         if (DBG) log("Essential record load complete");
@@ -386,9 +411,12 @@ public class IsimUiccRecords extends IccRecords implements IsimRecords {
         mEssentialRecordsLoadedRegistrants.notifyRegistrants(new AsyncResult(null, null, null));
     }
 
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
     @Override
     protected void onAllRecordsLoaded() {
+// QTI_BEGIN: 2020-01-06: Telephony: Split uicc records loading in two groups.
         if (DBG) log("record load complete");
+// QTI_END: 2020-01-06: Telephony: Split uicc records loading in two groups.
         mLoaded.set(true);
         mRecordsLoadedRegistrants.notifyRegistrants(new AsyncResult(null, null, null));
     }

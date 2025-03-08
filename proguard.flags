@@ -30,8 +30,10 @@
 -keepclassmembers class * {
     @**.UnsupportedAppUsage *;
 }
+#  QTI_BEGIN: 2022-01-26: Telephony: Disable proguard for CellularNetworkServiceProvider
 
 # Keep CellularNetworkServiceProvider members
 -keepclasseswithmembers class com.android.internal.telephony.CellularNetworkService$CellularNetworkServiceProvider {
 *;
 }
+#  QTI_END: 2022-01-26: Telephony: Disable proguard for CellularNetworkServiceProvider

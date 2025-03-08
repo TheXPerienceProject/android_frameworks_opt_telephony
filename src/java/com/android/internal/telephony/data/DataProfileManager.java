@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+// QTI_BEGIN: 2025-02-26: Telephony: Fix license marking
 /*
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
+// QTI_END: 2025-02-26: Telephony: Fix license marking
 package com.android.internal.telephony.data;
 
 import android.annotation.CallbackExecutor;
@@ -294,6 +296,7 @@ public class DataProfileManager extends Handler {
             while (cursor.moveToNext()) {
                 ApnSetting apn = ApnSetting.makeApnSetting(cursor);
                 if (apn != null) {
+// QTI_BEGIN: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
                     DataProfile dataProfile = new DataProfile.Builder()
                             .setApnSetting(apn)
                             .setTrafficDescriptor(new TrafficDescriptor(apn.getApnName(), null))
@@ -302,19 +305,26 @@ public class DataProfileManager extends Handler {
                     profiles.add(dataProfile);
                     log("Added " + dataProfile);
 
+// QTI_END: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
                     isInternetSupported |= apn.canHandleType(ApnSetting.TYPE_DEFAULT);
                     if (mDataConfigManager.isApnConfigAnomalyReportEnabled()
                             && apn.getEditedStatus() == Telephony.Carriers.UNEDITED) {
                         checkApnSetting(apn);
                     }
                 }
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
             }
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
             cursor.close();
 
+// QTI_BEGIN: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
             if (!profiles.isEmpty()) {
                 filterDataProfilesWithRadioCapability(profiles);
+// QTI_END: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
+// QTI_BEGIN: 2023-04-07: Telephony: Fix for initial attach on "nxtgenphone" instead of "nrphone"
             }
 
+// QTI_END: 2023-04-07: Telephony: Fix for initial attach on "nxtgenphone" instead of "nrphone"
             if (!isInternetSupported
                     && !profiles.isEmpty() // APN database has been read successfully
                     && mDataConfigManager.isApnConfigAnomalyReportEnabled()) {
@@ -404,13 +414,19 @@ public class DataProfileManager extends Handler {
         }
     }
 
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
     /**
      * Filters out multiple APNs based on radio capability if the APN's GID value is listed in
      * CarrierConfigManager#KEY_MULTI_APN_ARRAY_FOR_SAME_GID as per the operator requirement.
      */
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
+// QTI_BEGIN: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
     protected void filterDataProfilesWithRadioCapability(List<DataProfile> profiles) {
+// QTI_END: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
     }
 
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
     /**
      * @return The preferred data profile set id.
      */
@@ -1146,7 +1162,9 @@ public class DataProfileManager extends Handler {
      * Log debug messages.
      * @param s debug messages
      */
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
     protected void log(@NonNull String s) {
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
         Rlog.d(mLogTag, s);
     }
 
@@ -1154,7 +1172,9 @@ public class DataProfileManager extends Handler {
      * Log error messages.
      * @param s error messages
      */
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
     protected void loge(@NonNull String s) {
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
         Rlog.e(mLogTag, s);
     }
 
@@ -1170,7 +1190,9 @@ public class DataProfileManager extends Handler {
      * Log debug messages and also log into the local log.
      * @param s debug messages
      */
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
     protected void logl(@NonNull String s) {
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
         log(s);
         mLocalLog.log(s);
     }

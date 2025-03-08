@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+// QTI_BEGIN: 2025-02-26: Telephony: Fix license marking
 /*
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
+// QTI_END: 2025-02-26: Telephony: Fix license marking
 package com.android.internal.telephony.data;
 
 import android.annotation.CallbackExecutor;
@@ -99,7 +101,9 @@ import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.SlidingWindowEventCounter;
 import com.android.internal.telephony.TelephonyCapabilities;
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
 import com.android.internal.telephony.TelephonyComponentFactory;
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
 import com.android.internal.telephony.data.AccessNetworksManager.AccessNetworksManagerCallback;
 import com.android.internal.telephony.data.DataConfigManager.DataConfigManagerCallback;
 import com.android.internal.telephony.data.DataEvaluation.DataAllowedReason;
@@ -168,7 +172,9 @@ public class DataNetworkController extends Handler {
     private static final int EVENT_SRVCC_STATE_CHANGED = 4;
 
     /** Re-evaluate all unsatisfied network requests. */
+// QTI_BEGIN: 2022-03-31: Telephony: Add support for Telcel feature
     public static final int EVENT_REEVALUATE_UNSATISFIED_NETWORK_REQUESTS = 5;
+// QTI_END: 2022-03-31: Telephony: Add support for Telcel feature
 
     /** Event for packet switch restricted enabled by network. */
     private static final int EVENT_PS_RESTRICT_ENABLED = 6;
@@ -270,7 +276,9 @@ public class DataNetworkController extends Handler {
     @ElapsedRealtimeLong
     private long mBootstrapSimLastDataUsageQueryTime = 0L;
 
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
     protected final Phone mPhone;
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
     private final String mLogTag;
     private final LocalLog mLocalLog = new LocalLog(128);
 
@@ -296,7 +304,9 @@ public class DataNetworkController extends Handler {
     protected final SparseArray<DataServiceManager> mDataServiceManagers = new SparseArray<>();
 
     /** The subscription index associated with this data network controller. */
+// QTI_BEGIN: 2022-03-08: Telephony: Add CIWLAN feature support in new data stack
     protected int mSubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+// QTI_END: 2022-03-08: Telephony: Add CIWLAN feature support in new data stack
 
     /** The current service state of the device. */
     // Note that keeping a copy here instead of directly using ServiceStateTracker.getServiceState()
@@ -900,15 +910,22 @@ public class DataNetworkController extends Handler {
         }
     }
 
+// QTI_BEGIN: 2022-03-11: Telephony: Fix notify "Data During calls" preference change
     /**
      * Called when "Data During calls" preference is changed
      *
      * @param enabled change in preference.
      */
+// QTI_END: 2022-03-11: Telephony: Fix notify "Data During calls" preference change
+// QTI_BEGIN: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
     protected void onDataDuringVoiceCallChanged(boolean enabled,
             @TelephonyManager.MobileDataPolicy int policy) {
+// QTI_END: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
+// QTI_BEGIN: 2022-03-11: Telephony: Fix notify "Data During calls" preference change
     }
 
+// QTI_END: 2022-03-11: Telephony: Fix notify "Data During calls" preference change
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
     protected void onDataEnabledChanged(boolean enabled,
             @TelephonyManager.DataEnabledChangedReason int reason) {
         // If mobile data is enabled by the user, evaluate the unsatisfied network
@@ -934,6 +951,7 @@ public class DataNetworkController extends Handler {
                 DataEvaluationReason.ROAMING_ENABLED_CHANGED));
     }
 
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
     /**
      * Constructor
      *
@@ -951,6 +969,7 @@ public class DataNetworkController extends Handler {
         log("DataNetworkController created.");
 
         mAccessNetworksManager = phone.getAccessNetworksManager();
+// QTI_BEGIN: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
         mDataServiceManagers.put(AccessNetworkConstants.TRANSPORT_TYPE_WWAN,
                 TelephonyComponentFactory.getInstance()
                         .inject(DataServiceManager.class.getName())
@@ -958,14 +977,21 @@ public class DataNetworkController extends Handler {
                                 AccessNetworkConstants.TRANSPORT_TYPE_WWAN));
         if (!mAccessNetworksManager.isInLegacyMode()) {
             mDataServiceManagers.put(AccessNetworkConstants.TRANSPORT_TYPE_WLAN,
+// QTI_END: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
+// QTI_BEGIN: 2022-12-07: Telephony: Enable extension of a few data classes for QoS
                     TelephonyComponentFactory.getInstance()
                             .inject(DataServiceManager.class.getName())
+// QTI_END: 2022-12-07: Telephony: Enable extension of a few data classes for QoS
+// QTI_BEGIN: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
                             .makeDataServiceManager(mPhone, looper,
                                     AccessNetworkConstants.TRANSPORT_TYPE_WLAN));
+// QTI_END: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
         }
 
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
         mDataConfigManager = TelephonyComponentFactory.getInstance().inject(
                 DataConfigManager.class.getName())
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
                 .makeDataConfigManager(mPhone, looper, featureFlags);
 
         // ========== Anomaly counters ==========
@@ -991,7 +1017,9 @@ public class DataNetworkController extends Handler {
                             public void onDataEnabledChanged(boolean enabled,
                                     @TelephonyManager.DataEnabledChangedReason int reason,
                                     @NonNull String callingPackage) {
+// QTI_BEGIN: 2022-04-05: Telephony: Rework value adds based on latest LKG changes
                                 DataNetworkController.this.onDataEnabledChanged(enabled, reason);
+// QTI_END: 2022-04-05: Telephony: Rework value adds based on latest LKG changes
                             }
                             @Override
                             public void onDataEnabledOverrideChanged(boolean enabled,
@@ -1007,16 +1035,22 @@ public class DataNetworkController extends Handler {
                                                 : EVENT_REEVALUATE_EXISTING_DATA_NETWORKS,
                                         DataEvaluationReason.DATA_ENABLED_OVERRIDE_CHANGED));
 
+// QTI_BEGIN: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
                                 onDataDuringVoiceCallChanged(enabled, policy);
+// QTI_END: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
                             }
                             @Override
                             public void onDataRoamingEnabledChanged(boolean enabled) {
+// QTI_BEGIN: 2022-04-05: Telephony: Rework value adds based on latest LKG changes
                                 DataNetworkController.this.onDataRoamingEnabledChanged(enabled);
+// QTI_END: 2022-04-05: Telephony: Rework value adds based on latest LKG changes
                             }
                         });
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
         mDataProfileManager = TelephonyComponentFactory.getInstance().inject(
                 DataProfileManager.class.getName())
                 .makeDataProfileManager(mPhone, this, mDataServiceManagers
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
                                 .get(AccessNetworkConstants.TRANSPORT_TYPE_WWAN), looper,
                         mFeatureFlags,
                         new DataProfileManagerCallback(this::post) {
@@ -1028,7 +1062,9 @@ public class DataNetworkController extends Handler {
                                 sendMessage(
                                         obtainMessage(EVENT_REEVALUATE_UNSATISFIED_NETWORK_REQUESTS,
                                         DataEvaluationReason.DATA_PROFILES_CHANGED));
+// QTI_BEGIN: 2024-06-24: Telephony: Fix for data connection keeping connected on nDDS SUB
                                 initiateInternetDataConnectionState();
+// QTI_END: 2024-06-24: Telephony: Fix for data connection keeping connected on nDDS SUB
                             }
                         });
         mDataStallRecoveryManager = new DataStallRecoveryManager(mPhone, this, mDataServiceManagers
@@ -1039,9 +1075,11 @@ public class DataNetworkController extends Handler {
                         DataNetworkController.this.onDataStallReestablishInternet();
                     }
                 });
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
         mDataRetryManager = TelephonyComponentFactory.getInstance().inject(
                 DataRetryManager.class.getName())
                 .makeDataRetryManager(mPhone, this,
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
                 mDataServiceManagers, looper, mFeatureFlags,
                 new DataRetryManagerCallback(this::post) {
                     @Override
@@ -1145,12 +1183,14 @@ public class DataNetworkController extends Handler {
         mDataServiceManagers.get(AccessNetworkConstants.TRANSPORT_TYPE_WWAN)
                 .registerForServiceBindingChanged(this, EVENT_DATA_SERVICE_BINDING_CHANGED);
 
+// QTI_BEGIN: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
         if (!mAccessNetworksManager.isInLegacyMode()) {
             mPhone.getServiceStateTracker().registerForServiceStateChanged(this,
                     EVENT_SERVICE_STATE_CHANGED, null);
             mDataServiceManagers.get(AccessNetworkConstants.TRANSPORT_TYPE_WLAN)
                     .registerForServiceBindingChanged(this, EVENT_DATA_SERVICE_BINDING_CHANGED);
         }
+// QTI_END: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
 
         mPhone.getContext().getSystemService(TelephonyRegistryManager.class)
                 .addOnSubscriptionsChangedListener(new OnSubscriptionsChangedListener() {
@@ -1375,13 +1415,19 @@ public class DataNetworkController extends Handler {
         }
         if (!mAllNetworkRequestList.add(networkRequest)) {
             loge("onAddNetworkRequest: Duplicate network request. " + networkRequest);
+// QTI_BEGIN: 2023-07-24: Telephony: Revert "Reset transport type when SUB ID is changed"
             return;
+// QTI_END: 2023-07-24: Telephony: Revert "Reset transport type when SUB ID is changed"
         }
+// QTI_BEGIN: 2022-10-07: Telephony: Fix PDP reject retry interruption
         if (isPdpRejectRetryOngoing(networkRequest)) {
             loge("onAddNetworkRequest: Pdp reject retry in progress. " + networkRequest);
             return;
         }
+// QTI_END: 2022-10-07: Telephony: Fix PDP reject retry interruption
+// QTI_BEGIN: 2023-07-24: Telephony: Revert "Reset transport type when SUB ID is changed"
         log("onAddNetworkRequest: added " + networkRequest);
+// QTI_END: 2023-07-24: Telephony: Revert "Reset transport type when SUB ID is changed"
         onSatisfyNetworkRequest(networkRequest);
     }
 
@@ -1684,12 +1730,14 @@ public class DataNetworkController extends Handler {
         }
 
         // Check SIM state
+// QTI_BEGIN: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
         if (mSimState != TelephonyManager.SIM_STATE_LOADED) {
             evaluation.addDataDisallowedReason(DataDisallowedReason.SIM_NOT_READY);
         }
 
         // Check Qualcomm proprietary conditions
         dataEvaluationforValueAdds(evaluation, networkRequest);
+// QTI_END: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
 
         // Check if carrier specific config is loaded or not.
         if (!mDataConfigManager.isConfigCarrierSpecific()) {
@@ -1751,9 +1799,13 @@ public class DataNetworkController extends Handler {
         // Check if the request is preferred on cellular and radio is/will be turned off.
         // We are using getDesiredPowerState() instead of isRadioOn() because we also don't want
         // to setup data network when radio power is about to be turned off.
+// QTI_BEGIN: 2022-10-07: Telephony: Allow data call in legacy IWLAN mode
         // Besides, in legacy IWLAN mode, data should be allowed.
+// QTI_END: 2022-10-07: Telephony: Allow data call in legacy IWLAN mode
         if (transport == AccessNetworkConstants.TRANSPORT_TYPE_WWAN
+// QTI_BEGIN: 2022-10-07: Telephony: Allow data call in legacy IWLAN mode
                 && getDataNetworkType(transport) != TelephonyManager.NETWORK_TYPE_IWLAN
+// QTI_END: 2022-10-07: Telephony: Allow data call in legacy IWLAN mode
                 && (!mPhone.getServiceStateTracker().getDesiredPowerState()
                 || mPhone.mCi.getRadioState() != TelephonyManager.RADIO_POWER_ON)) {
             evaluation.addDataDisallowedReason(DataDisallowedReason.RADIO_POWER_OFF);
@@ -1882,16 +1934,28 @@ public class DataNetworkController extends Handler {
         return evaluation;
     }
 
+// QTI_BEGIN: 2022-04-28: Telephony: Make Secure Mode related changes
     /**
+// QTI_END: 2022-04-28: Telephony: Make Secure Mode related changes
+// QTI_BEGIN: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
      * Evaluate if data setup should be allowed with Qualcomm conditions.
+// QTI_END: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
+// QTI_BEGIN: 2022-03-07: Telephony: Use essential records for data call on new stack
      *
      * @param evaluation The evaluation result from
+// QTI_END: 2022-03-07: Telephony: Use essential records for data call on new stack
+// QTI_BEGIN: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
      * @param networkRequest The network request to evaluate.
+// QTI_END: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
+// QTI_BEGIN: 2022-03-07: Telephony: Use essential records for data call on new stack
      * {@link #evaluateDataNetwork(DataNetwork, DataEvaluationReason)} or
      * {@link #evaluateNetworkRequest(TelephonyNetworkRequest, DataEvaluationReason)}
      */
+// QTI_END: 2022-03-07: Telephony: Use essential records for data call on new stack
+// QTI_BEGIN: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
     protected void dataEvaluationforValueAdds(DataEvaluation evaluation,
             @NonNull TelephonyNetworkRequest networkRequest) {}
+// QTI_END: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
 
     /**
      * Returns whether the data roaming setting should be ignored for satellite connection,
@@ -2000,12 +2064,14 @@ public class DataNetworkController extends Handler {
                 continue;
             }
 
+// QTI_BEGIN: 2022-10-07: Telephony: Fix PDP reject retry interruption
             // If PDP reject retry is in progress and the current network request corresponds
             // to internet type, then do not proceed further.
             if (isPdpRejectRetryOngoing(requestList.get(0))) {
                 continue;
             }
 
+// QTI_END: 2022-10-07: Telephony: Fix PDP reject retry interruption
             // If no data network can satisfy the requests, then start the evaluation process. Since
             // all the requests in the list have the same capabilities, we can only evaluate one
             // of them.
@@ -2020,6 +2086,7 @@ public class DataNetworkController extends Handler {
         }
     }
 
+// QTI_BEGIN: 2022-10-07: Telephony: Fix PDP reject retry interruption
     /**
      * Check if PDP reject retry is in progress
      *
@@ -2033,6 +2100,7 @@ public class DataNetworkController extends Handler {
         return false;
     }
 
+// QTI_END: 2022-10-07: Telephony: Fix PDP reject retry interruption
     /**
      * Evaluate an existing data network to see if it is still allowed to exist. For example, if
      * RAT changes from LTE to UMTS, an IMS data network is not allowed anymore. Or when SIM is
@@ -2056,12 +2124,14 @@ public class DataNetworkController extends Handler {
         }
 
         // Check SIM state
+// QTI_BEGIN: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
         if (mSimState != TelephonyManager.SIM_STATE_LOADED) {
             evaluation.addDataDisallowedReason(DataDisallowedReason.SIM_NOT_READY);
         }
 
         // Check Qualcomm proprietary conditions
         dataEvaluationforValueAdds(evaluation, null);
+// QTI_END: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
 
         // Check if device is in CDMA ECBM
         if (mPhone.isInCdmaEcm()) {
@@ -2889,7 +2959,9 @@ public class DataNetworkController extends Handler {
     }
 
     /** Called when subscription info changed. */
+// QTI_BEGIN: 2022-03-08: Telephony: Add CIWLAN feature support in new data stack
     protected void onSubscriptionChanged() {
+// QTI_END: 2022-03-08: Telephony: Add CIWLAN feature support in new data stack
         if (mSubId != mPhone.getSubId()) {
             log("onDataConfigUpdated: mSubId changed from " + mSubId + " to "
                     + mPhone.getSubId());
@@ -2902,10 +2974,14 @@ public class DataNetworkController extends Handler {
             }
             mSubId = mPhone.getSubId();
             updateSubscriptionPlans();
+// QTI_BEGIN: 2024-06-24: Telephony: Fix for data connection keeping connected on nDDS SUB
         }
     }
 
+// QTI_END: 2024-06-24: Telephony: Fix for data connection keeping connected on nDDS SUB
+// QTI_BEGIN: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
     protected void initiateInternetDataConnectionState() {}
+// QTI_END: 2025-02-07: Telephony: Telephony-Data: Decouple Qualcomm value adds.
 
     /**
      * Called when carrier config was updated.
@@ -3228,7 +3304,9 @@ public class DataNetworkController extends Handler {
      *
      * @param dataNetwork The data network.
      */
+// QTI_BEGIN: 2022-03-31: Telephony: Add support for Telcel feature
     public void onDataNetworkConnected(@NonNull DataNetwork dataNetwork) {
+// QTI_END: 2022-03-31: Telephony: Add support for Telcel feature
         logl("onDataNetworkConnected: " + dataNetwork);
 
         mDataNetworkControllerCallbacks.forEach(callback -> callback.invokeFromExecutor(
@@ -3262,7 +3340,9 @@ public class DataNetworkController extends Handler {
      *
      * @param dataSetupRetryEntry The data setup retry entry scheduled by {@link DataRetryManager}.
      */
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
     protected void onDataNetworkSetupRetry(@NonNull DataSetupRetryEntry dataSetupRetryEntry) {
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
         // The request might be already removed before retry happens. Remove them from the list
         // if that's the case. Copy the list first. We don't want to remove the requests from
         // the retry entry. They can be later used to determine what kind of retry it is.
@@ -3320,10 +3400,14 @@ public class DataNetworkController extends Handler {
                 telephonyNetworkRequest, DataEvaluationReason.DATA_RETRY);
         if (!evaluation.containsDisallowedReasons()) {
             DataProfile dataProfile = dataSetupRetryEntry.dataProfile;
+// QTI_BEGIN: 2023-04-25: Telephony: Fix for data setup retry on wrong apn
             DataProfile candidateDataProfile = evaluation.getCandidateDataProfile();
+// QTI_END: 2023-04-25: Telephony: Fix for data setup retry on wrong apn
             if (dataProfile == null || (!dataProfile.equals(candidateDataProfile)) ||
                 !mDataProfileManager.isDataProfileCompatible(dataProfile)) {
+// QTI_BEGIN: 2023-04-25: Telephony: Fix for data setup retry on wrong apn
                 dataProfile = candidateDataProfile;
+// QTI_END: 2023-04-25: Telephony: Fix for data setup retry on wrong apn
             }
             if (dataProfile != null) {
                 setupDataNetwork(dataProfile, dataSetupRetryEntry,
@@ -3477,7 +3561,9 @@ public class DataNetworkController extends Handler {
      * @param cause The disconnect cause.
      * @param tearDownReason The reason the network was torn down
      */
+// QTI_BEGIN: 2022-12-07: Telephony: Enable extension of a few data classes for QoS
     protected void onDataNetworkDisconnected(@NonNull DataNetwork dataNetwork,
+// QTI_END: 2022-12-07: Telephony: Enable extension of a few data classes for QoS
             @DataFailureCause int cause, @TearDownReason int tearDownReason) {
         logl("onDataNetworkDisconnected: " + dataNetwork + ", cause="
                 + DataFailCause.toString(cause) + "(" + cause + "), tearDownReason="
@@ -3683,7 +3769,9 @@ public class DataNetworkController extends Handler {
      *
      * @param simState SIM state. (Note this is mixed with card state and application state.)
      */
+// QTI_BEGIN: 2022-03-07: Telephony: Use essential records for data call on new stack
     protected void onSimStateChanged(@SimState int simState) {
+// QTI_END: 2022-03-07: Telephony: Use essential records for data call on new stack
         log("onSimStateChanged: state=" + TelephonyManager.simStateToString(simState));
         if (mSimState != simState) {
             mSimState = simState;
@@ -3996,7 +4084,9 @@ public class DataNetworkController extends Handler {
     // Note that this is only called when data RAT or data registration changed. If we need to know
     // more "changed" events other than data RAT and data registration state, we should add
     // a new listening ServiceStateTracker.registerForServiceStateChanged().
+// QTI_BEGIN: 2022-03-29: Telephony: Add data roaming criteria for temp DDS switch
     protected void onServiceStateChanged() {
+// QTI_END: 2022-03-29: Telephony: Add data roaming criteria for temp DDS switch
         // Use the raw service state instead of the mPhone.getServiceState().
         ServiceState newServiceState = mPhone.getServiceStateTracker().getServiceState();
         StringBuilder debugMessage = new StringBuilder("onServiceStateChanged: ");
@@ -4043,7 +4133,9 @@ public class DataNetworkController extends Handler {
                 }
             }
             mServiceState = newServiceState;
+// QTI_BEGIN: 2024-06-24: Telephony: Fix for data connection keeping connected on nDDS SUB
             initiateInternetDataConnectionState();
+// QTI_END: 2024-06-24: Telephony: Fix for data connection keeping connected on nDDS SUB
         } else {
             debugMessage.append("not changed");
         }
@@ -4398,7 +4490,9 @@ public class DataNetworkController extends Handler {
      * Log debug messages.
      * @param s debug messages
      */
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
     protected void log(@NonNull String s) {
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
         Rlog.d(mLogTag, s);
     }
 
@@ -4406,7 +4500,9 @@ public class DataNetworkController extends Handler {
      * Log error messages.
      * @param s error messages
      */
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
     protected void loge(@NonNull String s) {
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
         Rlog.e(mLogTag, s);
     }
 
@@ -4414,7 +4510,9 @@ public class DataNetworkController extends Handler {
      * Log verbose messages.
      * @param s debug messages.
      */
+// QTI_BEGIN: 2022-03-05: Telephony: Add support for injecting data sub modules
     protected void logv(@NonNull String s) {
+// QTI_END: 2022-03-05: Telephony: Add support for injecting data sub modules
         if (VDBG) Rlog.v(mLogTag, s);
     }
 

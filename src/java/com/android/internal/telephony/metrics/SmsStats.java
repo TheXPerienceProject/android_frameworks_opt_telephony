@@ -385,11 +385,13 @@ public class SmsStats {
 
     private @NetworkType int getRat(boolean isOverIms) {
         if (isOverIms) {
+// QTI_BEGIN: 2023-06-26: Telephony: Allow RTT calls over C_IWLAN.
             int imsRegistrationTech = mPhone.getImsRegistrationTech();
             if (imsRegistrationTech
                     == ImsRegistrationImplBase.REGISTRATION_TECH_IWLAN
                     || imsRegistrationTech
                     == ImsRegistrationImplBase.REGISTRATION_TECH_CROSS_SIM) {
+// QTI_END: 2023-06-26: Telephony: Allow RTT calls over C_IWLAN.
                 return TelephonyManager.NETWORK_TYPE_IWLAN;
             }
         }
