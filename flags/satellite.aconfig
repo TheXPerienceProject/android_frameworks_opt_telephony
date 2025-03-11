@@ -19,14 +19,6 @@ flag {
     bug:"296437388"
 }
 
-# OWNER=nagendranb TARGET=24Q3
-flag {
-    name: "satellite_internet"
-    namespace: "telephony"
-    description: "This flag enables satellite internet support."
-    bug:"326972202"
-}
-
 # OWNER=xalle TARGET=24Q3
 flag {
     name: "satellite_persistent_logging"
