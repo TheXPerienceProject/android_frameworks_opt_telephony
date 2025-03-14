@@ -16,8 +16,8 @@
 
 package com.android.internal.telephony.metrics;
 
-import static android.telephony.satellite.NtnSignalStrength.NTN_SIGNAL_STRENGTH_NONE;
 import static android.telephony.TelephonyManager.UNKNOWN_CARRIER_ID;
+import static android.telephony.satellite.NtnSignalStrength.NTN_SIGNAL_STRENGTH_NONE;
 
 import static com.android.internal.telephony.satellite.SatelliteConstants.TRIGGERING_EVENT_UNKNOWN;
 
@@ -1762,6 +1762,9 @@ public class SatelliteStats {
         private final int mCountOfOutgoingSms;
         private final int mCountOfIncomingMms;
         private final int mCountOfOutgoingMms;
+        private final int[] mSupportedSatelliteServices;
+        private final int mServiceDataPolicy;
+        private final long mSatelliteDataConsumedBytes;
 
         private CarrierRoamingSatelliteSessionParams(Builder builder) {
             this.mCarrierId = builder.mCarrierId;
@@ -1781,6 +1784,10 @@ public class SatelliteStats {
             this.mCountOfOutgoingSms = builder.mCountOfOutgoingSms;
             this.mCountOfIncomingMms = builder.mCountOfIncomingMms;
             this.mCountOfOutgoingMms = builder.mCountOfOutgoingMms;
+            this.mSupportedSatelliteServices = builder.mSupportedSatelliteServices;
+            this.mServiceDataPolicy = builder.mServiceDataPolicy;
+            this.mSatelliteDataConsumedBytes =
+                    builder.mSatelliteDataConsumedBytes;
         }
 
         public int getCarrierId() {
@@ -1847,6 +1854,19 @@ public class SatelliteStats {
             return mCountOfOutgoingMms;
         }
 
+        public int[] getSupportedSatelliteServices() {
+            return mSupportedSatelliteServices;
+        }
+
+
+        public int getServiceDataPolicy() {
+            return mServiceDataPolicy;
+        }
+
+        public long getSatelliteDataConsumedBytes() {
+            return mSatelliteDataConsumedBytes;
+        }
+
         /**
          * A builder class to create {@link CarrierRoamingSatelliteSessionParams} data structure
          * class
@@ -1868,6 +1888,10 @@ public class SatelliteStats {
             private int mCountOfOutgoingSms = 0;
             private int mCountOfIncomingMms = 0;
             private int mCountOfOutgoingMms = 0;
+            private int[] mSupportedSatelliteServices = new int[0];
+            int mServiceDataPolicy =
+                    SatelliteConstants.SATELLITE_ENTITLEMENT_SERVICE_POLICY_UNKNOWN;
+            long mSatelliteDataConsumedBytes = 0L;
 
             /**
              * Sets carrierId value of {@link CarrierRoamingSatelliteSession} atom
@@ -2017,6 +2041,34 @@ public class SatelliteStats {
             }
 
             /**
+             * Sets supportedSatelliteServices value of {@link CarrierRoamingSatelliteSession}
+             * atom then returns Builder class
+             */
+            public Builder setSupportedSatelliteServices(int[] supportedSatelliteServices) {
+                this.mSupportedSatelliteServices = supportedSatelliteServices;
+                return this;
+            }
+
+            /**
+             * Sets serviceDataPolicy value of {@link CarrierRoamingSatelliteSession}
+             * atom then returns Builder class
+             */
+            public Builder setServiceDataPolicy(int serviceDataPolicy) {
+                this.mServiceDataPolicy = serviceDataPolicy;
+                return this;
+            }
+
+            /**
+             * Sets satelliteDataConsumedPerSessionBytes value of
+             * {@link CarrierRoamingSatelliteSession} atom then returns Builder class
+             */
+            public Builder setSatelliteDataConsumedBytes(
+                    long satelliteDataConsumedPerSessionBytes) {
+                this.mSatelliteDataConsumedBytes = satelliteDataConsumedPerSessionBytes;
+                return this;
+            }
+
+            /**
              * Returns CarrierRoamingSatelliteSessionParams, which contains whole component of
              * {@link CarrierRoamingSatelliteSession} atom
              */
@@ -2046,6 +2098,9 @@ public class SatelliteStats {
                     + ", countOfOutgoingSms=" + mCountOfOutgoingSms
                     + ", countOfIncomingMms=" + mCountOfIncomingMms
                     + ", countOfOutgoingMms=" + mCountOfOutgoingMms
+                    + ", supportedSatelliteServices=" + Arrays.toString(mSupportedSatelliteServices)
+                    + ", serviceDataPolicy=" + mServiceDataPolicy
+                    + ", SatelliteDataConsumedBytes=" + mSatelliteDataConsumedBytes
                     + ")";
         }
     }
@@ -2258,6 +2313,9 @@ public class SatelliteStats {
         private final int mEntitlementStatus;
         private final boolean mIsRetry;
         private final int mCount;
+        private final boolean mIsAllowedServiceEntitlement;
+        private final int[] mEntitlementServiceType;
+        private final int mEntitlementDataPolicy;
 
         private SatelliteEntitlementParams(Builder builder) {
             this.mCarrierId = builder.mCarrierId;
@@ -2265,6 +2323,9 @@ public class SatelliteStats {
             this.mEntitlementStatus = builder.mEntitlementStatus;
             this.mIsRetry = builder.mIsRetry;
             this.mCount = builder.mCount;
+            this.mIsAllowedServiceEntitlement = builder.mIsAllowedServiceEntitlement;
+            this.mEntitlementServiceType = builder.mEntitlementServiceType;
+            this.mEntitlementDataPolicy = builder.mEntitlementDataPolicy;
         }
 
         public int getCarrierId() {
@@ -2287,6 +2348,18 @@ public class SatelliteStats {
             return mCount;
         }
 
+        public boolean getIsAllowedServiceEntitlement() {
+            return mIsAllowedServiceEntitlement;
+        }
+
+        public int[] getEntitlementServiceType() {
+            return mEntitlementServiceType;
+        }
+
+        public int getEntitlementDataPolicy() {
+            return mEntitlementDataPolicy;
+        }
+
         /**
          * A builder class to create {@link SatelliteEntitlementParams} data structure class
          */
@@ -2296,6 +2369,10 @@ public class SatelliteStats {
             private int mEntitlementStatus = -1;
             private boolean mIsRetry = false;
             private int mCount = -1;
+            private boolean mIsAllowedServiceEntitlement = false;
+            private int[] mEntitlementServiceType = new int[0];
+            private int mEntitlementDataPolicy =
+                    SatelliteConstants.SATELLITE_ENTITLEMENT_SERVICE_POLICY_UNKNOWN;
 
             /**
              * Sets carrierId value of {@link SatelliteEntitlement} atom
@@ -2343,6 +2420,33 @@ public class SatelliteStats {
             }
 
             /**
+             * Sets isAllowedServiceEntitlement value of {@link SatelliteEntitlement} atom
+             * then returns Builder class
+             */
+            public Builder setIsAllowedServiceEntitlement(boolean isAllowedServiceEntitlement) {
+                this.mIsAllowedServiceEntitlement = isAllowedServiceEntitlement;
+                return this;
+            }
+
+            /**
+             * Sets entitlementServiceType value of {@link SatelliteEntitlement} atom
+             * then returns Builder class
+             */
+            public Builder setEntitlementServiceType(int[] entitlementServiceType) {
+                this.mEntitlementServiceType = entitlementServiceType;
+                return this;
+            }
+
+            /**
+             * Sets entitlementDataPolicy value of {@link SatelliteEntitlement} atom
+             * then returns Builder class
+             */
+            public Builder setEntitlementDataPolicy(int entitlementDataPolicy) {
+                this.mEntitlementDataPolicy = entitlementDataPolicy;
+                return this;
+            }
+
+            /**
              * Returns SatelliteEntitlementParams, which contains whole component of
              * {@link SatelliteEntitlement} atom
              */
@@ -2359,7 +2463,10 @@ public class SatelliteStats {
                     + ", result=" + mResult
                     + ", entitlementStatus=" + mEntitlementStatus
                     + ", isRetry=" + mIsRetry
-                    + ", count=" + mCount + ")";
+                    + ", count=" + mCount
+                    + ",isAllowedServiceEntitlement=" + mIsAllowedServiceEntitlement
+                    + ",entitlementServiceType=" + Arrays.toString(mEntitlementServiceType)
+                    + ",entitlementServicePolicy=" + mEntitlementDataPolicy + ")";
         }
     }
 
@@ -2831,6 +2938,9 @@ public class SatelliteStats {
         proto.countOfOutgoingSms = param.mCountOfOutgoingSms;
         proto.countOfIncomingMms = param.mCountOfIncomingMms;
         proto.countOfOutgoingMms = param.mCountOfOutgoingMms;
+        proto.supportedSatelliteServices = param.mSupportedSatelliteServices;
+        proto.serviceDataPolicy = param.mServiceDataPolicy;
+        proto.satelliteDataConsumedBytes = param.mSatelliteDataConsumedBytes;
         mAtomsStorage.addCarrierRoamingSatelliteSessionStats(proto);
     }
 
@@ -2858,6 +2968,9 @@ public class SatelliteStats {
         proto.entitlementStatus = param.getEntitlementStatus();
         proto.isRetry = param.getIsRetry();
         proto.count = param.getCount();
+        proto.isAllowedServiceEntitlement = param.getIsAllowedServiceEntitlement();
+        proto.entitlementServiceType = param.getEntitlementServiceType();
+        proto.entitlementDataPolicy = param.getEntitlementDataPolicy();
         mAtomsStorage.addSatelliteEntitlementStats(proto);
     }
 

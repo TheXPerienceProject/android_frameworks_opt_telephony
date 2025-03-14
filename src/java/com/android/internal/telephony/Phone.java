@@ -1112,19 +1112,12 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
     public void notifySmsSent(String destinationAddress) {
         TelephonyManager m = (TelephonyManager) getContext().getSystemService(
                 Context.TELEPHONY_SERVICE);
-        if (!mFeatureFlags.enforceTelephonyFeatureMappingForPublicApis()) {
+        if (mContext.getPackageManager() != null
+                && mContext.getPackageManager().hasSystemFeature(
+                        PackageManager.FEATURE_TELEPHONY_CALLING)) {
             if (m != null && m.isEmergencyNumber(destinationAddress)) {
                 mLocalLog.log("Emergency SMS detected, recording time.");
                 mTimeLastEmergencySmsSentMs = SystemClock.elapsedRealtime();
-            }
-        } else {
-            if (mContext.getPackageManager() != null
-                    && mContext.getPackageManager().hasSystemFeature(
-                            PackageManager.FEATURE_TELEPHONY_CALLING)) {
-                if (m != null && m.isEmergencyNumber(destinationAddress)) {
-                    mLocalLog.log("Emergency SMS detected, recording time.");
-                    mTimeLastEmergencySmsSentMs = SystemClock.elapsedRealtime();
-                }
             }
         }
     }

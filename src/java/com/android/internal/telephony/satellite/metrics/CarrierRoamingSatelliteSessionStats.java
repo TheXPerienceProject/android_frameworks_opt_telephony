@@ -17,6 +17,10 @@
 package com.android.internal.telephony.satellite.metrics;
 
 import android.annotation.NonNull;
+import android.app.usage.NetworkStats;
+import android.app.usage.NetworkStatsManager;
+import android.content.Context;
+import android.net.NetworkTemplate;
 import android.telephony.CellInfo;
 import android.telephony.CellSignalStrength;
 import android.telephony.CellSignalStrengthLte;
@@ -24,18 +28,22 @@ import android.telephony.NetworkRegistrationInfo;
 import android.telephony.ServiceState;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
 
 import com.android.internal.telephony.MccTable;
 import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.metrics.SatelliteStats;
+import com.android.internal.telephony.satellite.SatelliteConstants;
 import com.android.internal.telephony.subscription.SubscriptionInfoInternal;
 import com.android.internal.telephony.subscription.SubscriptionManagerService;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 public class CarrierRoamingSatelliteSessionStats {
     private static final String TAG = CarrierRoamingSatelliteSessionStats.class.getSimpleName();
@@ -49,12 +57,17 @@ public class CarrierRoamingSatelliteSessionStats {
     private int mCountOfIncomingMms;
     private int mCountOfOutgoingMms;
     private long mIncomingMessageId;
-
     private int mSessionStartTimeSec;
     private List<Long> mConnectionStartTimeList;
     private List<Long> mConnectionEndTimeList;
     private List<Integer> mRsrpList;
     private List<Integer> mRssnrList;
+    private int[] mSupportedSatelliteServices;
+    private int mServiceDataPolicy;
+    private Phone mPhone;
+    private Context mContext;
+    private long mSatelliteDataConsumedBytes = 0L;
+    private long mDataUsageOnSessionStartBytes = 0L;
 
     public CarrierRoamingSatelliteSessionStats(int subId) {
         logd("Create new CarrierRoamingSatelliteSessionStats. subId=" + subId);
@@ -74,11 +87,18 @@ public class CarrierRoamingSatelliteSessionStats {
     }
 
     /** Log carrier roaming satellite session start */
-    public void onSessionStart(int carrierId, Phone phone) {
+    public void onSessionStart(int carrierId, Phone phone, int[] supportedServices,
+            int serviceDataPolicy) {
+        mPhone = phone;
+        mContext = mPhone.getContext();
         mCarrierId = carrierId;
+        mSupportedSatelliteServices = supportedServices;
+        mServiceDataPolicy = serviceDataPolicy;
         mSessionStartTimeSec = getCurrentTimeInSec();
         mIsNtnRoamingInHomeCountry = false;
-        onConnectionStart(phone);
+        onConnectionStart(mPhone);
+        mDataUsageOnSessionStartBytes = getDataUsage();
+        logd("current data consumed: " + mDataUsageOnSessionStartBytes);
     }
 
     /** Log carrier roaming satellite connection start */
@@ -87,11 +107,51 @@ public class CarrierRoamingSatelliteSessionStats {
         updateNtnRoamingInHomeCountry(phone);
     }
 
+    /** calculate total satellite data consumed at the session */
+    private long getDataUsage() {
+        if (mContext == null) {
+            return 0L;
+        }
+
+        NetworkStatsManager networkStatsManager =
+                mContext.getSystemService(NetworkStatsManager.class);
+
+        if (networkStatsManager != null) {
+            final NetworkTemplate.Builder builder =
+                    new NetworkTemplate.Builder(NetworkTemplate.MATCH_MOBILE);
+            final String subscriberId = mPhone.getSubscriberId();
+            logd("subscriber id for data consumed:" + subscriberId);
+
+            if (!TextUtils.isEmpty(subscriberId)) {
+                builder.setSubscriberIds(Set.of(subscriberId));
+                // Consider data usage calculation of only metered capabilities / data network
+                builder.setMeteredness(android.net.NetworkStats.METERED_YES);
+                NetworkTemplate template = builder.build();
+                final NetworkStats.Bucket ret = networkStatsManager
+                        .querySummaryForDevice(template, 0L, System.currentTimeMillis());
+                return ret.getRxBytes() + ret.getTxBytes();
+            }
+        }
+        return 0L;
+    }
+
     /** Log carrier roaming satellite session end */
     public void onSessionEnd() {
         onConnectionEnd();
+        long dataUsageOnSessionEndBytes = getDataUsage();
+        logd("update data consumed: " + dataUsageOnSessionEndBytes);
+        if (dataUsageOnSessionEndBytes > 0L
+                && dataUsageOnSessionEndBytes > mDataUsageOnSessionStartBytes) {
+            mSatelliteDataConsumedBytes =
+                    dataUsageOnSessionEndBytes - mDataUsageOnSessionStartBytes;
+        }
+        logd("satellite data consumed at session: " + mSatelliteDataConsumedBytes);
         reportMetrics();
         mIsNtnRoamingInHomeCountry = false;
+        mSupportedSatelliteServices = new int[0];
+        mServiceDataPolicy = SatelliteConstants.SATELLITE_ENTITLEMENT_SERVICE_POLICY_UNKNOWN;
+        mSatelliteDataConsumedBytes = 0L;
+        mDataUsageOnSessionStartBytes = 0L;
     }
 
     /** Log carrier roaming satellite connection end */
@@ -189,8 +249,12 @@ public class CarrierRoamingSatelliteSessionStats {
                         .setCountOfOutgoingSms(mCountOfOutgoingSms)
                         .setCountOfIncomingMms(mCountOfIncomingMms)
                         .setCountOfOutgoingMms(mCountOfOutgoingMms)
+                        .setSupportedSatelliteServices(mSupportedSatelliteServices)
+                        .setServiceDataPolicy(mServiceDataPolicy)
+                        .setSatelliteDataConsumedBytes(mSatelliteDataConsumedBytes)
                         .build();
         SatelliteStats.getInstance().onCarrierRoamingSatelliteSessionMetrics(params);
+        logd("Supported satellite services: " + Arrays.toString(mSupportedSatelliteServices));
         logd("reportMetrics: " + params);
         initializeParams();
     }

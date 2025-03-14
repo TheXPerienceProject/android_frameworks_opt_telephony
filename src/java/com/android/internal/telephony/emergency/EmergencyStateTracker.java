@@ -1251,9 +1251,14 @@ public class EmergencyStateTracker {
             exitEmergencyMode(gsmCdmaPhone, EMERGENCY_TYPE_CALL);
         }
 
-        mEmergencyCallDomain = NetworkRegistrationInfo.DOMAIN_UNKNOWN;
-        mIsTestEmergencyNumber = false;
-        mPhone = null;
+        // If an emergency call is in progress, even if this method is called for any reason,
+        // we should not initialize the Phone object so that the application can normally end
+        // the emergency call.
+        if (mOngoingConnection == null) {
+            mEmergencyCallDomain = NetworkRegistrationInfo.DOMAIN_UNKNOWN;
+            mIsTestEmergencyNumber = false;
+            mPhone = null;
+        }
     }
 
     private void releaseWakeLock() {

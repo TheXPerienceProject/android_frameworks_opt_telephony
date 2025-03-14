@@ -1374,7 +1374,14 @@ public class DatagramDispatcher extends Handler {
     private boolean allowMtSmsPolling() {
         if (!mFeatureFlags.carrierRoamingNbIotNtn()) return false;
 
-        if (mIsMtSmsPollingThrottled) return false;
+        SatelliteController satelliteController = SatelliteController.getInstance();
+        int subId = satelliteController.getSelectedSatelliteSubId();
+        boolean isP2PSmsDisallowed =
+                satelliteController.isP2PSmsDisallowedOnCarrierRoamingNtn(subId);
+        if (isP2PSmsDisallowed) {
+            plogd("allowMtSmsPolling: P2P SMS disallowed, subId = " + subId);
+            return false;
+        }
 
         if (!mIsAligned) return false;
 

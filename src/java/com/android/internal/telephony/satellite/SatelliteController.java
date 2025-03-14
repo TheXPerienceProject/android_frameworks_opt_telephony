@@ -68,6 +68,7 @@ import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_SUCC
 import static com.android.internal.telephony.configupdate.ConfigProviderAdaptor.DOMAIN_SATELLITE;
 
 import android.annotation.ArrayRes;
+import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.AlertDialog;
@@ -183,6 +184,8 @@ import com.android.internal.telephony.util.TelephonyUtils;
 import com.android.internal.telephony.util.WorkerThread;
 import com.android.internal.util.FunctionalUtils;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -693,6 +696,12 @@ public class SatelliteController extends Handler {
     // Data Plan types at entitlement for the plmn allowed
     public static final int SATELLITE_DATA_PLAN_METERED = 0;
     public static final int SATELLITE_DATA_PLAN_UNMETERED = 1;
+    @IntDef(prefix = {"SATELLITE_DATA_PLAN_"}, value = {
+            SATELLITE_DATA_PLAN_METERED,
+            SATELLITE_DATA_PLAN_UNMETERED,
+    })
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface SatelliteDataPlan {}
     private BroadcastReceiver
             mDefaultSmsSubscriptionChangedBroadcastReceiver = new BroadcastReceiver() {
                 @Override
@@ -1048,6 +1057,15 @@ public class SatelliteController extends Handler {
             return null;
         }
         return satelliteConfigParser.getConfig();
+    }
+
+    /**
+     * This API should be used by only CTS/unit tests to reset the telephony configs set through
+     * config updater
+     */
+    @VisibleForTesting(visibility = VisibleForTesting.Visibility.PRIVATE)
+    public void cleanUpTelephonyConfigs() {
+        TelephonyConfigUpdateInstallReceiver.getInstance().cleanUpTelephonyConfigs();
     }
 
     /**
@@ -4190,19 +4208,27 @@ public class SatelliteController extends Handler {
     }
 
     /**
-     * To use the satellite service, update the EntitlementStatus and the PlmnAllowedList after
-     * receiving the satellite configuration from the entitlement server. If satellite
-     * entitlement is enabled, enable satellite for the carrier. Otherwise, disable satellite.
+     * To use the satellite service, update the EntitlementStatus, PlmnAllowedList, barred plmn list
+     * data plan, service type, data service policy and voice service policy after receiving the
+     * satellite configuration from the entitlement server. If satellite entitlement is enabled,
+     * enable satellite for the carrier. Otherwise, disable satellite.
      *
      * @param subId              subId
      * @param entitlementEnabled {@code true} Satellite service enabled
      * @param allowedPlmnList    plmn allowed list to use the satellite service
      * @param barredPlmnList    plmn barred list to pass the modem
-     * @param plmnDataPlanMap   data plan map for the plmn
-     * @param plmnServiceTypeMap available services map for the plmn
-     * @param plmnDataServicePolicyMap data service policy map for the plmn
-     * @param plmnVoiceServicePolicyMap voice service policy map for the plmn
-     * @param callback           callback for accept
+     * @param plmnDataPlanMap   data plan map for the plmn with key as plmn and data plan as value
+     *        with possible values {@link SatelliteDataPlan}
+     * @param plmnServiceTypeMap available services map for the plmn with key as plmn and service
+     *        type as list of integer values with possible values
+     *        {@link NetworkRegistrationInfo#ServiceType}
+     * @param plmnDataServicePolicyMap data service policy map for the plmn with key as plmn and
+     *        data service policy as integer value with possible values
+     *        {@link CarrierConfigManager#SATELLITE_DATA_SUPPORT_MODE}
+     * @param plmnVoiceServicePolicyMap voice service policy map for the plmn with key as plmn and
+     *        voice service policy as integer value with possible values
+     *        @link CarrierConfigManager#SATELLITE_DATA_SUPPORT_MODE}
+     * @param callback callback for accept
      */
     public void onSatelliteEntitlementStatusUpdated(int subId, boolean entitlementEnabled,
             @Nullable List<String> allowedPlmnList, @Nullable List<String> barredPlmnList,
@@ -5813,12 +5839,6 @@ public class SatelliteController extends Handler {
                     + "SetSatelliteAttachEnableForCarrier error code =" + errorCode);
         }
 
-        if (!isSatelliteSupportedViaCarrier(subId)) {
-            plogd("Satellite for carrier is not supported. Only user setting is stored");
-            callback.accept(SATELLITE_RESULT_SUCCESS);
-            return;
-        }
-
         Phone phone = SatelliteServiceUtils.getPhone(subId);
         if (phone == null) {
             ploge("evaluateEnablingSatelliteForCarrier: phone is null for subId=" + subId);
@@ -5828,23 +5848,20 @@ public class SatelliteController extends Handler {
 
         /* Request to enable or disable the satellite in the cellular modem only when the desired
         state and the current state are different. */
-        boolean isSatelliteExpectedToBeEnabled = !isSatelliteRestrictedForCarrier(subId);
+        boolean isSatelliteExpectedToBeEnabled = !isSatelliteRestrictedForCarrier(subId)
+                && isSatelliteSupportedViaCarrier(subId);
         if (isSatelliteExpectedToBeEnabled != isSatelliteEnabledForCarrierAtModem(subId)) {
-            if (mSatelliteModemInterface.isSatelliteServiceSupported()) {
-                int simSlot = SubscriptionManager.getSlotIndex(subId);
-                RequestHandleSatelliteAttachRestrictionForCarrierArgument argument =
-                        new RequestHandleSatelliteAttachRestrictionForCarrierArgument(subId,
-                                reason, callback);
-                SatelliteControllerHandlerRequest request =
-                        new SatelliteControllerHandlerRequest(argument,
-                                SatelliteServiceUtils.getPhone(subId));
-                Message onCompleted = obtainMessage(
-                        EVENT_EVALUATE_SATELLITE_ATTACH_RESTRICTION_CHANGE_DONE, request);
-                phone.setSatelliteEnabledForCarrier(simSlot,
-                        isSatelliteExpectedToBeEnabled, onCompleted);
-            } else {
-                callback.accept(SatelliteManager.SATELLITE_RESULT_INVALID_TELEPHONY_STATE);
-            }
+            int simSlot = SubscriptionManager.getSlotIndex(subId);
+            RequestHandleSatelliteAttachRestrictionForCarrierArgument argument =
+                    new RequestHandleSatelliteAttachRestrictionForCarrierArgument(subId,
+                            reason, callback);
+            SatelliteControllerHandlerRequest request =
+                    new SatelliteControllerHandlerRequest(argument,
+                            SatelliteServiceUtils.getPhone(subId));
+            Message onCompleted = obtainMessage(
+                    EVENT_EVALUATE_SATELLITE_ATTACH_RESTRICTION_CHANGE_DONE, request);
+            phone.setSatelliteEnabledForCarrier(simSlot,
+                    isSatelliteExpectedToBeEnabled, onCompleted);
         } else {
             callback.accept(SATELLITE_RESULT_SUCCESS);
         }
@@ -6035,6 +6052,36 @@ public class SatelliteController extends Handler {
         }
     }
 
+    /**
+     * map data policy to support unknown case at metrics
+     * @param dataPolicy data support mode for the service type
+     * @return corresponding value from {@link SatelliteConstants.SatelliteEntitlementServicePolicy}
+     *
+     */
+    @SatelliteConstants.SatelliteEntitlementServicePolicy
+    public int mapDataPolicyForMetrics(int dataPolicy) {
+        switch (dataPolicy) {
+            case CarrierConfigManager.SATELLITE_DATA_SUPPORT_ONLY_RESTRICTED -> {
+                return SatelliteConstants.SATELLITE_ENTITLEMENT_SERVICE_POLICY_RESTRICTED;
+            }
+            case CarrierConfigManager.SATELLITE_DATA_SUPPORT_BANDWIDTH_CONSTRAINED -> {
+                return SatelliteConstants.SATELLITE_ENTITLEMENT_SERVICE_POLICY_CONSTRAINED;
+            }
+            case CarrierConfigManager.SATELLITE_DATA_SUPPORT_ALL -> {
+                return SatelliteConstants.SATELLITE_ENTITLEMENT_SERVICE_POLICY_UNCONSTRAINED;
+            }
+        }
+        return SatelliteConstants.SATELLITE_ENTITLEMENT_SERVICE_POLICY_UNKNOWN;
+    }
+
+    private int[] getSupportedSatelliteServicesOnSessionStart(List<Integer> supportedServices) {
+        if (supportedServices == null || supportedServices.isEmpty()) {
+            return new int[0];
+        }
+
+        return supportedServices.stream().mapToInt(Integer::intValue).toArray();
+    }
+
     private void logCarrierRoamingSatelliteSessionStats(@NonNull Phone phone,
             boolean lastNotifiedNtnMode, boolean currNtnMode) {
         synchronized (mSatelliteConnectedLock) {
@@ -6043,7 +6090,15 @@ public class SatelliteController extends Handler {
                 // Log satellite session start
                 CarrierRoamingSatelliteSessionStats sessionStats =
                         CarrierRoamingSatelliteSessionStats.getInstance(subId);
-                sessionStats.onSessionStart(phone.getCarrierId(), phone);
+                int[] supported_satellite_services =
+                        getSupportedSatelliteServicesOnSessionStart(
+                                getSupportedSatelliteServicesForPlmn(subId,
+                        phone.getServiceState().getOperatorNumeric()));
+                int dataPolicy = mapDataPolicyForMetrics(getSatelliteDataServicePolicyForPlmn(subId,
+                        phone.getServiceState().getOperatorNumeric()));
+
+                sessionStats.onSessionStart(phone.getCarrierId(), phone,
+                        supported_satellite_services, dataPolicy);
                 mCarrierRoamingSatelliteSessionStatsMap.put(subId, sessionStats);
             } else if (lastNotifiedNtnMode && !currNtnMode) {
                 // Log satellite session end
@@ -8344,7 +8399,6 @@ public class SatelliteController extends Handler {
      * return {@code true} when the phone does not support P2P SMS over carrier roaming satellite
      *        {@code false} otherwise
      */
-    @VisibleForTesting(visibility = VisibleForTesting.Visibility.PRIVATE)
     public boolean isP2PSmsDisallowedOnCarrierRoamingNtn(int subId) {
         int carrierRoamingNtnConnectType = getCarrierRoamingNtnConnectType(subId);
         if (carrierRoamingNtnConnectType == CARRIER_ROAMING_NTN_CONNECT_MANUAL) {

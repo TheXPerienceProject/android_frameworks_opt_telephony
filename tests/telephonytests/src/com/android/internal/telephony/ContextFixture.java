@@ -105,6 +105,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executor;
 
 /**
  * Controls a test {@link Context} as would be provided by the Android framework to an
@@ -239,18 +240,34 @@ public class ContextFixture implements TestFixture<Context> {
             if (mServiceByServiceConnection.containsKey(connection)) {
                 throw new RuntimeException("ServiceConnection already bound: " + connection);
             }
-            IInterface service = mServiceByComponentName.get(serviceIntent.getComponent());
+            IInterface service = null;
+            if (serviceIntent.getComponent() != null) {
+                service = mServiceByComponentName.get(serviceIntent.getComponent());
+            }
             if (service == null) {
                 service = mServiceByPackageName.get(serviceIntent.getPackage());
             }
             if (service == null) {
                 throw new RuntimeException(
-                        String.format("ServiceConnection not found for component: %s, package: %s",
+                        String.format(
+                                "ServiceConnection not found for component: %s, package: %s",
                                 serviceIntent.getComponent(), serviceIntent.getPackage()));
             }
             mServiceByServiceConnection.put(connection, service);
-            connection.onServiceConnected(serviceIntent.getComponent(), service.asBinder());
+            ComponentName componentName = null;
+            if (mComponentNameByService.containsKey(service)) {
+                componentName = mComponentNameByService.get(service);
+            } else {
+                componentName = serviceIntent.getComponent();
+            }
+            connection.onServiceConnected(componentName, service.asBinder());
             return true;
+        }
+
+        @Override
+        public boolean bindService(
+                Intent serviceIntent, int flags, Executor executor, ServiceConnection connection) {
+            return bindService(serviceIntent, connection, flags);
         }
 
         @Override

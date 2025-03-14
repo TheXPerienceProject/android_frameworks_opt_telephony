@@ -1264,9 +1264,6 @@ public class DatagramDispatcherTest extends TelephonyTest {
         mContextFixture.putBooleanResource(
                 R.bool.config_satellite_allow_check_message_in_not_connected, true);
 
-        mDatagramDispatcherUT.onSatelliteModemStateChanged(
-                SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED);
-
         verify(mMockSmsDispatchersController, times(0)).sendMtSmsPollingMessage();
     }
 
@@ -1285,6 +1282,31 @@ public class DatagramDispatcherTest extends TelephonyTest {
         verify(mMockSmsDispatchersController, times(1)).sendMtSmsPollingMessage();
     }
 
+    @Test
+    public void testSendsMtSmsPoll_P2PSmsAllowed() {
+        mDatagramDispatcherUT.setDeviceAlignedWithSatellite(true);
+        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
+        mContextFixture.putBooleanResource(R.bool.config_enabled_mt_sms_polling, true);
+        when(mMockSatelliteController.shouldSendSmsToDatagramDispatcher(any(Phone.class)))
+                .thenReturn(true);
+
+        // Set P2P SMS disallowed
+        when(mMockSatelliteController.isP2PSmsDisallowedOnCarrierRoamingNtn(anyInt()))
+                .thenReturn(true);
+        mDatagramDispatcherUT.onSatelliteModemStateChanged(
+                SatelliteManager.SATELLITE_MODEM_STATE_CONNECTED);
+
+        verify(mMockSmsDispatchersController, times(0)).sendMtSmsPollingMessage();
+
+        // Set P2P SMS allowed
+        when(mMockSatelliteController.isP2PSmsDisallowedOnCarrierRoamingNtn(anyInt()))
+                .thenReturn(false);
+        mDatagramDispatcherUT.onSatelliteModemStateChanged(
+                SatelliteManager.SATELLITE_MODEM_STATE_CONNECTED);
+
+        verify(mMockSmsDispatchersController, times(1)).sendMtSmsPollingMessage();
+    }
+
     private void setModemState(int state) {
         mDatagramDispatcherUT.onSatelliteModemStateChanged(state);
     }
@@ -1296,6 +1318,8 @@ public class DatagramDispatcherTest extends TelephonyTest {
         mContextFixture.putBooleanResource(R.bool.config_enabled_mt_sms_polling, true);
         when(mMockSatelliteController.shouldSendSmsToDatagramDispatcher(any(Phone.class)))
                 .thenReturn(true);
+        when(mMockSatelliteController.isP2PSmsDisallowedOnCarrierRoamingNtn(anyInt()))
+                .thenReturn(false);
         // This will trigger mShouldPollMtSms = shouldPollMtSms
         setModemState(SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED);
     }

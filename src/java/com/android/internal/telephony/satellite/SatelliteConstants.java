@@ -124,4 +124,18 @@ public class SatelliteConstants {
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface TriggeringEvent {}
+
+    public static final int SATELLITE_ENTITLEMENT_SERVICE_POLICY_UNKNOWN = 0;
+    public static final int SATELLITE_ENTITLEMENT_SERVICE_POLICY_RESTRICTED = 1;
+    public static final int SATELLITE_ENTITLEMENT_SERVICE_POLICY_CONSTRAINED = 2;
+    public static final int SATELLITE_ENTITLEMENT_SERVICE_POLICY_UNCONSTRAINED = 3;
+
+    @IntDef(prefix = {"SATELLITE_ENTITLEMENT_SERVICE_POLICY_"}, value = {
+            SATELLITE_ENTITLEMENT_SERVICE_POLICY_UNKNOWN,
+            SATELLITE_ENTITLEMENT_SERVICE_POLICY_RESTRICTED,
+            SATELLITE_ENTITLEMENT_SERVICE_POLICY_CONSTRAINED,
+            SATELLITE_ENTITLEMENT_SERVICE_POLICY_UNCONSTRAINED,
+    })
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface SatelliteEntitlementServicePolicy {}
 }

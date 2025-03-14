@@ -749,7 +749,6 @@ public class GsmCdmaPhoneTest extends TelephonyTest {
 
         // Feature flag enabled
         // Device does not have FEATURE_TELEPHONY_CALLING
-        doReturn(true).when(mFeatureFlags).enforceTelephonyFeatureMappingForPublicApis();
         doReturn(false).when(mPackageManager).hasSystemFeature(
                 eq(PackageManager.FEATURE_TELEPHONY_CALLING));
         mPhoneUT.notifySmsSent(emergencyNumber);

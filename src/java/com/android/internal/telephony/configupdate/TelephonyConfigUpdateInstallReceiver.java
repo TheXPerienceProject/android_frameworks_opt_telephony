@@ -34,6 +34,7 @@ import com.android.server.updates.ConfigUpdateInstallReceiver;
 
 import libcore.io.IoUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
@@ -292,5 +293,38 @@ public class TelephonyConfigUpdateInstallReceiver extends ConfigUpdateInstallRec
         }
         Log.d(TAG, "source file is not exist, no file to copy");
         return false;
+    }
+
+    /**
+     * This API should be used by only CTS/unit tests to reset the telephony configs set through
+     * config updater
+     */
+    @VisibleForTesting(visibility = VisibleForTesting.Visibility.PRIVATE)
+    public boolean cleanUpTelephonyConfigs() {
+        Log.d(TAG, "cleanTelephonyConfigs: resetting the telephony configs");
+        try {
+            // metadata/version
+            File updateMetadataDir = new File(updateDir, UPDATE_METADATA_PATH);
+            writeUpdate(
+                    updateMetadataDir,
+                    updateVersion,
+                    new ByteArrayInputStream(Integer.toString(-1).getBytes()));
+
+            // new_telephony_config.pb
+            writeUpdate(updateDir, updateContent, new ByteArrayInputStream(new byte[] {}));
+
+            // valid_telephony_config.pb
+            File validConfigContentPath = new File(updateDir, VALID_CONFIG_CONTENT_PATH);
+            writeUpdate(updateDir, validConfigContentPath, new ByteArrayInputStream(new byte[] {}));
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to clean telephony config files: " + e);
+            return false;
+        }
+
+        Log.d(TAG, "cleanTelephonyConfigs: resetting the config parser");
+        synchronized (getInstance().mConfigParserLock) {
+            getInstance().mConfigParser = null;
+        }
+        return true;
     }
 }

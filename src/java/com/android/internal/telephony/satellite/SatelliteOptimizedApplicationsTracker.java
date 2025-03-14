@@ -82,10 +82,10 @@ public class SatelliteOptimizedApplicationsTracker {
                                 handleInitializeTracker();
                             }
                             case ACTION_PACKAGE_ADDED,
-                                ACTION_PACKAGE_UPDATED,
-                                ACTION_PACKAGE_MODIFIED-> {
-                                    String packageName = (String) msg.obj;
-                                    handlePackageMonitor(packageName);
+                                    ACTION_PACKAGE_UPDATED,
+                                    ACTION_PACKAGE_MODIFIED -> {
+                                String packageName = (String) msg.obj;
+                                handlePackageMonitor(packageName);
                             }
                             case ACTION_PACKAGE_REMOVED -> {
                                 String packageName = (String) msg.obj;
@@ -161,10 +161,7 @@ public class SatelliteOptimizedApplicationsTracker {
     }
 
     private void handlePackageRemoved(String packageName) {
-        ApplicationInfo applicationInfo = getApplicationInfo(packageName);
-        if (applicationInfo != null && isOptimizedSatelliteApplication(applicationInfo)) {
-            removeCacheOptimizedSatelliteApplication(packageName);
-        }
+        removeCacheOptimizedSatelliteApplication(packageName);
     }
 
     private void handlePackageMonitor(String packageName) {
@@ -182,7 +179,7 @@ public class SatelliteOptimizedApplicationsTracker {
         List<UserInfo> users = mUserManager.getUsers();
         for (UserInfo user : users) {
             int userId = user.getUserHandle().getIdentifier();
-            mSatelliteApplications.put(userId, new HashSet<>());
+            mSatelliteApplications.putIfAbsent(userId, new HashSet<>());
         }
         // Get a list of installed packages
         List<PackageInfo> packages =
@@ -213,6 +210,7 @@ public class SatelliteOptimizedApplicationsTracker {
             try {
                 mPackageManager.getPackageUidAsUser(
                         packageName, PackageManager.GET_META_DATA, userId);
+                mSatelliteApplications.putIfAbsent(userId, new HashSet<>());
                 mSatelliteApplications.get(userId).add(packageName);
             } catch (java.lang.Exception e) {
                 // package is not present for current user
@@ -229,7 +227,8 @@ public class SatelliteOptimizedApplicationsTracker {
                         packageName, PackageManager.GET_META_DATA, userId);
             } catch (java.lang.Exception e) {
                 // package is not present for current user
-                if (mSatelliteApplications.get(userId).contains(packageName)) {
+                if (mSatelliteApplications.containsKey(userId)
+                        && mSatelliteApplications.get(userId).contains(packageName)) {
                     mSatelliteApplications.get(userId).remove(packageName);
                 }
             }
@@ -240,7 +239,6 @@ public class SatelliteOptimizedApplicationsTracker {
      * Get list of applications that are optimized for low bandwidth satellite data.
      *
      * @param userId is Identifier of user
-     *
      * @return List of applications package names with data optimized network property. {@link
      *     #PROPERTY_SATELLITE_DATA_OPTIMIZED}
      */

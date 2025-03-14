@@ -713,13 +713,6 @@ public class DataNetworkController extends Handler {
         public void onDataServiceBound(@TransportType int transport) {}
 
         /**
-         * Called when SIM load state changed.
-         *
-         * @param simState The current SIM state
-         */
-        public void onSimStateChanged(@SimState int simState) {}
-
-        /**
          * Called when QosBearerSessions changed.
          *
          * @param qosBearerSessions The latest QOS bearer sessions.
@@ -3781,8 +3774,6 @@ public class DataNetworkController extends Handler {
                 sendMessage(obtainMessage(EVENT_REEVALUATE_UNSATISFIED_NETWORK_REQUESTS,
                         DataEvaluationReason.SIM_LOADED));
             }
-            mDataNetworkControllerCallbacks.forEach(callback -> callback.invokeFromExecutor(
-                    () -> callback.onSimStateChanged(mSimState)));
         }
     }
 
