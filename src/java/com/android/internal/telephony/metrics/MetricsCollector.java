@@ -1593,7 +1593,10 @@ public class MetricsCollector implements StatsManager.StatsPullAtomCallback {
                 stats.countOfIncomingSms,
                 stats.countOfOutgoingSms,
                 stats.countOfIncomingMms,
-                stats.countOfOutgoingMms);
+                stats.countOfOutgoingMms,
+                stats.supportedSatelliteServices,
+                stats.serviceDataPolicy,
+                stats.satelliteDataConsumedBytes);
     }
 
     private static StatsEvent buildStatsEvent(CarrierRoamingSatelliteControllerStats stats) {
@@ -1617,7 +1620,10 @@ public class MetricsCollector implements StatsManager.StatsPullAtomCallback {
                 stats.result,
                 stats.entitlementStatus,
                 stats.isRetry,
-                stats.count);
+                stats.count,
+                stats.isAllowedServiceEntitlement,
+                stats.entitlementServiceType,
+                stats.entitlementDataPolicy);
     }
 
     private static StatsEvent buildStatsEvent(SatelliteConfigUpdater stats) {

@@ -579,7 +579,6 @@ public abstract class TelephonyTest {
         mDomainSelectionResolver = Mockito.mock(DomainSelectionResolver.class);
         mNullCipherNotifier = Mockito.mock(NullCipherNotifier.class);
 
-        doReturn(true).when(mFeatureFlags).minimalTelephonyCdmCheck();
         doReturn(true).when(mFeatureFlags).hsumBroadcast();
         doReturn(true).when(mFeatureFlags).hsumPackageManager();
         doReturn(true).when(mFeatureFlags).dataServiceCheck();

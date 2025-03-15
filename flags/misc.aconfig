@@ -52,22 +52,6 @@ flag {
     bug:"271921464"
 }
 
-# OWNER=joonhunshin TARGET=24Q3
-flag {
-    name: "enforce_telephony_feature_mapping"
-    namespace: "telephony"
-    description: "This flag controls telephony feature flags mapping."
-    bug:"297989574"
-}
-
-# OWNER=joonhunshin TARGET=24Q3
-flag {
-    name: "enforce_telephony_feature_mapping_for_public_apis"
-    namespace: "telephony"
-    description: "This flag controls telephony feature flags mapping for public APIs and CTS."
-    bug:"297989574"
-}
-
 # OWNER=stevestatia TARGET=24Q3
 flag {
     name: "prevent_system_server_and_phone_deadlock"
@@ -82,14 +66,6 @@ flag {
     namespace: "telephony"
     description: "This flag prevents repeat invocation of call related APIs in RIL when the device is not voice capable"
     bug: "290833783"
-}
-
-# OWNER=jackyu TARGET=24Q3
-flag {
-    name: "minimal_telephony_cdm_check"
-    namespace: "telephony"
-    description: "This flag disables Calling/Data/Messaging features if their respective feature is missing"
-    bug: "310710841"
 }
 
 # OWNER=jackyu TARGET=24Q3

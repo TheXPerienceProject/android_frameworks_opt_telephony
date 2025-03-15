@@ -124,6 +124,7 @@ import static org.mockito.Mockito.when;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.NotificationManager;
+import android.app.usage.NetworkStatsManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -620,6 +621,14 @@ public class SatelliteControllerTest extends TelephonyTest {
         doReturn(SUB_ID1).when(mPhone2).getSubId();
         when(mPhone2.getPhoneId()).thenReturn(1);
         when(mPhone2.getSignalStrengthController()).thenReturn(mSignalStrengthController);
+
+        doReturn(Context.NETWORK_STATS_SERVICE).when(mContext).getSystemServiceName(
+                NetworkStatsManager.class);
+        doReturn(mStatsManager).when(mContext).getSystemService(Context.NETWORK_STATS_SERVICE);
+        if (mContext.getSystemService(NetworkStatsManager.class) == null) {
+            // Test is using mockito-extended
+            doReturn(mStatsManager).when(mContext).getSystemService(NetworkStatsManager.class);
+        }
 
         mContextFixture.putStringArrayResource(
                 R.array.config_satellite_providers,

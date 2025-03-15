@@ -1115,6 +1115,32 @@ public class EmergencyStateTrackerTest extends TelephonyTest {
 
     @Test
     @SmallTest
+    public void testEndCallAfterExitEmergencyCallbackModeIsCalledInNonEcbm() throws Exception {
+        // Setup EmergencyStateTracker
+        EmergencyStateTracker emergencyStateTracker = setupEmergencyStateTracker(
+                /* isSuplDdsSwitchRequiredForEmergencyCall= */ true);
+        // Create test Phone
+        GsmCdmaPhone testPhone = (GsmCdmaPhone) setupTestPhoneForEmergencyCall(
+                /* isRoaming= */ true, /* isRadioOn= */ true);
+        setUpAsyncResultForSetEmergencyMode(testPhone, E_REG_RESULT);
+        setUpAsyncResultForExitEmergencyMode(testPhone);
+        // Start emergency call then enter ECM
+        CompletableFuture<Integer> unused = emergencyStateTracker.startEmergencyCall(testPhone,
+                mTestConnection1, false);
+        processAllMessages();
+
+        // Exit emergency mode explicitly
+        emergencyStateTracker.exitEmergencyCallbackMode();
+
+        emergencyStateTracker.endCall(mTestConnection1);
+        processAllMessages();
+
+        // Verify exitEmergencyMode() is called.
+        verify(testPhone).exitEmergencyMode(any(Message.class));
+    }
+
+    @Test
+    @SmallTest
     public void testRecoverNormalInCellularWhenVoWiFiConnected() {
         EmergencyStateTracker emergencyStateTracker = setupEmergencyStateTracker(
                 /* isSuplDdsSwitchRequiredForEmergencyCall= */ true);
