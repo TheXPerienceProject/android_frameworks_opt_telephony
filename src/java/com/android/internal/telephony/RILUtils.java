@@ -59,7 +59,9 @@ import static com.android.internal.telephony.RILConstants.RIL_REQUEST_DATA_REGIS
 import static com.android.internal.telephony.RILConstants.RIL_REQUEST_DEACTIVATE_DATA_CALL;
 import static com.android.internal.telephony.RILConstants.RIL_REQUEST_DELETE_SMS_ON_SIM;
 import static com.android.internal.telephony.RILConstants.RIL_REQUEST_DEVICE_IDENTITY;
+// QTI_BEGIN: 2023-03-23: RIL: Update getImei to check the correct HAL service
 import static com.android.internal.telephony.RILConstants.RIL_REQUEST_DEVICE_IMEI;
+// QTI_END: 2023-03-23: RIL: Update getImei to check the correct HAL service
 import static com.android.internal.telephony.RILConstants.RIL_REQUEST_DIAL;
 import static com.android.internal.telephony.RILConstants.RIL_REQUEST_DTMF;
 import static com.android.internal.telephony.RILConstants.RIL_REQUEST_DTMF_START;
@@ -3143,7 +3145,9 @@ public class RILUtils {
         return new CellSignalStrengthNr(CellSignalStrengthNr.flip(ss.csiRsrp),
                 CellSignalStrengthNr.flip(ss.csiRsrq), ss.csiSinr, ss.csiCqiTableIndex,
                 primitiveArrayToArrayList(ss.csiCqiReport), CellSignalStrengthNr.flip(ss.ssRsrp),
+// QTI_BEGIN: 2023-04-21: Telephony: Revert "Use CellInfo.UNAVAILABLE for NR mTimingAdvance"
                 CellSignalStrengthNr.flip(ss.ssRsrq), ss.ssSinr, ss.timingAdvance);
+// QTI_END: 2023-04-21: Telephony: Revert "Use CellInfo.UNAVAILABLE for NR mTimingAdvance"
     }
 
     private static ClosedSubscriberGroupInfo convertHalClosedSubscriberGroupInfo(

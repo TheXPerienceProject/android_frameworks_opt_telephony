@@ -727,6 +727,7 @@ message SatelliteController {
     optional int32 count_of_p2p_sms_available_notification_shown = 34;
     optional int32 count_of_p2p_sms_available_notification_removed = 35;
     optional bool is_ntn_only_carrier = 36;
+    optional int32 version_of_satellite_access_config = 37;
 }
 
 message SatelliteSession {

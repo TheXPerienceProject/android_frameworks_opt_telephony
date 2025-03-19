@@ -50,7 +50,9 @@ public class EuiccCard extends UiccCard {
         super(c, ci, ics, phoneId, lock, supportedMepMode);
         if (TextUtils.isEmpty(ics.eid)) {
             loge("no eid given in constructor for phone " + phoneId);
+// QTI_BEGIN: 2024-07-24: Telephony: AOSP: using correct index to get uicc port instance.
             loadEidAndNotifyRegistrants(phoneId);
+// QTI_END: 2024-07-24: Telephony: AOSP: using correct index to get uicc port instance.
         } else {
             mEid = ics.eid;
             mCardId = ics.eid;
@@ -122,7 +124,9 @@ public class EuiccCard extends UiccCard {
     // For RadioConfig<1.2 we don't know the EID when constructing the EuiccCard, so callers may
     // need to register to be notified when we have the EID
     @VisibleForTesting(visibility = VisibleForTesting.Visibility.PRIVATE)
+// QTI_BEGIN: 2024-07-24: Telephony: AOSP: using correct index to get uicc port instance.
     protected void loadEidAndNotifyRegistrants(int phoneId) {
+// QTI_END: 2024-07-24: Telephony: AOSP: using correct index to get uicc port instance.
         Handler euiccMainThreadHandler = new Handler();
         AsyncResultCallback<String> cardCb = new AsyncResultCallback<String>() {
             @Override
@@ -148,7 +152,9 @@ public class EuiccCard extends UiccCard {
                 Rlog.e(LOG_TAG, "Failed loading eid", e);
             }
         };
+// QTI_BEGIN: 2024-07-24: Telephony: AOSP: using correct index to get uicc port instance.
         ((EuiccPort) getUiccPortForPhone(phoneId)).getEid(cardCb,
+// QTI_END: 2024-07-24: Telephony: AOSP: using correct index to get uicc port instance.
                 euiccMainThreadHandler);
     }
 

@@ -237,6 +237,17 @@ public class SatelliteConfig {
     }
 
     /**
+     * Get the version of satellite config data
+     *
+     * @return version corresponding version number of satellite config data.
+     */
+    @NonNull
+    public int getSatelliteConfigDataVersion() {
+        Log.d(TAG, "getSatelliteConfigDataVersion: mVersion: " + mVersion);
+        return mVersion;
+    }
+
+    /**
      * @param context       the Context
      * @param byteArrayFile byte array type of protobuffer config data
      * @return the path for satellite_file in phone process

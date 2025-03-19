@@ -56,7 +56,9 @@ import com.android.internal.telephony.uicc.IccFileHandler;
 import com.android.internal.telephony.uicc.IccUtils;
 import com.android.internal.telephony.uicc.UiccController;
 import com.android.internal.telephony.uicc.UiccProfile;
+// QTI_BEGIN: 2018-03-08: Telephony: Get SIM card capacity of SMS
 import com.android.internal.telephony.uicc.IccRecords;
+// QTI_END: 2018-03-08: Telephony: Get SIM card capacity of SMS
 import com.android.internal.util.HexDump;
 import com.android.telephony.Rlog;
 
@@ -89,8 +91,10 @@ public class IccSmsInterfaceManager {
     private static final int EVENT_SET_SMSC_DONE = 6;
     private static final int SMS_CB_CODE_SCHEME_MIN = 0;
     private static final int SMS_CB_CODE_SCHEME_MAX = 255;
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
     public static final int SMS_MESSAGE_PRIORITY_NOT_SPECIFIED = -1;
     public static final int SMS_MESSAGE_PERIOD_NOT_SPECIFIED = -1;
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
 
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
     protected Phone mPhone;
@@ -161,8 +165,10 @@ public class IccSmsInterfaceManager {
     protected IccSmsInterfaceManager(Phone phone, @NonNull FeatureFlags featureFlags) {
         this(phone, phone.getContext(),
                 (AppOpsManager) phone.getContext().getSystemService(Context.APP_OPS_SERVICE),
+// QTI_BEGIN: 2023-01-26: Telephony: Make SmsDispatchersController injectable
                 TelephonyComponentFactory.getInstance().inject(
                         SmsDispatchersController.class.getName())
+// QTI_END: 2023-01-26: Telephony: Make SmsDispatchersController injectable
                         .makeSmsDispatchersController(phone, featureFlags),
                 new SmsPermissions(phone, phone.getContext(),
                         (AppOpsManager) phone.getContext().getSystemService(
@@ -556,6 +562,7 @@ public class IccSmsInterfaceManager {
      * @param deliveryIntent if not NULL this <code>PendingIntent</code> is
      *  broadcast when the message is delivered to the recipient.  The
      *  raw pdu of the status report is in the extended data ("pdu").
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
      * @param persistMessageForNonDefaultSmsApp whether the sent message should
      *  be automatically persisted in the SMS db. It only affects messages sent
      *  by a non-default SMS app. Currently only the carrier app can set this
@@ -577,6 +584,7 @@ public class IccSmsInterfaceManager {
      *  Validity Period(Minimum) -> 5 mins
      *  Validity Period(Maximum) -> 635040 mins(i.e.63 weeks).
      *  Any Other values including negative considered as Invalid Validity Period of the message.
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
      * @param messageId An id that uniquely identifies the message requested to be sent.
      *                 Used for logging and diagnostics purposes. The id may be 0.
      * @param skipShortCodeCheck Skip check for short code type destination address.
@@ -584,7 +592,9 @@ public class IccSmsInterfaceManager {
 
     private void sendTextInternal(String callingPackage, int callingUser, String destAddr,
             String scAddr, String text, PendingIntent sentIntent, PendingIntent deliveryIntent,
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
             boolean persistMessageForNonDefaultSmsApp, int priority, boolean expectMore,
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
             int validityPeriod, boolean isForVvm, long messageId, boolean skipShortCodeCheck) {
         if (Rlog.isLoggable("SMS", Log.VERBOSE)) {
             log("sendText: destAddr=" + destAddr + " scAddr=" + scAddr
@@ -598,6 +608,7 @@ public class IccSmsInterfaceManager {
         mDispatchersController.sendText(destAddr, scAddr, text, sentIntent, deliveryIntent,
                 null/*messageUri*/, callingPackage, callingUser, persistMessageForNonDefaultSmsApp,
                 priority, expectMore, validityPeriod, isForVvm, messageId, skipShortCodeCheck);
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
     }
 
     /**
@@ -646,6 +657,7 @@ public class IccSmsInterfaceManager {
      *  Any Other values including negative considered as Invalid Validity Period of the message.
      */
 
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
     public void sendTextWithOptions(String callingPackage, int callingUser,
             String callingAttributionTag, String destAddr, String scAddr, String text,
             PendingIntent sentIntent, PendingIntent deliveryIntent,
@@ -730,9 +742,12 @@ public class IccSmsInterfaceManager {
             boolean persistMessageForNonDefaultSmsApp, long messageId) {
         sendMultipartTextWithOptions(callingPackage, callingUser, callingAttributionTag, destAddr,
                 scAddr, parts, sentIntents, deliveryIntents, persistMessageForNonDefaultSmsApp,
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
                 SMS_MESSAGE_PRIORITY_NOT_SPECIFIED, false /* expectMore */,
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
                 SMS_MESSAGE_PERIOD_NOT_SPECIFIED,
                 messageId);
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
     }
 
     /**
@@ -780,10 +795,13 @@ public class IccSmsInterfaceManager {
      *  Validity Period(Minimum) -> 5 mins
      *  Validity Period(Maximum) -> 635040 mins(i.e.63 weeks).
      *  Any Other values including negative considered as Invalid Validity Period of the message.
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
      * @param messageId An id that uniquely identifies the message requested to be sent.
      *                 Used for logging and diagnostics purposes. The id may be 0.
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
      */
 
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
     public void sendMultipartTextWithOptions(String callingPackage, int callingUser,
             String callingAttributionTag, String destAddr, String scAddr, List<String> parts,
             List<PendingIntent> sentIntents, List<PendingIntent> deliveryIntents,
@@ -1333,7 +1351,9 @@ public class IccSmsInterfaceManager {
         textAndAddress[1] = filterDestAddress(textAndAddress[1]);
         mDispatchersController.sendText(textAndAddress[1], scAddress, textAndAddress[0],
                 sentIntent, deliveryIntent, messageUri, callingPkg, callingUser,
+// QTI_BEGIN: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
                 true /* persistMessageForNonDefaultSmsApp */, SMS_MESSAGE_PRIORITY_NOT_SPECIFIED,
+// QTI_END: 2018-02-18: Telephony: Add support for sending message with priority, link control and validity period options
                 false /* expectMore */, SMS_MESSAGE_PERIOD_NOT_SPECIFIED, false /* isForVvm */,
                 0L /* messageId */);
     }
@@ -1410,7 +1430,9 @@ public class IccSmsInterfaceManager {
                         false /* isForVvm */, 0L /* messageId */);
             }
             return;
+// QTI_BEGIN: 2019-02-06: Telephony: Add 7bit Ascii support for long message
         }
+// QTI_END: 2019-02-06: Telephony: Add 7bit Ascii support for long message
 
         mDispatchersController.sendMultipartText(
                 textAndAddress[1], // destAddress

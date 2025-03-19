@@ -64,7 +64,9 @@ public interface IccConstants {
     // CDMA RUIM file ids from 3GPP2 C.S0023-0
     static final int EF_CST = 0x6F32;
     static final int EF_RUIM_SPN =0x6F41;
+// QTI_BEGIN: 2018-03-14: Telephony: Define EF MSPL/MLPL/PRL values and paths
     static final int EF_RUIM_ID = 0x6F31;
+// QTI_END: 2018-03-14: Telephony: Define EF MSPL/MLPL/PRL values and paths
 
     // ETSI TS.102.221
     static final int EF_PL = 0x2F05;
@@ -75,10 +77,12 @@ public interface IccConstants {
     static final int EF_CSIM_IMSIM = 0x6F22;
     static final int EF_CSIM_CDMAHOME = 0x6F28;
     static final int EF_CSIM_EPRL = 0x6F5A;
+// QTI_BEGIN: 2018-03-14: Telephony: Define EF MSPL/MLPL/PRL values and paths
     static final int EF_CSIM_PRL = 0x6F30;
     // C.S0074-Av1.0 Section 4
     static final int EF_CSIM_MLPL = 0x4F20;
     static final int EF_CSIM_MSPL = 0x4F21;
+// QTI_END: 2018-03-14: Telephony: Define EF MSPL/MLPL/PRL values and paths
     static final int EF_CSIM_MIPUPP = 0x6F4D;
 
     //ISIM access
@@ -109,7 +113,9 @@ public interface IccConstants {
     static final String DF_GRAPHICS = "5F50";
     static final String DF_GSM = "7F20";
     static final String DF_CDMA = "7F25";
+// QTI_BEGIN: 2018-03-14: Telephony: Define EF MSPL/MLPL/PRL values and paths
     static final String DF_MMSS = "5F3C";
+// QTI_END: 2018-03-14: Telephony: Define EF MSPL/MLPL/PRL values and paths
 
     //UICC access
     static final String DF_ADF = "7FFF";

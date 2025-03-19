@@ -158,6 +158,7 @@ public class UiccCardApplicationTest extends TelephonyTest {
         assertTrue(mUiccCardApplication.getIccFdnEnabled());
     }
 
+// QTI_BEGIN: 2018-02-25: Telephony: *Telephony: SIM De-personalization
     @Test
     @SmallTest
     public void testCheckIsPersoLocked() {
@@ -165,17 +166,22 @@ public class UiccCardApplicationTest extends TelephonyTest {
                .APPSTATE_SUBSCRIPTION_PERSO;
         mUiccCardAppStatus.perso_substate = IccCardApplicationStatus.PersoSubState
                 .PERSOSUBSTATE_SIM_NETWORK;
+// QTI_END: 2018-02-25: Telephony: *Telephony: SIM De-personalization
         mUiccCardApplication.update(mUiccCardAppStatus, mContext, mSimulatedCommands);
         processAllMessages();
         assertTrue(IccCardApplicationStatus.PersoSubState.isPersoLocked(mUiccCardApplication.getPersoSubState()));
+// QTI_BEGIN: 2018-02-25: Telephony: *Telephony: SIM De-personalization
 
         mUiccCardAppStatus.perso_substate = IccCardApplicationStatus.PersoSubState
                 .PERSOSUBSTATE_READY;
+// QTI_END: 2018-02-25: Telephony: *Telephony: SIM De-personalization
         mUiccCardApplication.update(mUiccCardAppStatus, mContext, mSimulatedCommands);
         processAllMessages();
         assertFalse(IccCardApplicationStatus.PersoSubState.isPersoLocked(mUiccCardApplication.getPersoSubState()));
+// QTI_BEGIN: 2018-02-25: Telephony: *Telephony: SIM De-personalization
     }
 
+// QTI_END: 2018-02-25: Telephony: *Telephony: SIM De-personalization
     @Test
     @SmallTest
     public void testGetSetIccLockedEnabled() {

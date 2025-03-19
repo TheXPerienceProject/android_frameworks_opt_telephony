@@ -609,9 +609,11 @@ public abstract class TelephonyTest {
 
         Settings.Global.getInt(mContext.getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0);
 
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
         mServiceManagerMockedServices.put("isub", mSubscriptionManagerService);
         doReturn(mSubscriptionManagerService).when(mSubscriptionManagerService)
                 .queryLocalInterface(anyString());
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
 
         mPhone.mCi = mSimulatedCommands;
         mCT.mCi = mSimulatedCommands;

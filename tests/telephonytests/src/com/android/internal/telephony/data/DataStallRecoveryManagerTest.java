@@ -91,7 +91,6 @@ public class DataStallRecoveryManagerTest extends TelephonyTest {
         Field field = DataStallRecoveryManager.class.getDeclaredField("mPredictWaitingMillis");
         field.setAccessible(true);
 
-        doReturn(true).when(mFeatureFlags).dsrsDiagnosticsEnabled();
         mFakeContentResolver = new FakeContentResolver();
         doReturn(mFakeContentResolver).when(mContext).getContentResolver();
         // Set the global settings for action enabled state and duration to
@@ -433,7 +432,6 @@ public class DataStallRecoveryManagerTest extends TelephonyTest {
     @Test
     public void testSendDSRMData() throws Exception {
         ArgumentCaptor<Intent> captorIntent = ArgumentCaptor.forClass(Intent.class);
-        boolean isDsrsDiagnosticsEnabled = mFeatureFlags.dsrsDiagnosticsEnabled();
 
         logd("Set phone status to normal status.");
         sendOnInternetDataNetworkCallback(true);
@@ -465,13 +463,8 @@ public class DataStallRecoveryManagerTest extends TelephonyTest {
             logd(bundle.toString());
             int size = bundle.size();
             logd("bundle size is " + size);
-            if (isDsrsDiagnosticsEnabled) {
-                // Check if bundle size is 27
-                assertThat(size).isEqualTo(27);
-            } else {
-                // Check if bundle size is 19
-                assertThat(size).isEqualTo(19);
-            }
+            // Check if bundle size is 27
+            assertThat(size).isEqualTo(27);
         }
     }
 

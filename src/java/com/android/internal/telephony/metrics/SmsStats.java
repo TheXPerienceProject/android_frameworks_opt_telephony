@@ -57,7 +57,6 @@ import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.PhoneFactory;
 import com.android.internal.telephony.ServiceStateTracker;
-import com.android.internal.telephony.flags.Flags;
 import com.android.internal.telephony.nano.PersistAtomsProto.IncomingSms;
 import com.android.internal.telephony.nano.PersistAtomsProto.OutgoingShortCodeSms;
 import com.android.internal.telephony.nano.PersistAtomsProto.OutgoingSms;
@@ -386,11 +385,13 @@ public class SmsStats {
 
     private @NetworkType int getRat(boolean isOverIms) {
         if (isOverIms) {
+// QTI_BEGIN: 2023-06-26: Telephony: Allow RTT calls over C_IWLAN.
             int imsRegistrationTech = mPhone.getImsRegistrationTech();
             if (imsRegistrationTech
                     == ImsRegistrationImplBase.REGISTRATION_TECH_IWLAN
                     || imsRegistrationTech
                     == ImsRegistrationImplBase.REGISTRATION_TECH_CROSS_SIM) {
+// QTI_END: 2023-06-26: Telephony: Allow RTT calls over C_IWLAN.
                 return TelephonyManager.NETWORK_TYPE_IWLAN;
             }
         }
@@ -414,10 +415,6 @@ public class SmsStats {
     }
 
     private boolean isNonTerrestrialNetwork() {
-        if (!Flags.carrierEnabledSatelliteFlag()) {
-            return false;
-        }
-
         ServiceState ss = getServiceState();
         if (ss != null) {
             return ss.isUsingNonTerrestrialNetwork();

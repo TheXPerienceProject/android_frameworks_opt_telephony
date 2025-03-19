@@ -18,7 +18,9 @@ package com.android.internal.telephony.data;
 
 import static com.google.common.truth.Truth.assertThat;
 
+// QTI_BEGIN: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
 import static org.junit.Assume.assumeFalse;
+// QTI_END: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -160,7 +162,9 @@ public class AccessNetworksManagerTest extends TelephonyTest {
         processAllMessages();
         replaceInstance(AccessNetworksManager.class, "mDataConfigManager",
                 mAccessNetworksManager, mMockedDataConfigManager);
+// QTI_BEGIN: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
         assumeFalse(mAccessNetworksManager.isInLegacyMode());
+// QTI_END: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
         logd("-setUp");
     }
 
@@ -351,10 +355,7 @@ public class AccessNetworksManagerTest extends TelephonyTest {
     }
 
     @Test
-    public void testCallbackForReconnectQualifiedNetworkTypeWithFlagEnabled()  throws Exception {
-        when(mFeatureFlags.reconnectQualifiedNetwork()).thenReturn(true);
-
-
+    public void testCallbackForReconnectQualifiedNetworkType()  throws Exception {
         mAccessNetworksManager.registerCallback(mMockedCallback);
 
         mQnsCallback.onReconnectQualifiedNetworkType(ApnSetting.TYPE_IMS | ApnSetting.TYPE_MMS,
@@ -374,31 +375,6 @@ public class AccessNetworksManagerTest extends TelephonyTest {
         assertThat(mAccessNetworksManager.getPreferredTransportByNetworkCapability(
                 NetworkCapabilities.NET_CAPABILITY_IMS)).isEqualTo(
                 AccessNetworkConstants.TRANSPORT_TYPE_WLAN);
-        assertThat(mAccessNetworksManager.getPreferredTransportByNetworkCapability(
-                NetworkCapabilities.NET_CAPABILITY_XCAP)).isEqualTo(
-                AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
-    }
-
-    @Test
-    public void testCallbackForReconnectQualifiedNetworkTypeWithFlagDisabled() throws Exception {
-        when(mFeatureFlags.reconnectQualifiedNetwork()).thenReturn(false);
-        mQnsCallback.onReconnectQualifiedNetworkType(ApnSetting.TYPE_IMS | ApnSetting.TYPE_MMS,
-                AccessNetworkType.IWLAN);
-        processAllMessages();
-
-        verify(mMockedCallback, never()).onPreferredTransportChanged(
-                eq(NetworkCapabilities.NET_CAPABILITY_MMS), eq(true));
-        verify(mMockedCallback, never()).onPreferredTransportChanged(
-                eq(NetworkCapabilities.NET_CAPABILITY_IMS), eq(true));
-        verify(mMockedCallback, never()).onPreferredTransportChanged(
-                eq(NetworkCapabilities.NET_CAPABILITY_XCAP), eq(true));
-        Mockito.clearInvocations(mMockedCallback);
-        assertThat(mAccessNetworksManager.getPreferredTransportByNetworkCapability(
-                NetworkCapabilities.NET_CAPABILITY_MMS)).isEqualTo(
-                AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
-        assertThat(mAccessNetworksManager.getPreferredTransportByNetworkCapability(
-                NetworkCapabilities.NET_CAPABILITY_IMS)).isEqualTo(
-                AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
         assertThat(mAccessNetworksManager.getPreferredTransportByNetworkCapability(
                 NetworkCapabilities.NET_CAPABILITY_XCAP)).isEqualTo(
                 AccessNetworkConstants.TRANSPORT_TYPE_WWAN);

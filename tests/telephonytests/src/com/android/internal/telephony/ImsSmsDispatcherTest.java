@@ -50,7 +50,9 @@ import com.android.internal.util.HexDump;
 
 import org.junit.After;
 import org.junit.Before;
+// QTI_BEGIN: 2020-07-15: Telephony: Fix FrameworksTelephonyTests UT failures
 import org.junit.Ignore;
+// QTI_END: 2020-07-15: Telephony: Fix FrameworksTelephonyTests UT failures
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -217,8 +219,10 @@ public class ImsSmsDispatcherTest extends TelephonyTest {
      */
     @Test
     @SmallTest
+// QTI_BEGIN: 2020-07-15: Telephony: Fix FrameworksTelephonyTests UT failures
     @Ignore
     // The code changes that break this UT are being upstreamed via b/110594694.
+// QTI_END: 2020-07-15: Telephony: Fix FrameworksTelephonyTests UT failures
     public void testFallbackGsmRetry() throws Exception {
         int token = mImsSmsDispatcher.mNextToken.get();
         mTrackerData.put("pdu", com.android.internal.telephony.gsm.SmsMessage.getSubmitPdu(null,
@@ -245,8 +249,10 @@ public class ImsSmsDispatcherTest extends TelephonyTest {
      */
     @Test
     @SmallTest
+// QTI_BEGIN: 2020-07-15: Telephony: Fix FrameworksTelephonyTests UT failures
     @Ignore
     // The code changes that break this UT are being upstreamed via b/110594694.
+// QTI_END: 2020-07-15: Telephony: Fix FrameworksTelephonyTests UT failures
     public void testErrorImsRetry() throws Exception {
         int token = mImsSmsDispatcher.mNextToken.get();
         mContextFixture.getCarrierConfigBundle().putInt(CarrierConfigManager.ImsSms

@@ -215,6 +215,7 @@ public class ContextFixture implements TestFixture<Context> {
             return mPackageManager;
         }
 
+// QTI_BEGIN: 2018-03-28: Telephony: UT: Add changes to enable UT of telephony-fwk git
         @Override
         public void startActivity(Intent intent) {
             logd("startActivity called for " + intent);
@@ -226,6 +227,7 @@ public class ContextFixture implements TestFixture<Context> {
             return null;
         }
 
+// QTI_END: 2018-03-28: Telephony: UT: Add changes to enable UT of telephony-fwk git
         @Override
         public boolean bindService(
                 Intent serviceIntent,

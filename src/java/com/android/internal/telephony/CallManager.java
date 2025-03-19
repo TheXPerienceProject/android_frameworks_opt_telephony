@@ -30,6 +30,8 @@ import android.telephony.ServiceState;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.telephony.imsphone.ImsPhoneConnection;
+import com.android.server.telecom.flags.FeatureFlags;
+import com.android.server.telecom.flags.FeatureFlagsImpl;
 import com.android.telephony.Rlog;
 
 import java.util.ArrayList;
@@ -120,6 +122,7 @@ public class CallManager {
 
     private Object mRegistrantidentifier = new Object();
 
+    private FeatureFlags mTelecomFeatureFlags;
     // state registrants
     protected final RegistrantList mPreciseCallStateRegistrants
     = new RegistrantList();
@@ -196,6 +199,7 @@ public class CallManager {
         mBackgroundCalls = new ArrayList<Call>();
         mForegroundCalls = new ArrayList<Call>();
         mDefaultPhone = null;
+        mTelecomFeatureFlags = new FeatureFlagsImpl();
     }
 
     /**
@@ -596,7 +600,9 @@ public class CallManager {
         phone.registerForCdmaOtaStatusChange(handler, EVENT_CDMA_OTA_STATUS_CHANGE, null);
         phone.registerForSubscriptionInfoReady(handler, EVENT_SUBSCRIPTION_INFO_READY, null);
         phone.registerForCallWaiting(handler, EVENT_CALL_WAITING, null);
+// QTI_BEGIN: 2019-04-16: Telephony: Handle ECBM mode for both the SUBs to place calls in ECBM mode
         EcbmHandler.getInstance().registerForEcmTimerReset(handler, EVENT_ECM_TIMER_RESET, null);
+// QTI_END: 2019-04-16: Telephony: Handle ECBM mode for both the SUBs to place calls in ECBM mode
 
         // for events supported only by IMS phone
         phone.registerForOnHoldTone(handler, EVENT_ONHOLD_TONE, null);
@@ -640,7 +646,9 @@ public class CallManager {
         phone.unregisterForCdmaOtaStatusChange(handler);
         phone.unregisterForSubscriptionInfoReady(handler);
         phone.unregisterForCallWaiting(handler);
+// QTI_BEGIN: 2019-04-16: Telephony: Handle ECBM mode for both the SUBs to place calls in ECBM mode
         EcbmHandler.getInstance().unregisterForEcmTimerReset(handler);
+// QTI_END: 2019-04-16: Telephony: Handle ECBM mode for both the SUBs to place calls in ECBM mode
 
         // for events supported only by IMS phone
         phone.unregisterForOnHoldTone(handler);
@@ -862,8 +870,10 @@ public class CallManager {
      * Phone can make a call only if ALL of the following are true:
      *        - Phone is not powered off
      *        - There's no incoming or waiting call
+// QTI_BEGIN: 2025-01-28: Telephony: Revert "[DSDA] Modify OTASP logic when placing OTASP call"
      *        - The foreground call is ACTIVE or IDLE or DISCONNECTED.
      *          (We mainly need to make sure it *isn't* DIALING or ALERTING.)
+// QTI_END: 2025-01-28: Telephony: Revert "[DSDA] Modify OTASP logic when placing OTASP call"
      * @param phone
      * @return true if the phone can make a new call
      */
@@ -2069,8 +2079,11 @@ public class CallManager {
                             && ((ImsPhoneConnection) c).isIncomingCallAutoRejected()) {
                         incomingRejected = true;
                     }
+// QTI_BEGIN: 2025-01-28: Telephony: Revert "IMS: Update Maximum Ringing Calls for DSDA"
                     if ((getActiveFgCallState(subId).isDialing() || hasMoreThanOneRingingCall())
-                            && (!incomingRejected)) {
+// QTI_END: 2025-01-28: Telephony: Revert "IMS: Update Maximum Ringing Calls for DSDA"
+                            && (!incomingRejected)
+                            && !mTelecomFeatureFlags.enableCallSequencing()) {
                         try {
                             Rlog.d(LOG_TAG, "silently drop incoming call: " + c.getCall());
                             c.getCall().hangup();

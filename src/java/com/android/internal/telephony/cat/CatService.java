@@ -717,7 +717,9 @@ public class CatService extends Handler implements AppInterface {
 
     private void broadcastCatCmdIntent(CatCmdMessage cmdMsg) {
         Intent intent = new Intent(AppInterface.CAT_CMD_ACTION);
+// QTI_BEGIN: 2018-03-07: Telephony: Add FLAG_RECEIVER_FOREGROUND to CatService broadcast intents
         intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+// QTI_END: 2018-03-07: Telephony: Add FLAG_RECEIVER_FOREGROUND to CatService broadcast intents
         intent.putExtra("STK CMD", cmdMsg);
         intent.putExtra("SLOT_ID", mSlotId);
         intent.setComponent(AppInterface.getDefaultSTKApplication());
@@ -741,7 +743,9 @@ public class CatService extends Handler implements AppInterface {
         Intent intent = new Intent(AppInterface.CAT_SESSION_END_ACTION);
         intent.putExtra("SLOT_ID", mSlotId);
         intent.setComponent(AppInterface.getDefaultSTKApplication());
+// QTI_BEGIN: 2018-03-07: Telephony: Add FLAG_RECEIVER_FOREGROUND to CatService broadcast intents
         intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+// QTI_END: 2018-03-07: Telephony: Add FLAG_RECEIVER_FOREGROUND to CatService broadcast intents
         if (sFlags.hsumBroadcast()) {
             mContext.sendBroadcastAsUser(intent, UserHandle.ALL, AppInterface.STK_PERMISSION);
         } else {
@@ -997,9 +1001,11 @@ public class CatService extends Handler implements AppInterface {
     //TODO Need to take care for MSIM
     public static AppInterface getInstance() {
         int slotId = PhoneConstants.DEFAULT_SLOT_INDEX;
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
         if (SubscriptionManagerService.getInstance() != null) {
             slotId = SubscriptionManagerService.getInstance().getSlotIndex(
                     SubscriptionManagerService.getInstance().getDefaultSubId());
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
         }
         return getInstance(null, null, null, slotId);
     }
@@ -1095,15 +1101,21 @@ public class CatService extends Handler implements AppInterface {
     private void  broadcastCardStateAndIccRefreshResp(CardState cardState,
             IccRefreshResponse iccRefreshState) {
         Intent intent = new Intent(AppInterface.CAT_ICC_STATUS_CHANGE);
+// QTI_BEGIN: 2018-03-07: Telephony: Add FLAG_RECEIVER_FOREGROUND to CatService broadcast intents
         intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+// QTI_END: 2018-03-07: Telephony: Add FLAG_RECEIVER_FOREGROUND to CatService broadcast intents
         boolean cardPresent = (cardState == CardState.CARDSTATE_PRESENT);
 
         if (iccRefreshState != null) {
             //This case is when MSG_ID_ICC_REFRESH is received.
             intent.putExtra(AppInterface.REFRESH_RESULT, iccRefreshState.refreshResult);
+// QTI_BEGIN: 2018-03-07: Telephony: STK application uninstall for NAA Application reset.
             intent.putExtra(AppInterface.AID, iccRefreshState.aid);
+// QTI_END: 2018-03-07: Telephony: STK application uninstall for NAA Application reset.
             CatLog.d(this, "Sending IccResult with Result: "
+// QTI_BEGIN: 2018-03-07: Telephony: STK application uninstall for NAA Application reset.
                     + iccRefreshState.refreshResult + " " + "aid: " + iccRefreshState.aid);
+// QTI_END: 2018-03-07: Telephony: STK application uninstall for NAA Application reset.
         }
 
         // This sends an intent with CARD_ABSENT (0 - false) /CARD_PRESENT (1 - true).

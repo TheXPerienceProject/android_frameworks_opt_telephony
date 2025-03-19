@@ -52,13 +52,17 @@ import com.android.internal.telephony.uicc.IccRecords.OperatorPlmnInfo;
 import com.android.internal.telephony.uicc.IccRecords.PlmnNetworkName;
 
 import org.junit.After;
+// QTI_BEGIN: 2018-03-08: Telephony: Get SIM card capacity of SMS
 import static org.junit.Assert.assertEquals;
+// QTI_END: 2018-03-08: Telephony: Get SIM card capacity of SMS
 import org.junit.Before;
 import org.junit.Test;
 
+// QTI_BEGIN: 2018-03-08: Telephony: Get SIM card capacity of SMS
 import static com.android.internal.telephony.TelephonyTestUtils.waitForMs;
 import android.os.AsyncResult;
 import android.os.Message;
+// QTI_END: 2018-03-08: Telephony: Get SIM card capacity of SMS
 
 import java.util.ArrayList;
 import java.util.List;
@@ -133,6 +137,7 @@ public class IccRecordsTest extends TelephonyTest {
         assertNull(pair);
     }
 
+// QTI_BEGIN: 2018-03-08: Telephony: Get SIM card capacity of SMS
     @Test
     public void testGetSmsCapacityOnIcc() {
         // set the number of records to 500
@@ -144,9 +149,12 @@ public class IccRecordsTest extends TelephonyTest {
         fetchCapacityDone.sendToTarget();
 
         // verify whether the count is 500
+// QTI_END: 2018-03-08: Telephony: Get SIM card capacity of SMS
         waitForLastHandlerAction(mIccRecords);
+// QTI_BEGIN: 2018-03-08: Telephony: Get SIM card capacity of SMS
         assertEquals(mIccRecords.getSmsCapacityOnIcc(), 500);
     }
+// QTI_END: 2018-03-08: Telephony: Get SIM card capacity of SMS
 
     @Test
     public void testGetIccSimChallengeResponseNull() {

@@ -423,7 +423,9 @@ public class SimPhonebookRecordCache extends Handler {
     }
 
     private void handlePhonebookChanged() {
+// QTI_BEGIN: 2023-06-16: Telephony: Fix adding SIM contact during hotswap scenario
         if (mUpdateRequests.isEmpty() || isAdnCapacityInvalid()) {
+// QTI_END: 2023-06-16: Telephony: Fix adding SIM contact during hotswap scenario
             // If this event is received, means this feature is supported.
             getSimPhonebookCapacity();
         } else {
@@ -432,26 +434,34 @@ public class SimPhonebookRecordCache extends Handler {
     }
 
     private void handlePhonebookCapacityChanged(AdnCapacity newCapacity) {
+// QTI_BEGIN: 2023-03-24: Telephony: Fix SIM Contact not shown in hotswap scenario.
         if (newCapacity == null || !newCapacity.isSimValid()) {
             logd("ADN capacity is null or invalid");
             reset();
             return;
+// QTI_END: 2023-03-24: Telephony: Fix SIM Contact not shown in hotswap scenario.
         }
+// QTI_BEGIN: 2023-03-24: Telephony: Fix SIM Contact not shown in hotswap scenario.
         AdnCapacity oldCapacity = mAdnCapacity.get();
+// QTI_END: 2023-03-24: Telephony: Fix SIM Contact not shown in hotswap scenario.
         mAdnCapacity.set(newCapacity);
         if (oldCapacity == null && newCapacity != null) {
             inflateWithEmptyRecords(newCapacity);
             if (!newCapacity.isSimEmpty()){
                 mIsCacheInvalidated.set(true);
                 fillCacheWithoutWaiting();
+// QTI_BEGIN: 2023-03-24: Telephony: Fix SIM Contact not shown in hotswap scenario.
             } else {
+// QTI_END: 2023-03-24: Telephony: Fix SIM Contact not shown in hotswap scenario.
                 notifyAdnLoadingWaiters();
                 tryFireUpdatePendingList();
             }
             mIsInitialized.set(true); // Let's say the whole process is ready
         } else {
             // There is nothing from PB, so notify waiters directly if any
+// QTI_BEGIN: 2023-03-24: Telephony: Fix SIM Contact not shown in hotswap scenario.
             if (newCapacity.isSimEmpty()) {
+// QTI_END: 2023-03-24: Telephony: Fix SIM Contact not shown in hotswap scenario.
                 mIsCacheInvalidated.set(false);
                 notifyAdnLoadingWaiters();
                 tryFireUpdatePendingList();

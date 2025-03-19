@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+// QTI_BEGIN: 2022-09-20: Telephony: CAG and SNPN feature
 /*
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
@@ -21,6 +22,7 @@
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
+// QTI_END: 2022-09-20: Telephony: CAG and SNPN feature
 package com.android.internal.telephony;
 
 import android.annotation.NonNull;
@@ -90,7 +92,9 @@ public interface CommandsInterface {
     static final int CF_REASON_NOT_REACHABLE    = 3;
     static final int CF_REASON_ALL              = 4;
     static final int CF_REASON_ALL_CONDITIONAL  = 5;
+// QTI_BEGIN: 2021-10-14: Telephony: Support Call Forward Not Logged In
     static final int CF_REASON_NOT_LOGGED_IN    = 6;
+// QTI_END: 2021-10-14: Telephony: Support Call Forward Not Logged In
 
     // Used for call barring methods below
     static final String CB_FACILITY_BAOC         = "AO";

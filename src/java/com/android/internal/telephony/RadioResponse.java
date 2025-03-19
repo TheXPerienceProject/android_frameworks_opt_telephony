@@ -1695,13 +1695,17 @@ public class RadioResponse extends IRadioResponse.Stub {
         responseVoid(responseInfo);
     }
 
+// QTI_BEGIN: 2025-02-03: Telephony: Decouple Qualcomm value adds.
     /**
      * @param responseInfo Response info struct containing response type, serial no. and error
      */
+// QTI_END: 2025-02-03: Telephony: Decouple Qualcomm value adds.
+// QTI_BEGIN: 2020-03-28: Telephony: Add definition for 1.5 HAL API's
     public void setIndicationFilterResponse_1_5(RadioResponseInfo responseInfo) {
         responseVoid(responseInfo);
     }
 
+// QTI_END: 2020-03-28: Telephony: Add definition for 1.5 HAL API's
     /**
      * @param responseInfo Response info struct containing response type, serial no. and error
      */

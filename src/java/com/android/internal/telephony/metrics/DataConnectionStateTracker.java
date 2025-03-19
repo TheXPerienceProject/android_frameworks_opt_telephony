@@ -16,8 +16,6 @@
 
 package com.android.internal.telephony.metrics;
 
-import static com.android.internal.telephony.flags.Flags.dataRatMetricEnabled;
-
 import android.os.Handler;
 import android.os.HandlerExecutor;
 import android.os.HandlerThread;
@@ -235,9 +233,7 @@ public class DataConnectionStateTracker {
 
         @Override
         public void onActiveDataSubscriptionIdChanged(int subId) {
-            if (dataRatMetricEnabled()) {
-                logRATChanges(subId);
-            }
+            logRATChanges(subId);
             mActiveDataSubId = subId;
         }
 

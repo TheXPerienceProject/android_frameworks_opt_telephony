@@ -51,7 +51,9 @@ import java.util.Map;
  */
 public class TelephonyNetworkProvider extends NetworkProvider implements NetworkOfferCallback {
 
+// QTI_BEGIN: 2024-10-28: Telephony: Modify several variables as protected
     public String LOG_TAG = "TNP";
+// QTI_END: 2024-10-28: Telephony: Modify several variables as protected
 
     /** Android feature flags */
     @NonNull
@@ -63,7 +65,9 @@ public class TelephonyNetworkProvider extends NetworkProvider implements Network
 
     /** Phone switcher responsible to determine request routing on dual-SIM device */
     @NonNull
+// QTI_BEGIN: 2024-10-28: Telephony: Modify several variables as protected
     protected final PhoneSwitcher mPhoneSwitcher;
+// QTI_END: 2024-10-28: Telephony: Modify several variables as protected
 
     /** Network requests map. Key is the network request, value is the phone id it applies to. */
     private final Map<TelephonyNetworkRequest, Integer> mNetworkRequests = new ArrayMap<>();
@@ -207,7 +211,9 @@ public class TelephonyNetworkProvider extends NetworkProvider implements Network
      * @param reason The reason for re-evaluating network request. Note this can be only used for
      * debugging message purposes.
      */
+// QTI_BEGIN: 2024-10-28: Telephony: Modify several variables as protected
     protected void reevaluateNetworkRequests(@NonNull String reason) {
+// QTI_END: 2024-10-28: Telephony: Modify several variables as protected
         logl("reevaluateNetworkRequests: " + reason + ".");
         mNetworkRequests.forEach((request, oldPhoneId) -> {
             int newPhoneId = getPhoneIdForNetworkRequest(request);
@@ -265,7 +271,9 @@ public class TelephonyNetworkProvider extends NetworkProvider implements Network
      *
      * @param s The debug message to log
      */
+// QTI_BEGIN: 2024-10-28: Telephony: Modify several variables as protected
     protected void log(@NonNull String s) {
+// QTI_END: 2024-10-28: Telephony: Modify several variables as protected
         Rlog.d(LOG_TAG, s);
     }
 
@@ -273,7 +281,9 @@ public class TelephonyNetworkProvider extends NetworkProvider implements Network
      * Log error debug messages to logcat.
      * @param s The error debug messages
      */
+// QTI_BEGIN: 2024-10-28: Telephony: Modify several variables as protected
     protected void loge(@NonNull String s) {
+// QTI_END: 2024-10-28: Telephony: Modify several variables as protected
         Rlog.e(LOG_TAG, s);
     }
 
@@ -282,7 +292,9 @@ public class TelephonyNetworkProvider extends NetworkProvider implements Network
      *
      * @param s The debug message to log
      */
+// QTI_BEGIN: 2024-10-28: Telephony: Modify several variables as protected
     protected void logl(@NonNull String s) {
+// QTI_END: 2024-10-28: Telephony: Modify several variables as protected
         log(s);
         mLocalLog.log(s);
     }

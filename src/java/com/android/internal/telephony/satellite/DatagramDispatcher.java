@@ -28,8 +28,8 @@ import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_NETW
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_NOT_REACHABLE;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_SUCCESS;
 
-import static com.android.internal.telephony.satellite.DatagramController.ROUNDING_UNIT;
 import static com.android.internal.telephony.SmsDispatchersController.PendingRequest;
+import static com.android.internal.telephony.satellite.DatagramController.ROUNDING_UNIT;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -39,7 +39,6 @@ import android.os.AsyncResult;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.telephony.DropBoxManagerLoggerBackend;
 import android.telephony.PersistentLogger;
 import android.telephony.Rlog;
 import android.telephony.satellite.SatelliteDatagram;
@@ -194,10 +193,7 @@ public class DatagramDispatcher extends Handler {
         mDatagramController = datagramController;
         mControllerMetricsStats = ControllerMetricsStats.getInstance();
         mSessionMetricsStats = SessionMetricsStats.getInstance();
-        if (isSatellitePersistentLoggingEnabled(context, featureFlags)) {
-            mPersistentLogger = new PersistentLogger(
-                    DropBoxManagerLoggerBackend.getInstance(context));
-        }
+        mPersistentLogger = SatelliteServiceUtils.getPersistentLogger(context);
 
         synchronized (mLock) {
             mSendingInProgress = false;
@@ -1408,19 +1404,6 @@ public class DatagramDispatcher extends Handler {
     }
 
     private static void logw(@NonNull String log) { Rlog.w(TAG, log); }
-
-    private boolean isSatellitePersistentLoggingEnabled(
-            @NonNull Context context, @NonNull FeatureFlags featureFlags) {
-        if (featureFlags.satellitePersistentLogging()) {
-            return true;
-        }
-        try {
-            return context.getResources().getBoolean(
-                    R.bool.config_dropboxmanager_persistent_logging_enabled);
-        } catch (RuntimeException e) {
-            return false;
-        }
-    }
 
     private void plogd(@NonNull String log) {
         Rlog.d(TAG, log);

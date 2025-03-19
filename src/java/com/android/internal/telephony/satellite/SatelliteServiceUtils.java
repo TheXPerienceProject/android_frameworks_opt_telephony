@@ -30,7 +30,9 @@ import android.os.PersistableBundle;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CarrierConfigManager;
 import android.telephony.CellIdentity;
+import android.telephony.DropBoxManagerLoggerBackend;
 import android.telephony.NetworkRegistrationInfo;
+import android.telephony.PersistentLogger;
 import android.telephony.Rlog;
 import android.telephony.ServiceState;
 import android.telephony.SubscriptionInfo;
@@ -51,9 +53,12 @@ import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
 import android.text.TextUtils;
 
+import com.android.internal.R;
 import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.PhoneFactory;
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
 import com.android.internal.telephony.RILUtils;
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
 import com.android.internal.telephony.subscription.SubscriptionManagerService;
 import com.android.internal.telephony.util.TelephonyUtils;
 
@@ -333,8 +338,10 @@ public class SatelliteServiceUtils {
     public static int getValidSatelliteSubId(int subId, @NonNull Context context) {
         final long identity = Binder.clearCallingIdentity();
         try {
+// QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
             boolean isActive = SubscriptionManagerService.getInstance().isActiveSubId(subId,
                     context.getOpPackageName(), context.getAttributionTag());
+// QTI_END: 2023-11-10: Telephony: Remove legacy subscription code
 
             if (isActive) {
                 return subId;
@@ -661,6 +668,26 @@ public class SatelliteServiceUtils {
             earfcnsMap.put(configId, earfcnsSet);
         }
         return earfcnsMap;
+    }
+
+    /**
+     * Returns a persistent logger to persist important log because logcat logs may not be
+     * retained long enough.
+     *
+     * @return a PersistentLogger, return {@code null} if it is not supported or encounters
+     * exception.
+     */
+    @Nullable
+    public static PersistentLogger getPersistentLogger(@NonNull Context context) {
+        try {
+            if (context.getResources().getBoolean(
+                    R.bool.config_dropboxmanager_persistent_logging_enabled)) {
+                return new PersistentLogger(DropBoxManagerLoggerBackend.getInstance(context));
+            }
+        } catch (RuntimeException ex) {
+            loge("getPersistentLogger: RuntimeException ex=" + ex);
+        }
+        return null;
     }
 
     private static void logd(@NonNull String log) {

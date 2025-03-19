@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+// QTI_BEGIN: 2022-09-20: Telephony: CAG and SNPN feature
 /*
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
@@ -21,6 +22,7 @@
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
+// QTI_END: 2022-09-20: Telephony: CAG and SNPN feature
 package com.android.internal.telephony.imsphone;
 
 import android.content.Context;
@@ -330,7 +332,9 @@ class ImsPhoneCommandInterface extends BaseCommands implements CommandsInterface
     public void setNetworkSelectionModeManual(String operatorNumeric, int ran, Message response) {
     }
 
+// QTI_BEGIN: 2022-09-20: Telephony: CAG and SNPN feature
     @Override
+// QTI_END: 2022-09-20: Telephony: CAG and SNPN feature
     public void getNetworkSelectionMode(Message response) {
     }
 

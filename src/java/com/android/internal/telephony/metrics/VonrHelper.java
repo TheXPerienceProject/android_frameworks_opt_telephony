@@ -45,22 +45,18 @@ public class VonrHelper {
 
     public VonrHelper(@NonNull FeatureFlags featureFlags) {
         this.mFlags = featureFlags;
-        if (mFlags.vonrEnabledMetric()) {
-            if (mFlags.threadShred()) {
-                mHandler = new Handler(BackgroundThread.get().getLooper());
-            } else {
-                HandlerThread mHandlerThread = new HandlerThread("VonrHelperThread");
-                mHandlerThread.start();
-                mHandler = new Handler(mHandlerThread.getLooper());
-            }
+        if (mFlags.threadShred()) {
+            mHandler = new Handler(BackgroundThread.get().getLooper());
+        } else {
+            HandlerThread mHandlerThread = new HandlerThread("VonrHelperThread");
+            mHandlerThread.start();
+            mHandler = new Handler(mHandlerThread.getLooper());
         }
     }
 
     /** Update vonr_enabled state */
     public void updateVonrEnabledState() {
-        if (mFlags.vonrEnabledMetric()) {
-            mHandler.post(mVonrRunnable);
-        }
+        mHandler.post(mVonrRunnable);
     }
 
     @VisibleForTesting
@@ -77,10 +73,6 @@ public class VonrHelper {
 
     /** Get vonr_enabled per subId */
     public boolean getVonrEnabled(int subId) {
-        if (mFlags.vonrEnabledMetric()) {
-            return mPhoneVonrState.getOrDefault(subId, false);
-        } else {
-            return false;
-        }
+        return mPhoneVonrState.getOrDefault(subId, false);
     }
 }

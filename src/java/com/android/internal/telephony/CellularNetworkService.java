@@ -113,7 +113,9 @@ public class CellularNetworkService extends NetworkService {
                     TelephonyManager.NETWORK_TYPE_TD_SCDMA}));
     }
 
+// QTI_BEGIN: 2021-03-09: Telephony: Add provision to override CellularNetworkService
     protected class CellularNetworkServiceProvider extends NetworkServiceProvider {
+// QTI_END: 2021-03-09: Telephony: Add provision to override CellularNetworkService
 
         private final Map<Message, NetworkServiceCallback> mCallbackMap = new HashMap<>();
 
@@ -121,7 +123,10 @@ public class CellularNetworkService extends NetworkService {
 
         private final Phone mPhone;
 
+// QTI_BEGIN: 2021-03-09: Telephony: Add provision to override CellularNetworkService
         protected CellularNetworkServiceProvider() {
+// QTI_END: 2021-03-09: Telephony: Add provision to override CellularNetworkService
+// QTI_BEGIN: 2022-12-12: Telephony: Initiates service provider properly from injection
             this(SubscriptionManager.DEFAULT_SIM_SLOT_INDEX, false);
         }
 
@@ -130,8 +135,11 @@ public class CellularNetworkService extends NetworkService {
             if (!unsolAware) {
                 mPhone.mCi.unregisterForNetworkStateChanged(mHandler);
             }
+// QTI_END: 2022-12-12: Telephony: Initiates service provider properly from injection
+// QTI_BEGIN: 2021-03-09: Telephony: Add provision to override CellularNetworkService
         }
 
+// QTI_END: 2021-03-09: Telephony: Add provision to override CellularNetworkService
         CellularNetworkServiceProvider(int slotId) {
             super(slotId);
 
@@ -258,8 +266,10 @@ public class CellularNetworkService extends NetworkService {
             return availableServices;
         }
 
+// QTI_BEGIN: 2021-03-09: Telephony: Add provision to override CellularNetworkService
         protected NetworkRegistrationInfo getRegistrationStateFromResult(Object result,
                                                                          int domain) {
+// QTI_END: 2021-03-09: Telephony: Add provision to override CellularNetworkService
             if (result == null) {
                 return null;
             }
