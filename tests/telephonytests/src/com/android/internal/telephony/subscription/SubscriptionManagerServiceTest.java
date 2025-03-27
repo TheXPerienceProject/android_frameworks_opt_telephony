@@ -43,7 +43,12 @@ import static com.android.internal.telephony.subscription.SubscriptionDatabaseMa
 import static com.android.internal.telephony.subscription.SubscriptionDatabaseManagerTest.FAKE_PHONE_NUMBER2;
 import static com.android.internal.telephony.subscription.SubscriptionDatabaseManagerTest.FAKE_RCS_CONFIG1;
 import static com.android.internal.telephony.subscription.SubscriptionDatabaseManagerTest.FAKE_RCS_CONFIG2;
+import static com.android.internal.telephony.subscription.SubscriptionDatabaseManagerTest.FAKE_SATELLITE_ENTITLEMENT_BARRED_PLMNS1;
+import static com.android.internal.telephony.subscription.SubscriptionDatabaseManagerTest.FAKE_SATELLITE_ENTITLEMENT_DATA_PLAN_PLMNS1;
+import static com.android.internal.telephony.subscription.SubscriptionDatabaseManagerTest.FAKE_SATELLITE_ENTITLEMENT_DATA_SERVICE_POLICY1;
 import static com.android.internal.telephony.subscription.SubscriptionDatabaseManagerTest.FAKE_SATELLITE_ENTITLEMENT_PLMNS1;
+import static com.android.internal.telephony.subscription.SubscriptionDatabaseManagerTest.FAKE_SATELLITE_ENTITLEMENT_SERVICE_TYPE_MAP1;
+import static com.android.internal.telephony.subscription.SubscriptionDatabaseManagerTest.FAKE_SATELLITE_ENTITLEMENT_VOICE_SERVICE_POLICY1;
 import static com.android.internal.telephony.subscription.SubscriptionDatabaseManagerTest.FAKE_SATELLITE_IS_ONLY_NTN_DISABLED;
 import static com.android.internal.telephony.subscription.SubscriptionDatabaseManagerTest.FAKE_SUBSCRIPTION_INFO1;
 import static com.android.internal.telephony.subscription.SubscriptionDatabaseManagerTest.FAKE_SUBSCRIPTION_INFO2;
@@ -102,6 +107,7 @@ import android.testing.AndroidTestingRunner;
 import android.testing.TestableLooper;
 import android.util.ArraySet;
 import android.util.Base64;
+import android.util.Log;
 
 import com.android.internal.R;
 import com.android.internal.telephony.ContextFixture;
@@ -136,7 +142,9 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -3442,11 +3450,31 @@ public class SubscriptionManagerServiceTest extends TelephonyTest {
         List<String> expectedPlmnList = new ArrayList<>();
         int subId = 1;
 
-        SubscriptionInfoInternal subInfo = mSubscriptionManagerServiceUT
-                .getSubscriptionInfoInternal(subId);
+        SubscriptionInfoInternal subInfo =
+                mSubscriptionManagerServiceUT.getSubscriptionInfoInternal(subId);
         assertTrue(subInfo.getSatelliteEntitlementPlmns().isEmpty());
         assertEquals(expectedPlmnList,
                 mSubscriptionManagerServiceUT.getSatelliteEntitlementPlmnList(subId));
+
+        assertTrue(subInfo.getSatelliteEntitlementBarredPlmnsList().isEmpty());
+        assertEquals(expectedPlmnList,
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementBarredPlmnList(subId));
+
+        assertTrue(subInfo.getSatelliteEntitlementDataPlanForPlmns().isEmpty());
+        assertEquals(new HashMap<>(),
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementDataPlanForPlmns(subId));
+
+        assertTrue(subInfo.getSatelliteEntitlementPlmnsServiceTypes().isEmpty());
+        assertEquals(new HashMap<>(),
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementPlmnServiceTypeMap(subId));
+
+        assertTrue(subInfo.getSatellitePlmnsDataServicePolicy().isEmpty());
+        assertEquals(new HashMap<>(),
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementPlmnDataServicePolicy(subId));
+
+        assertTrue(subInfo.getSatellitePlmnsVoiceServicePolicy().isEmpty());
+        assertEquals(new HashMap<>(),
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementPlmnVoiceServicePolicy(subId));
 
         // When the list is stored as [123123,12310], verify whether SubscriptionInfoInternal
         // returns the string as "123123,12310" and SubscriptionManagerService returns the List as
@@ -3455,11 +3483,56 @@ public class SubscriptionManagerServiceTest extends TelephonyTest {
         String expectedPlmn = FAKE_SATELLITE_ENTITLEMENT_PLMNS1;
         expectedPlmnList = Arrays.stream(expectedPlmn.split(",")).collect(Collectors.toList());
         subId = 2;
-
         subInfo = mSubscriptionManagerServiceUT.getSubscriptionInfoInternal(subId);
         assertEquals(expectedPlmn, subInfo.getSatelliteEntitlementPlmns());
         assertEquals(expectedPlmnList,
                 mSubscriptionManagerServiceUT.getSatelliteEntitlementPlmnList(subId));
+
+        // When the list is stored as [123123,12310], verify whether SubscriptionInfoInternal
+        // returns the string as "123123,12310" and SubscriptionManagerService returns the List as
+        // [123123,12310].
+        expectedPlmn = FAKE_SATELLITE_ENTITLEMENT_BARRED_PLMNS1;
+        expectedPlmnList = Arrays.stream(expectedPlmn.split(",")).collect(Collectors.toList());
+        assertEquals(expectedPlmn, subInfo.getSatelliteEntitlementBarredPlmnsList());
+        assertEquals(expectedPlmnList,
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementBarredPlmnList(subId));
+
+        // When the Map is stored as {"302820":0,"31026":1,"40445":0}, verify whether
+        // SubscriptionInfoInternal returns the Map as {"302820":0,"31026":1,"40445":0} and
+        // SubscriptionManagerService returns the Map as {"302820":0,"31026":1,"40445":0}.
+        String entitlementInfo = FAKE_SATELLITE_ENTITLEMENT_DATA_PLAN_PLMNS1;
+        Map<String, Integer> entitlementInfoMap = mSubscriptionManagerServiceUT.deSerializeCVToMap(
+                entitlementInfo);
+        assertEquals(entitlementInfo, subInfo.getSatelliteEntitlementDataPlanForPlmns());
+        assertEquals(entitlementInfoMap,
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementDataPlanForPlmns(subId));
+
+        // When the Map is stored as {"302820":[1,3],"31026":[2,3],"40445":[1,3]}, verify whether
+        // SubscriptionInfoInternal returns the Map as {"302820":[1,3],"31026":[2,3],"40445":[1,
+        // 3]} and SubscriptionManagerService returns the Map as {"302820":[1,3],"31026":[2,3],
+        // "40445":[1,3]}.
+        entitlementInfo = FAKE_SATELLITE_ENTITLEMENT_SERVICE_TYPE_MAP1;
+        Map<String, List<Integer>> entitlementInfoMapList =
+                mSubscriptionManagerServiceUT.deSerializeCVToMapList(entitlementInfo);
+        assertEquals(entitlementInfo, subInfo.getSatelliteEntitlementPlmnsServiceTypes());
+        assertEquals(entitlementInfoMapList,
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementPlmnServiceTypeMap(subId));
+
+        // When the Map is stored as {"31026":1}, verify whether SubscriptionInfoInternal returns
+        // the Map as {"31026":1} and SubscriptionManagerService returns the Map as {"31026":1}.
+        entitlementInfo = FAKE_SATELLITE_ENTITLEMENT_DATA_SERVICE_POLICY1;
+        entitlementInfoMap = mSubscriptionManagerServiceUT.deSerializeCVToMap(entitlementInfo);
+        assertEquals(entitlementInfo, subInfo.getSatellitePlmnsDataServicePolicy());
+        assertEquals(entitlementInfoMap,
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementPlmnDataServicePolicy(subId));
+
+        // When the Map is stored as {"31234":2}, verify whether SubscriptionInfoInternal returns
+        // the Map as {"31234":2} and SubscriptionManagerService returns the Map as {"31234":2}.
+        entitlementInfo = FAKE_SATELLITE_ENTITLEMENT_VOICE_SERVICE_POLICY1;
+        entitlementInfoMap = mSubscriptionManagerServiceUT.deSerializeCVToMap(entitlementInfo);
+        assertEquals(entitlementInfo, subInfo.getSatellitePlmnsVoiceServicePolicy());
+        assertEquals(entitlementInfoMap,
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementPlmnVoiceServicePolicy(subId));
 
         // When calling SubscriptionDatabaseManager#getSubscriptionInfoInternalreturns returns a
         // null, then verify the SubscriptionManagerService returns an empty List.
@@ -3475,6 +3548,21 @@ public class SubscriptionManagerServiceTest extends TelephonyTest {
         assertEquals(expectedPlmnList,
                 mSubscriptionManagerServiceUT.getSatelliteEntitlementPlmnList(subId));
 
+        assertEquals(expectedPlmnList,
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementBarredPlmnList(subId));
+
+        assertEquals(new HashMap<>(),
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementDataPlanForPlmns(subId));
+
+        assertEquals(new HashMap<>(),
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementPlmnServiceTypeMap(subId));
+
+        assertEquals(new HashMap<>(),
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementPlmnDataServicePolicy(subId));
+
+        assertEquals(new HashMap<>(),
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementPlmnVoiceServicePolicy(subId));
+
         // When calling SubscriptionDatabaseManager#getSubscriptionInfoInternalreturns returns a
         // non null. And when calling SubscriptionInfoInternal#getSatelliteEntitlementPlmns
         // returns a null, then verify the SubscriptionManagerService returns an empty List.
@@ -3482,10 +3570,31 @@ public class SubscriptionManagerServiceTest extends TelephonyTest {
                 SubscriptionInfoInternal.class);
         doReturn(mockSubscriptionInfoInternal).when(
                 mockSubscriptionDatabaseManager).getSubscriptionInfoInternal(anyInt());
-        doReturn(null).when(mockSubscriptionInfoInternal).getSatelliteEntitlementPlmns();
 
+        doReturn(null).when(mockSubscriptionInfoInternal).getSatelliteEntitlementPlmns();
         assertEquals(expectedPlmnList,
                 mSubscriptionManagerServiceUT.getSatelliteEntitlementPlmnList(subId));
+
+        doReturn(null).when(mockSubscriptionInfoInternal).getSatelliteEntitlementBarredPlmnsList();
+        assertEquals(expectedPlmnList,
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementBarredPlmnList(subId));
+
+        doReturn(null).when(mockSubscriptionInfoInternal).getSatelliteEntitlementDataPlanForPlmns();
+        assertEquals(new HashMap<>(),
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementDataPlanForPlmns(subId));
+
+        doReturn(null).when(
+                mockSubscriptionInfoInternal).getSatelliteEntitlementPlmnsServiceTypes();
+        assertEquals(new HashMap<>(),
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementPlmnServiceTypeMap(subId));
+
+        doReturn(null).when(mockSubscriptionInfoInternal).getSatellitePlmnsDataServicePolicy();
+        assertEquals(new HashMap<>(),
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementPlmnDataServicePolicy(subId));
+
+        doReturn(null).when(mockSubscriptionInfoInternal).getSatellitePlmnsVoiceServicePolicy();
+        assertEquals(new HashMap<>(),
+                mSubscriptionManagerServiceUT.getSatelliteEntitlementPlmnVoiceServicePolicy(subId));
     }
 
     public void testIsSatelliteProvisionedForNonIpDatagram() {

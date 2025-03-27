@@ -230,6 +230,7 @@ public class CarrierRoamingSatelliteSessionStats {
             satelliteConnectionGapMinSec = Collections.min(connectionGapList);
             satelliteConnectionGapMaxSec = Collections.max(connectionGapList);
         }
+        boolean isMultiSim = mSubscriptionManagerService.getActiveSubIdList(true).length > 1;
 
         SatelliteStats.CarrierRoamingSatelliteSessionParams params =
                 new SatelliteStats.CarrierRoamingSatelliteSessionParams.Builder()
@@ -252,6 +253,7 @@ public class CarrierRoamingSatelliteSessionStats {
                         .setSupportedSatelliteServices(mSupportedSatelliteServices)
                         .setServiceDataPolicy(mServiceDataPolicy)
                         .setSatelliteDataConsumedBytes(mSatelliteDataConsumedBytes)
+                        .setIsMultiSim(isMultiSim)
                         .build();
         SatelliteStats.getInstance().onCarrierRoamingSatelliteSessionMetrics(params);
         logd("Supported satellite services: " + Arrays.toString(mSupportedSatelliteServices));

@@ -46,6 +46,7 @@ import android.util.LocalLog;
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.PhoneConstants;
+import com.android.internal.telephony.PhoneFactory;
 import com.android.internal.telephony.data.DataConfigManager.DataConfigManagerCallback;
 import com.android.internal.telephony.data.DataNetworkController.DataNetworkControllerCallback;
 import com.android.internal.telephony.data.DataSettingsManager.DataSettingsManagerCallback;
@@ -800,9 +801,14 @@ public class DataStallRecoveryManager extends Handler {
         }
 
         // Skip recovery if it can cause a call to drop
-        if (mPhone.getState() != PhoneConstants.State.IDLE
-                && getRecoveryAction() > RECOVERY_ACTION_CLEANUP) {
+        if (!isPhoneStateIdle() && getRecoveryAction() > RECOVERY_ACTION_CLEANUP) {
             logl("skip data stall recovery as there is an active call");
+            return false;
+        }
+
+        // Skip when network scan started
+        if (isAnyPhoneNetworkScanStarted()) {
+            logl("skip data stall recovery as network scan started");
             return false;
         }
 
@@ -820,6 +826,38 @@ public class DataStallRecoveryManager extends Handler {
         if (!mIsInternetNetworkConnected) {
             logl("skip data stall recovery as data not connected");
             return false;
+        }
+        return true;
+    }
+
+    /**
+     * Checks if any network scan is currently started on any of the available phones.
+     *
+     * @return {@code true} if any network scan is started on any phone; {@code false} otherwise.
+     */
+    private boolean isAnyPhoneNetworkScanStarted() {
+        for (Phone phone : PhoneFactory.getPhones()) {
+            logl("NetworkScanStarted: " + phone.getNetworkScanStarted()
+                    + " on phone" + phone.getPhoneId());
+            if (phone.getNetworkScanStarted()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check whether the phone state is {@link PhoneConstants.State#IDLE} for all phones.
+     * If any phone is not IDLE (voice call active on any phone), do not trigger recovery.
+     *
+     * @return {@code true} if all phones are IDLE and {@code false} if any phones are not IDLE.
+     */
+    private boolean isPhoneStateIdle() {
+        for (Phone phone : PhoneFactory.getPhones()) {
+            logl("Phone State: " + phone.getState() + " on phone" + phone.getPhoneId());
+            if (phone.getState() != PhoneConstants.State.IDLE) {
+                return false;
+            }
         }
         return true;
     }
