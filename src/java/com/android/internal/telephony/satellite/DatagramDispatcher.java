@@ -81,6 +81,8 @@ public class DatagramDispatcher extends Handler {
     private static final int CMD_SEND_SMS = 8;
     private static final int EVENT_SEND_SMS_DONE = 9;
     private static final int EVENT_MT_SMS_POLLING_THROTTLE_TIMED_OUT = 10;
+    private static final int CMD_SEND_MT_SMS_POLLING_MESSAGE = 11;
+
     private static final Long TIMEOUT_DATAGRAM_DELAY_IN_DEMO_MODE = TimeUnit.SECONDS.toMillis(10);
     @NonNull private static DatagramDispatcher sInstance;
     @NonNull private final Context mContext;
@@ -422,10 +424,16 @@ public class DatagramDispatcher extends Handler {
             case EVENT_MT_SMS_POLLING_THROTTLE_TIMED_OUT: {
                 synchronized (mLock) {
                     mIsMtSmsPollingThrottled = false;
-                    if (allowMtSmsPolling()) {
-                        sendMtSmsPollingMessage();
-                    }
                 }
+                if (allowMtSmsPolling()) {
+                    sendMessage(obtainMessage(CMD_SEND_MT_SMS_POLLING_MESSAGE));
+                }
+                break;
+            }
+
+            case CMD_SEND_MT_SMS_POLLING_MESSAGE: {
+                plogd("CMD_SEND_MT_SMS_POLLING_MESSAGE");
+                handleCmdSendMtSmsPollingMessage();
                 break;
             }
 
@@ -517,9 +525,9 @@ public class DatagramDispatcher extends Handler {
             mIsAligned = isAligned;
             plogd("setDeviceAlignedWithSatellite: " + mIsAligned);
             if (isAligned && mIsDemoMode) handleEventSatelliteAligned();
-            if (allowMtSmsPolling()) {
-                sendMtSmsPollingMessage();
-            }
+        }
+        if (allowMtSmsPolling()) {
+            sendMessage(obtainMessage(CMD_SEND_MT_SMS_POLLING_MESSAGE));
         }
     }
 
@@ -841,10 +849,9 @@ public class DatagramDispatcher extends Handler {
                     mShouldPollMtSms = shouldPollMtSms();
                 }
             }
-
-            if (allowMtSmsPolling()) {
-                sendMtSmsPollingMessage();
-            }
+        }
+        if (allowMtSmsPolling()) {
+            sendMessage(obtainMessage(CMD_SEND_MT_SMS_POLLING_MESSAGE));
         }
     }
 
@@ -1321,22 +1328,25 @@ public class DatagramDispatcher extends Handler {
                 && satelliteController.shouldSendSmsToDatagramDispatcher(satellitePhone);
     }
 
-    @GuardedBy("mLock")
-    private void sendMtSmsPollingMessage() {
-        if (!mShouldPollMtSms) {
-            return;
-        }
-
-        plogd("sendMtSmsPollingMessage");
-        if (!allowCheckMessageInNotConnected()) {
-            mShouldPollMtSms = false;
-        }
-
-        for (Entry<Long, PendingRequest> entry : mPendingSmsMap.entrySet()) {
-            PendingRequest pendingRequest = entry.getValue();
-            if (pendingRequest.isMtSmsPolling) {
-                plogd("sendMtSmsPollingMessage: mPendingSmsMap already has the polling message.");
+    private void handleCmdSendMtSmsPollingMessage() {
+        synchronized (mLock) {
+            if (!mShouldPollMtSms) {
+                plogd("sendMtSmsPollingMessage: mShouldPollMtSms=" + mShouldPollMtSms);
                 return;
+            }
+
+            plogd("sendMtSmsPollingMessage");
+            if (!allowCheckMessageInNotConnected()) {
+                mShouldPollMtSms = false;
+            }
+
+            for (Entry<Long, PendingRequest> entry : mPendingSmsMap.entrySet()) {
+                PendingRequest pendingRequest = entry.getValue();
+                if (pendingRequest.isMtSmsPolling) {
+                    plogd("sendMtSmsPollingMessage: mPendingSmsMap already "
+                            + "has the polling message.");
+                    return;
+                }
             }
         }
 
@@ -1370,7 +1380,6 @@ public class DatagramDispatcher extends Handler {
         removeMessages(EVENT_MT_SMS_POLLING_THROTTLE_TIMED_OUT);
     }
 
-    @GuardedBy("mLock")
     private boolean allowMtSmsPolling() {
         if (!mFeatureFlags.carrierRoamingNbIotNtn()) return false;
 
@@ -1383,11 +1392,15 @@ public class DatagramDispatcher extends Handler {
             return false;
         }
 
-        if (!mIsAligned) return false;
+        boolean isModemStateConnectedOrTransferring;
+        synchronized (mLock) {
+            if (!mIsAligned) return false;
 
-        boolean isModemStateConnectedOrTransferring =
-                mModemState == SATELLITE_MODEM_STATE_CONNECTED
-                        || mModemState == SATELLITE_MODEM_STATE_DATAGRAM_TRANSFERRING;
+            isModemStateConnectedOrTransferring =
+                    mModemState == SATELLITE_MODEM_STATE_CONNECTED
+                            || mModemState == SATELLITE_MODEM_STATE_DATAGRAM_TRANSFERRING;
+        }
+
         if (!isModemStateConnectedOrTransferring && !allowCheckMessageInNotConnected()) {
             plogd("EVENT_MT_SMS_POLLING_THROTTLE_TIMED_OUT:"
                     + " allow_check_message_in_not_connected is disabled");

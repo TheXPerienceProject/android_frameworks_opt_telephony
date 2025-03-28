@@ -4562,6 +4562,10 @@ public class GsmCdmaPhone extends Phone {
     protected void phoneObjectUpdater(int newVoiceRadioTech) {
 // QTI_END: 2018-01-31: Telephony: Enable vendor Telephony plugin
         logd("phoneObjectUpdater: newVoiceRadioTech=" + newVoiceRadioTech);
+        if (mFeatureFlags.phoneTypeCleanup()) {
+            logd("phoneObjectUpdater: no-op as CDMA cleanup flag is set");
+            return;
+        }
 
         // Check for a voice over LTE/NR replacement
         if (ServiceState.isPsOnlyTech(newVoiceRadioTech)
@@ -5135,6 +5139,7 @@ public class GsmCdmaPhone extends Phone {
     }
 
     public int getLteOnCdmaMode() {
+        if (mFeatureFlags.phoneTypeCleanup()) return PhoneConstants.LTE_ON_CDMA_FALSE;
         int currentConfig = TelephonyProperties.lte_on_cdma_device()
                 .orElse(PhoneConstants.LTE_ON_CDMA_FALSE);
         int lteOnCdmaModeDynamicValue = currentConfig;

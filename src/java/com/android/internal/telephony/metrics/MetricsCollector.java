@@ -1596,7 +1596,8 @@ public class MetricsCollector implements StatsManager.StatsPullAtomCallback {
                 stats.countOfOutgoingMms,
                 stats.supportedSatelliteServices,
                 stats.serviceDataPolicy,
-                stats.satelliteDataConsumedBytes);
+                stats.satelliteDataConsumedBytes,
+                stats.isMultiSim);
     }
 
     private static StatsEvent buildStatsEvent(CarrierRoamingSatelliteControllerStats stats) {
@@ -1610,7 +1611,9 @@ public class MetricsCollector implements StatsManager.StatsPullAtomCallback {
                 stats.satelliteSessionGapAvgSec,
                 stats.satelliteSessionGapMaxSec,
                 stats.carrierId,
-                stats.isDeviceEntitled);
+                stats.isDeviceEntitled,
+                stats.isMultiSim,
+                stats.countOfSatelliteSessions);
     }
 
     private static StatsEvent buildStatsEvent(SatelliteEntitlement stats) {

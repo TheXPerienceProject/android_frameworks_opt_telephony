@@ -74,6 +74,7 @@ import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.telephony.AnomalyReporter;
 import android.telephony.CarrierConfigManager;
+import android.telephony.NetworkRegistrationInfo;
 import android.telephony.RadioAccessFamily;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
@@ -127,12 +128,18 @@ import com.android.internal.telephony.util.TelephonyUtils;
 import com.android.internal.telephony.util.WorkerThread;
 import com.android.telephony.Rlog;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -207,7 +214,12 @@ public class SubscriptionManagerService extends ISub.Stub {
             SimInfo.COLUMN_SATELLITE_ENTITLEMENT_STATUS,
             SimInfo.COLUMN_SATELLITE_ENTITLEMENT_PLMNS,
             SimInfo.COLUMN_SATELLITE_ESOS_SUPPORTED,
-            SimInfo.COLUMN_IS_SATELLITE_PROVISIONED_FOR_NON_IP_DATAGRAM
+            SimInfo.COLUMN_IS_SATELLITE_PROVISIONED_FOR_NON_IP_DATAGRAM,
+            SimInfo.COLUMN_SATELLITE_ENTITLEMENT_BARRED_PLMNS,
+            SimInfo.COLUMN_SATELLITE_ENTITLEMENT_DATA_PLAN_PLMNS,
+            SimInfo.COLUMN_SATELLITE_ENTITLEMENT_SERVICE_TYPE_MAP,
+            SimInfo.COLUMN_SATELLITE_ENTITLEMENT_DATA_SERVICE_POLICY,
+            SimInfo.COLUMN_SATELLITE_ENTITLEMENT_VOICE_SERVICE_POLICY
     );
 
     /**
@@ -4648,16 +4660,37 @@ public class SubscriptionManagerService extends ISub.Stub {
     }
 
     /**
-     * Set the satellite entitlement plmn list value in the subscription database.
+     * Save the satellite entitlement Info in the subscription database.
      *
-     * @param subId subscription id.
-     * @param satelliteEntitlementPlmnList satellite entitlement plmn list
+     * @param subId                     Subscription ID.
+     * @param allowedPlmnList           Plmn [MCC+MNC] list of codes to determine if satellite
+     *                                  communication is allowed. Ex : "123123,12310".
+     * @param barredPlmnList            Plmn [MCC+MNC] list of codes to determine if satellite
+     *                                  communication is not allowed.  Ex : "123123,12310".
+     * @param plmnDataPlanMap           data plan per plmn of type
+     *                                  {@link SatelliteController.SatelliteDataPlan}.
+     *                                  Ex : {"302820":0, "31026":1}
+     * @param plmnServiceTypeMap        list of supported services per plmn of type
+     *                                  {@link NetworkRegistrationInfo.ServiceType}).
+     *                                  Ex : {"302820":[1,3],"31026":[2,3]}
+     * @param plmnDataServicePolicyMap  data support mode per plmn map of types
+     *                                  {@link CarrierConfigManager.SATELLITE_DATA_SUPPORT_MODE}.
+     *                                  Ex : {"302820":2, "31026":1}
+     * @param plmnVoiceServicePolicyMap voice support mode per plmn map of types
+     *                                  {@link CarrierConfigManager.SATELLITE_DATA_SUPPORT_MODE}.
+     *                                  Ex : {"302820":2, "31026":1}.
      */
-    public void setSatelliteEntitlementPlmnList(int subId,
-            @NonNull List<String> satelliteEntitlementPlmnList) {
+    public void setSatelliteEntitlementInfo(int subId,
+            @NonNull List<String> allowedPlmnList,
+            @Nullable List<String> barredPlmnList,
+            @Nullable Map<String, Integer> plmnDataPlanMap,
+            @Nullable Map<String, List<Integer>> plmnServiceTypeMap,
+            @Nullable Map<String, Integer> plmnDataServicePolicyMap,
+            @Nullable Map<String, Integer> plmnVoiceServicePolicyMap) {
         try {
-            mSubscriptionDatabaseManager.setSatelliteEntitlementPlmnList(
-                    subId, satelliteEntitlementPlmnList);
+            mSubscriptionDatabaseManager.setSatelliteEntitlementInfo(
+                    subId, allowedPlmnList, barredPlmnList, plmnDataPlanMap, plmnServiceTypeMap,
+                    plmnDataServicePolicyMap, plmnVoiceServicePolicyMap);
         } catch (IllegalArgumentException e) {
             loge("setSatelliteEntitlementPlmnList: invalid subId=" + subId);
         }
@@ -4734,6 +4767,94 @@ public class SubscriptionManagerService extends ISub.Stub {
         }
 
         return subInfo.getSatelliteESOSSupported() == 1;
+    }
+
+    /**
+     * Get the satellite entitlement barred plmn list value from the subscription database.
+     *
+     * @param subId subscription id.
+     * @return satellite entitlement plmn list. Ex : "123123,12310".
+     */
+    @NonNull
+    public List<String> getSatelliteEntitlementBarredPlmnList(int subId) {
+        SubscriptionInfoInternal subInfo = mSubscriptionDatabaseManager.getSubscriptionInfoInternal(
+                subId);
+
+        return Optional.ofNullable(subInfo).map(
+                SubscriptionInfoInternal::getSatelliteEntitlementBarredPlmnsList).filter(
+                s -> !s.isEmpty()).map(
+                s -> Arrays.stream(s.split(",")).collect(Collectors.toList())).orElse(
+                new ArrayList<>());
+    }
+
+    /**
+     * Get the satellite entitlement data plan for the plmns value from the subscription database.
+     *
+     * @param subId subscription id.
+     * @return satellite entitlement data plan map. Ex : {"302820":0, "31026":1}.
+     */
+    @NonNull
+    public Map<String, Integer> getSatelliteEntitlementDataPlanForPlmns(int subId) {
+        SubscriptionInfoInternal subInfo = mSubscriptionDatabaseManager.getSubscriptionInfoInternal(
+                subId);
+        if (subInfo == null) {
+            return new HashMap<>();
+        }
+        String plmnDataPlanJson = subInfo.getSatelliteEntitlementDataPlanForPlmns();
+        return deSerializeCVToMap(plmnDataPlanJson);
+    }
+
+    /**
+     * Get the satellite entitlement services for the plmns value from the subscription database.
+     *
+     * @param subId subscription id.
+     * @return satellite entitlement services map. Ex : {"302820":[1,3],"31026":[2,3]}.
+     */
+    @NonNull
+    public Map<String, List<Integer>> getSatelliteEntitlementPlmnServiceTypeMap(int subId) {
+        SubscriptionInfoInternal subInfo = mSubscriptionDatabaseManager.getSubscriptionInfoInternal(
+                subId);
+        if (subInfo == null) {
+            return new HashMap<>();
+        }
+        String plmnDataPlanJson = subInfo.getSatelliteEntitlementPlmnsServiceTypes();
+        return deSerializeCVToMapList(plmnDataPlanJson);
+    }
+
+    /**
+     * Get the satellite entitlement data service policy for plmns  value from the subscription
+     * database.
+     *
+     * @param subId subscription id.
+     * @return satellite entitlement data service policy map. Ex : {"302820":2, "31026":1}.
+     */
+    @NonNull
+    public Map<String, Integer> getSatelliteEntitlementPlmnDataServicePolicy(int subId) {
+        SubscriptionInfoInternal subInfo = mSubscriptionDatabaseManager.getSubscriptionInfoInternal(
+                subId);
+        if (subInfo == null) {
+            return new HashMap<>();
+        }
+        String plmnDataPolicyJson = subInfo.getSatellitePlmnsDataServicePolicy();
+        return deSerializeCVToMap(plmnDataPolicyJson);
+    }
+
+    /**
+     * Get the satellite entitlement voice service policy for plmns  value from the subscription
+     * database.
+     *
+     * @param subId subscription id.
+     * @return satellite entitlement voice service policy map. Ex : {"302820":2, "31026":1}.
+     */
+    @NonNull
+    public Map<String, Integer> getSatelliteEntitlementPlmnVoiceServicePolicy(int subId) {
+        SubscriptionInfoInternal subInfo = mSubscriptionDatabaseManager.getSubscriptionInfoInternal(
+                subId);
+        if (subInfo == null) {
+            return new HashMap<>();
+        }
+        String plmnVoicePolicyJson = subInfo.getSatellitePlmnsVoiceServicePolicy();
+        return deSerializeCVToMap(plmnVoicePolicyJson);
     }
 
     /**
@@ -4929,6 +5050,58 @@ public class SubscriptionManagerService extends ISub.Stub {
     }
 
     /**
+     * DeSerialize the given Json model string to Map<String, Integer>.
+     *
+     * @param jsonString Json in string format.
+     * @return Map of type Map<String, Integer>.
+     */
+    public Map<String, Integer> deSerializeCVToMap(String jsonString) {
+        Map<String, Integer> map = new HashMap<>();
+        try {
+            if (TextUtils.isEmpty(jsonString)) {
+                return map;
+            }
+            JSONObject json = new JSONObject(jsonString);
+            Iterator<String> keys = json.keys();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                map.put(key, json.getInt(key));
+            }
+        } catch (JSONException e) {
+            loge("deSerializeCVToMap JSON error: " + e.getMessage());
+        }
+        return map;
+    }
+
+    /**
+     * DeSerialize the given Json model string to Map<String, List<Integer>>.
+     *
+     * @param jsonString Json in string format.
+     * @return Map of type Map<String, List<Integer>>.
+     */
+    public Map<String, List<Integer>> deSerializeCVToMapList(String jsonString) {
+        Map<String, List<Integer>> map = new HashMap<>();
+        try {
+            if (TextUtils.isEmpty(jsonString)) {
+                return map;
+            }
+            JSONObject json = new JSONObject(jsonString);
+            Iterator<String> keys = json.keys();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                JSONArray jsonArray = json.getJSONArray(key);
+                List<Integer> values = new ArrayList<>();
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    values.add(jsonArray.getInt(i));
+                }
+                map.put(key, values);
+            }
+        } catch (JSONException e) {
+            loge("deSerializeCVToMapList JSON error: " + e.getMessage());
+        }
+        return map;
+    }
+     /**
      * Log debug messages.
      *
      * @param s debug messages
