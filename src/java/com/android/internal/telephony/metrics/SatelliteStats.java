@@ -40,6 +40,7 @@ import com.android.internal.telephony.satellite.SatelliteConstants;
 import com.android.telephony.Rlog;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 
 /** Tracks Satellite metrics for each phone */
@@ -105,6 +106,12 @@ public class SatelliteStats {
         private final int mCountOfP2PSmsAvailableNotificationRemoved;
         private static boolean sIsNtnOnlyCarrier;
         private static int sVersionOfSatelliteAccessConfig;
+        private final int mCountOfIncomingDatagramTypeSosSmsSuccess;
+        private final int mCountOfIncomingDatagramTypeSosSmsFail;
+        private final int mCountOfOutgoingDatagramTypeSmsSuccess;
+        private final int mCountOfOutgoingDatagramTypeSmsFail;
+        private final int mCountOfIncomingDatagramTypeSmsSuccess;
+        private final int mCountOfIncomingDatagramTypeSmsFail;
 
         private SatelliteControllerParams(Builder builder) {
             this.mCountOfSatelliteServiceEnablementsSuccess =
@@ -181,6 +188,17 @@ public class SatelliteStats {
                 this.sVersionOfSatelliteAccessConfig =
                         builder.mVersionOfSatelliteAccessConfig.get();
             }
+
+            this.mCountOfIncomingDatagramTypeSosSmsSuccess =
+                    builder.mCountOfIncomingDatagramTypeSosSmsSuccess;
+            this.mCountOfIncomingDatagramTypeSosSmsFail =
+                    builder.mCountOfIncomingDatagramTypeSosSmsFail;
+            this.mCountOfOutgoingDatagramTypeSmsSuccess =
+                    builder.mCountOfOutgoingDatagramTypeSmsSuccess;
+            this.mCountOfOutgoingDatagramTypeSmsFail = builder.mCountOfOutgoingDatagramTypeSmsFail;
+            this.mCountOfIncomingDatagramTypeSmsSuccess =
+                    builder.mCountOfIncomingDatagramTypeSmsSuccess;
+            this.mCountOfIncomingDatagramTypeSmsFail = builder.mCountOfIncomingDatagramTypeSmsFail;
         }
 
         public int getCountOfSatelliteServiceEnablementsSuccess() {
@@ -331,6 +349,30 @@ public class SatelliteStats {
             return sVersionOfSatelliteAccessConfig;
         }
 
+        public int getCountOfIncomingDatagramTypeSosSmsSuccess() {
+            return mCountOfIncomingDatagramTypeSosSmsSuccess;
+        }
+
+        public int getCountOfIncomingDatagramTypeSosSmsFail() {
+            return mCountOfIncomingDatagramTypeSosSmsFail;
+        }
+
+        public int getCountOfOutgoingDatagramTypeSmsSuccess() {
+            return mCountOfOutgoingDatagramTypeSmsSuccess;
+        }
+
+        public int getCountOfOutgoingDatagramTypeSmsFail() {
+            return mCountOfOutgoingDatagramTypeSmsFail;
+        }
+
+        public int getCountOfIncomingDatagramTypeSmsSuccess() {
+            return mCountOfIncomingDatagramTypeSmsSuccess;
+        }
+
+        public int getCountOfIncomingDatagramTypeSmsFail() {
+            return mCountOfIncomingDatagramTypeSmsFail;
+        }
+
         /**
          * A builder class to create {@link SatelliteControllerParams} data structure class
          */
@@ -372,6 +414,12 @@ public class SatelliteStats {
             private int mCountOfP2PSmsAvailableNotificationRemoved = 0;
             private Optional<Boolean> mIsNtnOnlyCarrier = Optional.empty();
             private Optional<Integer> mVersionOfSatelliteAccessConfig = Optional.empty();
+            private int mCountOfIncomingDatagramTypeSosSmsSuccess;
+            private int mCountOfIncomingDatagramTypeSosSmsFail;
+            private int mCountOfOutgoingDatagramTypeSmsSuccess;
+            private int mCountOfOutgoingDatagramTypeSmsFail;
+            private int mCountOfIncomingDatagramTypeSmsSuccess;
+            private int mCountOfIncomingDatagramTypeSmsFail;
 
             /**
              * Sets countOfSatelliteServiceEnablementsSuccess value of {@link SatelliteController}
@@ -740,6 +788,67 @@ public class SatelliteStats {
             }
 
             /**
+             * Sets countOfIncomingDatagramTypeSosSmsSuccess value of {@link SatelliteController}
+             * atom then returns Builder class
+             */
+            public Builder setCountOfIncomingDatagramTypeSosSmsSuccess(
+                    int countOfIncomingDatagramTypeSosSmsSuccess) {
+                this.mCountOfIncomingDatagramTypeSosSmsSuccess =
+                        countOfIncomingDatagramTypeSosSmsSuccess;
+                return this;
+            }
+
+            /**
+             * Sets countOfIncomingDatagramTypeSosSmsFail value of {@link SatelliteController} atom
+             * then returns Builder class
+             */
+            public Builder setCountOfIncomingDatagramTypeSosSmsFail(
+                    int countOfIncomingDatagramTypeSosSmsFail) {
+                this.mCountOfIncomingDatagramTypeSosSmsFail = countOfIncomingDatagramTypeSosSmsFail;
+                return this;
+            }
+
+            /**
+             * Sets countOfOutgoingDatagramTypeSmsSuccess value of {@link SatelliteController} atom
+             * then returns Builder class
+             */
+            public Builder setCountOfOutgoingDatagramTypeSmsSuccess(
+                    int countOfOutgoingDatagramTypeSmsSuccess) {
+                this.mCountOfOutgoingDatagramTypeSmsSuccess = countOfOutgoingDatagramTypeSmsSuccess;
+                return this;
+            }
+
+            /**
+             * Sets countOfOutgoingDatagramTypeSmsFail value of {@link SatelliteController} atom
+             * then returns Builder class
+             */
+            public Builder setCountOfOutgoingDatagramTypeSmsFail(
+                    int countOfOutgoingDatagramTypeSmsFail) {
+                this.mCountOfOutgoingDatagramTypeSmsFail = countOfOutgoingDatagramTypeSmsFail;
+                return this;
+            }
+
+            /**
+             * Sets countOfIncomingDatagramTypeSmsSuccess value of {@link SatelliteController} atom
+             * then returns Builder class
+             */
+            public Builder setCountOfIncomingDatagramTypeSmsSuccess(
+                    int countOfIncomingDatagramTypeSmsSuccess) {
+                this.mCountOfIncomingDatagramTypeSmsSuccess = countOfIncomingDatagramTypeSmsSuccess;
+                return this;
+            }
+
+            /**
+             * Sets countOfIncomingDatagramTypeSmsFail value of {@link SatelliteController} atom
+             * then returns Builder class
+             */
+            public Builder setCountOfIncomingDatagramTypeSmsFail(
+                    int countOfIncomingDatagramTypeSmsFail) {
+                this.mCountOfIncomingDatagramTypeSmsFail = countOfIncomingDatagramTypeSmsFail;
+                return this;
+            }
+
+            /**
              * Returns ControllerParams, which contains whole component of
              * {@link SatelliteController} atom
              */
@@ -799,6 +908,16 @@ public class SatelliteStats {
                     + ", countOfP2PSmsAvailableNotificationRemoved="
                     + mCountOfP2PSmsAvailableNotificationRemoved
                     + ", versionOfSatelliteAccessConfig=" + sVersionOfSatelliteAccessConfig
+                    + ", countOfIncomingDatagramTypeSosSmsSuccess="
+                    + mCountOfIncomingDatagramTypeSosSmsSuccess
+                    + ", countOfIncomingDatagramTypeSosSmsFail="
+                    + mCountOfIncomingDatagramTypeSosSmsFail
+                    + ", countOfOutgoingDatagramTypeSmsSuccess="
+                    + mCountOfOutgoingDatagramTypeSmsSuccess
+                    + ", countOfOutgoingDatagramTypeSmsFail=" + mCountOfOutgoingDatagramTypeSmsFail
+                    + ", countOfIncomingDatagramTypeSmsSuccess="
+                    + mCountOfIncomingDatagramTypeSmsSuccess
+                    + ", countOfIncomingDatagramTypeSmsFail=" + mCountOfIncomingDatagramTypeSmsFail
                     + ")";
         }
     }
@@ -1767,6 +1886,7 @@ public class SatelliteStats {
         private final int mServiceDataPolicy;
         private final long mSatelliteDataConsumedBytes;
         private final boolean mIsMultiSim;
+        private final boolean mIsNbIotNtn;
 
         private CarrierRoamingSatelliteSessionParams(Builder builder) {
             this.mCarrierId = builder.mCarrierId;
@@ -1791,6 +1911,7 @@ public class SatelliteStats {
             this.mSatelliteDataConsumedBytes =
                     builder.mSatelliteDataConsumedBytes;
             this.mIsMultiSim = builder.mIsMultiSim;
+            this.mIsNbIotNtn = builder.mIsNbIotNtn;
         }
 
         public int getCarrierId() {
@@ -1873,6 +1994,10 @@ public class SatelliteStats {
             return mIsMultiSim;
         }
 
+        public boolean isNbIotNtn() {
+            return mIsNbIotNtn;
+        }
+
         /**
          * A builder class to create {@link CarrierRoamingSatelliteSessionParams} data structure
          * class
@@ -1899,6 +2024,7 @@ public class SatelliteStats {
                     SatelliteConstants.SATELLITE_ENTITLEMENT_SERVICE_POLICY_UNKNOWN;
             long mSatelliteDataConsumedBytes = 0L;
             private boolean mIsMultiSim = false;
+            private boolean mIsNbIotNtn = false;
 
             /**
              * Sets carrierId value of {@link CarrierRoamingSatelliteSession} atom
@@ -2053,6 +2179,7 @@ public class SatelliteStats {
              */
             public Builder setSupportedSatelliteServices(int[] supportedSatelliteServices) {
                 this.mSupportedSatelliteServices = supportedSatelliteServices;
+                Arrays.sort(this.mSupportedSatelliteServices);
                 return this;
             }
 
@@ -2092,6 +2219,15 @@ public class SatelliteStats {
                 return new SatelliteStats()
                         .new CarrierRoamingSatelliteSessionParams(Builder.this);
             }
+
+            /**
+             * Sets isNbIotNtn value of {@link CarrierRoamingSatelliteSession} atom, which indicates
+             * whether satellite service tech is NB-IoT-NTN or not
+             */
+            public Builder setIsNbIotNtn(boolean isNbIotNtn) {
+                this.mIsNbIotNtn = isNbIotNtn;
+                return this;
+            }
         }
 
         @Override
@@ -2118,6 +2254,7 @@ public class SatelliteStats {
                     + ", serviceDataPolicy=" + mServiceDataPolicy
                     + ", SatelliteDataConsumedBytes=" + mSatelliteDataConsumedBytes
                     + ", isMultiSim=" + mIsMultiSim
+                    + ", isNbIotNtn=" + mIsNbIotNtn
                     + ")";
         }
     }
@@ -2139,6 +2276,7 @@ public class SatelliteStats {
         private static boolean sIsDeviceEntitled;
         private static boolean sIsMultiSim;
         private final int mCountOfSatelliteSessions;
+        private static boolean sIsNbIotNtn;
 
         private CarrierRoamingSatelliteControllerStatsParams(Builder builder) {
             this.mConfigDataSource = builder.mConfigDataSource;
@@ -2176,12 +2314,16 @@ public class SatelliteStats {
             }
 
             this.mCountOfSatelliteSessions = builder.mCountOfSatelliteSessions;
+
+            // isNbIotNtn value should be updated only when it is meaningful.
+            if (builder.mIsNbIotNtn.isPresent()) {
+                sIsNbIotNtn = builder.mIsNbIotNtn.get();
+            }
         }
 
         public int getConfigDataSource() {
             return mConfigDataSource;
         }
-
 
         public int getCountOfEntitlementStatusQueryRequest() {
             return mCountOfEntitlementStatusQueryRequest;
@@ -2223,6 +2365,10 @@ public class SatelliteStats {
             return mCountOfSatelliteSessions;
         }
 
+        public boolean isNbIotNtn() {
+            return sIsNbIotNtn;
+        }
+
         /**
          * A builder class to create {@link CarrierRoamingSatelliteControllerStatsParams}
          * data structure class
@@ -2239,6 +2385,7 @@ public class SatelliteStats {
             private Optional<Boolean> mIsDeviceEntitled = Optional.empty();
             private Optional<Boolean> mIsMultiSim = Optional.empty();
             private int mCountOfSatelliteSessions = 0;
+            private Optional<Boolean> mIsNbIotNtn = Optional.empty();
 
             /**
              * Sets configDataSource value of {@link CarrierRoamingSatelliteControllerStats} atom
@@ -2333,6 +2480,12 @@ public class SatelliteStats {
                 return this;
             }
 
+            /** Sets whether the device is in NB-NoT-NTN state or not. */
+            public Builder setIsNbIotNtn(boolean isNbIotNtn) {
+                this.mIsNbIotNtn = Optional.of(isNbIotNtn);
+                return this;
+            }
+
             /**
              * Returns CarrierRoamingSatelliteControllerStatsParams, which contains whole component
              * of {@link CarrierRoamingSatelliteControllerStats} atom
@@ -2341,6 +2494,38 @@ public class SatelliteStats {
                 return new SatelliteStats()
                         .new CarrierRoamingSatelliteControllerStatsParams(Builder.this);
             }
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+            CarrierRoamingSatelliteControllerStatsParams that =
+                    (CarrierRoamingSatelliteControllerStatsParams) obj;
+            return mConfigDataSource == that.getConfigDataSource()
+                    && mCountOfEntitlementStatusQueryRequest
+                    == that.getCountOfEntitlementStatusQueryRequest()
+                    && mCountOfSatelliteConfigUpdateRequest
+                    == that.getCountOfSatelliteConfigUpdateRequest()
+                    && mCountOfSatelliteNotificationDisplayed
+                    == that.getCountOfSatelliteNotificationDisplayed()
+                    && sSatelliteSessionGapMinSec == that.getSatelliteSessionGapMinSec()
+                    && sSatelliteSessionGapAvgSec == that.getSatelliteSessionGapAvgSec()
+                    && sSatelliteSessionGapMaxSec == that.getSatelliteSessionGapMaxSec()
+                    && sCarrierId == that.getCarrierId()
+                    && sIsDeviceEntitled == that.isDeviceEntitled()
+                    && sIsMultiSim == that.isMultiSim()
+                    && mCountOfSatelliteSessions == that.getCountOfSatelliteSessions()
+                    && sIsNbIotNtn == that.isNbIotNtn();
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(mConfigDataSource, mCountOfEntitlementStatusQueryRequest,
+                    mCountOfSatelliteConfigUpdateRequest, mCountOfSatelliteNotificationDisplayed,
+                    sSatelliteSessionGapMinSec, sSatelliteSessionGapAvgSec,
+                    sSatelliteSessionGapMaxSec, sCarrierId, sIsDeviceEntitled, sIsMultiSim,
+                    mCountOfSatelliteSessions, sIsNbIotNtn);
         }
 
         @Override
@@ -2360,6 +2545,7 @@ public class SatelliteStats {
                     + ", isDeviceEntitled=" + sIsDeviceEntitled
                     + ", isMultiSim=" + sIsMultiSim
                     + ", countOfSatelliteSession=" + mCountOfSatelliteSessions
+                    + ", isNbIotNtn=" + sIsNbIotNtn
                     + ")";
         }
     }
@@ -2495,6 +2681,7 @@ public class SatelliteStats {
              */
             public Builder setEntitlementServiceType(int[] entitlementServiceType) {
                 this.mEntitlementServiceType = entitlementServiceType;
+                Arrays.sort(this.mEntitlementServiceType);
                 return this;
             }
 
@@ -2890,6 +3077,16 @@ public class SatelliteStats {
                 param.getCountOfP2PSmsAvailableNotificationRemoved();
         proto.isNtnOnlyCarrier = param.isNtnOnlyCarrier();
         proto.versionOfSatelliteAccessConfig = param.getVersionSatelliteAccessConfig();
+        proto.countOfIncomingDatagramTypeSosSmsSuccess =
+                param.getCountOfIncomingDatagramTypeSosSmsSuccess();
+        proto.countOfIncomingDatagramTypeSosSmsFail =
+                param.getCountOfIncomingDatagramTypeSosSmsFail();
+        proto.countOfOutgoingDatagramTypeSmsSuccess =
+                param.getCountOfOutgoingDatagramTypeSmsSuccess();
+        proto.countOfOutgoingDatagramTypeSmsFail = param.getCountOfOutgoingDatagramTypeSmsFail();
+        proto.countOfIncomingDatagramTypeSmsSuccess =
+                param.getCountOfIncomingDatagramTypeSmsSuccess();
+        proto.countOfIncomingDatagramTypeSmsFail = param.getCountOfIncomingDatagramTypeSmsFail();
         if (DBG) logd("onSatelliteControllerMetrics" + param);
         mAtomsStorage.addSatelliteControllerStats(proto);
     }
@@ -3008,6 +3205,7 @@ public class SatelliteStats {
         proto.serviceDataPolicy = param.mServiceDataPolicy;
         proto.satelliteDataConsumedBytes = param.mSatelliteDataConsumedBytes;
         proto.isMultiSim = param.isMultiSim();
+        proto.isNbIotNtn = param.isNbIotNtn();
         if (DBG) logd("onCarrierRoamingSatelliteSessionMetrics: " + param);
         mAtomsStorage.addCarrierRoamingSatelliteSessionStats(proto);
     }
@@ -3027,6 +3225,7 @@ public class SatelliteStats {
         proto.isDeviceEntitled = param.isDeviceEntitled();
         proto.isMultiSim = param.isMultiSim();
         proto.countOfSatelliteSessions = param.getCountOfSatelliteSessions();
+        proto.isNbIotNtn = param.isNbIotNtn();
         if (DBG) logd("onCarrierRoamingSatelliteControllerStatsMetrics: " + param);
         mAtomsStorage.addCarrierRoamingSatelliteControllerStats(proto);
     }

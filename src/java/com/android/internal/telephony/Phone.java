@@ -1107,16 +1107,17 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
     }
 
     /**
-     * Notify the phone that an SMS has been sent. This will be used determine if the SMS was sent
-     * to an emergency address.
+     * Notify the phone that an SMS has been sent. This will be used to determine if the SMS was
+     * sent to an emergency address.
+     *
      * @param destinationAddress the address that the SMS was sent to.
      */
     public void notifySmsSent(String destinationAddress) {
-        TelephonyManager m = (TelephonyManager) getContext().getSystemService(
-                Context.TELEPHONY_SERVICE);
+        TelephonyManager m =
+                (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
         if (mContext.getPackageManager() != null
-                && mContext.getPackageManager().hasSystemFeature(
-                        PackageManager.FEATURE_TELEPHONY_CALLING)) {
+                && mContext.getPackageManager()
+                                .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)) {
             if (m != null && m.isEmergencyNumber(destinationAddress)) {
                 mLocalLog.log("Emergency SMS detected, recording time.");
                 mTimeLastEmergencySmsSentMs = SystemClock.elapsedRealtime();
@@ -2038,6 +2039,13 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
      */
     public boolean hasCalling() {
         return TelephonyCapabilities.supportsTelephonyCalling(mFeatureFlags, mContext);
+    }
+
+    /**
+     * @return true if this device supports messaging, false otherwise.
+     */
+    public boolean hasMessaging() {
+        return TelephonyCapabilities.supportsTelephonyMessaging(mFeatureFlags, mContext);
     }
 
     /**
@@ -5673,6 +5681,9 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
     public void setSatellitePlmn(int simSlot,
             @NonNull List<String> carrierPlmnList, @NonNull List<String> allSatellitePlmnList,
             Message result) {
+        logd("setSatellitePlmn: simSlot=" + simSlot
+                + " carrierPlmnList=" + carrierPlmnList.toString()
+                + " allSatellitePlmnList=" + allSatellitePlmnList.toString());
         mCi.setSatellitePlmn(simSlot, carrierPlmnList, allSatellitePlmnList, result);
     }
 
@@ -5686,6 +5697,8 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
      */
     public void setSatelliteEnabledForCarrier(int simSlot, boolean satelliteEnabled,
             Message result) {
+        logd("setSatelliteEnabledForCarrier: simSlot=" + simSlot
+                + " satelliteEnabled=" + satelliteEnabled);
         mCi.setSatelliteEnabledForCarrier(simSlot, satelliteEnabled, result);
     }
 

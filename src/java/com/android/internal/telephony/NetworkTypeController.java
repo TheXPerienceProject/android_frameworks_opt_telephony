@@ -213,8 +213,8 @@ public class NetworkTypeController extends StateMachine {
     @NonNull private final Set<Integer> mAdditionalNrAdvancedBands = new HashSet<>();
     @NonNull private String mPrimaryTimerState;
     @NonNull private String mSecondaryTimerState;
-    // TODO(b/316425811 remove the workaround)
     private int mNrAdvancedBandsSecondaryTimer;
+    private int mNrAdvancedPciChangeSecondaryTimer;
     @NonNull private String mPreviousState;
     @LinkStatus private int mPhysicalLinkStatus;
     private boolean mIsPhysicalChannelConfig16Supported;
@@ -224,6 +224,7 @@ public class NetworkTypeController extends StateMachine {
     private boolean mEnableNrAdvancedWhileRoaming = true;
     private boolean mIsDeviceIdleMode = false;
     private boolean mPrimaryCellChangedWhileIdle = false;
+    private boolean mPciChangedDuringPrimaryTimer = false;
 
     // Cached copies below to prevent race conditions
     @NonNull private ServiceState mServiceState;
@@ -485,6 +486,8 @@ public class NetworkTypeController extends StateMachine {
                 CarrierConfigManager.KEY_LTE_ENDC_USING_USER_DATA_FOR_RRC_DETECTION_BOOL);
         mNrAdvancedBandsSecondaryTimer = config.getInt(
                 CarrierConfigManager.KEY_NR_ADVANCED_BANDS_SECONDARY_TIMER_SECONDS_INT);
+        mNrAdvancedPciChangeSecondaryTimer = config.getInt(
+                CarrierConfigManager.KEY_NR_ADVANCED_PCI_CHANGE_SECONDARY_TIMER_SECONDS_INT);
         String nrIconConfiguration = config.getString(
                 CarrierConfigManager.KEY_5G_ICON_CONFIGURATION_STRING);
         String overrideTimerRule = config.getString(
@@ -1404,6 +1407,8 @@ public class NetworkTypeController extends StateMachine {
             mRatchetedNrBandwidths = Math.max(mRatchetedNrBandwidths, nrBandwidths);
             mRatchetedNrBands.addAll(nrBands);
         } else {
+            mRatchetedNrBandwidths = nrBandwidths;
+            mRatchetedNrBands = nrBands;
             if (mDoesPccListIndicateIdle
                     && anchorNrCellId != mLastAnchorNrCellId
                     && isUsingPhysicalChannelConfigForRrcDetection()
@@ -1420,13 +1425,12 @@ public class NetworkTypeController extends StateMachine {
                 log("Not ratcheting physical channel config fields since anchor NR cell changed: "
                         + mLastAnchorNrCellId + " -> " + anchorNrCellId);
             }
-            mRatchetedNrBandwidths = nrBandwidths;
-            mRatchetedNrBands = nrBands;
         }
 
         mLastAnchorNrCellId = anchorNrCellId;
         mPhysicalChannelConfigs = physicalChannelConfigs;
         mDoesPccListIndicateIdle = false;
+        mPciChangedDuringPrimaryTimer = mIsPrimaryTimerActive;
         if (DBG) {
             log("Physical channel configs updated: anchorNrCell=" + mLastAnchorNrCellId
                     + ", nrBandwidths=" + mRatchetedNrBandwidths + ", nrBands=" +  mRatchetedNrBands
@@ -1484,6 +1488,7 @@ public class NetworkTypeController extends StateMachine {
     private void transitionWithSecondaryTimerTo(IState destState) {
         String currentName = getCurrentState().getName();
         OverrideTimerRule rule = mOverrideTimerRules.get(mPrimaryTimerState);
+        int duration = -1;
         if (DBG) {
             log("Transition with secondary timer from " + currentName + " to "
                     + destState.getName());
@@ -1492,12 +1497,19 @@ public class NetworkTypeController extends StateMachine {
             log("Skip secondary timer from " + currentName + " to "
                     + destState.getName() + " due to in call");
         } else if (!mIsDeviceIdleMode && rule != null && rule.getSecondaryTimer(currentName) > 0) {
-            int duration = rule.getSecondaryTimer(currentName);
+            duration = rule.getSecondaryTimer(currentName);
             if (mLastShownNrDueToAdvancedBand && mNrAdvancedBandsSecondaryTimer > 0) {
                 duration = mNrAdvancedBandsSecondaryTimer;
                 if (DBG) log("timer adjusted by nr_advanced_bands_secondary_timer_seconds_int");
             }
             if (DBG) log(duration + "s secondary timer started for state: " + currentName);
+        } else if (mNrAdvancedPciChangeSecondaryTimer > 0
+                && mPciChangedDuringPrimaryTimer) {
+            duration = mNrAdvancedPciChangeSecondaryTimer;
+            if (DBG) log(duration + "s secondary timer started for PCI changed");
+        }
+
+        if (duration > 0) {
             mSecondaryTimerState = currentName;
             mPreviousState = currentName;
             mIsSecondaryTimerActive = true;
@@ -1505,7 +1517,9 @@ public class NetworkTypeController extends StateMachine {
             mSecondaryTimerExpireTimestamp = SystemClock.uptimeMillis() + durationMillis;
             sendMessageDelayed(EVENT_SECONDARY_TIMER_EXPIRED, destState, durationMillis);
         }
+
         mIsPrimaryTimerActive = false;
+        mPciChangedDuringPrimaryTimer = false;
         transitionTo(getCurrentState());
     }
 
@@ -1555,6 +1569,7 @@ public class NetworkTypeController extends StateMachine {
             }
             removeMessages(EVENT_PRIMARY_TIMER_EXPIRED);
             mIsPrimaryTimerActive = false;
+            mPciChangedDuringPrimaryTimer = false;
             mPrimaryTimerState = "";
             transitionToCurrentState();
             return;
@@ -1598,6 +1613,7 @@ public class NetworkTypeController extends StateMachine {
         removeMessages(EVENT_PRIMARY_TIMER_EXPIRED);
         removeMessages(EVENT_SECONDARY_TIMER_EXPIRED);
         mIsPrimaryTimerActive = false;
+        mPciChangedDuringPrimaryTimer = false;
         mIsSecondaryTimerActive = false;
         mSecondaryTimerExpireTimestamp = 0;
         mPrimaryTimerState = "";
@@ -1821,10 +1837,11 @@ public class NetworkTypeController extends StateMachine {
         pw.flush();
         pw.increaseIndent();
         pw.println("mSubId=" + mPhone.getSubId());
-        pw.println("mOverrideTimerRules=" + mOverrideTimerRules.toString());
+        pw.println("mOverrideTimerRules=" + mOverrideTimerRules);
         pw.println("mLteEnhancedPattern=" + mLteEnhancedPattern);
         pw.println("mIsPhysicalChannelConfigOn=" + mIsPhysicalChannelConfigOn);
         pw.println("mIsPrimaryTimerActive=" + mIsPrimaryTimerActive);
+        pw.println("mPciChangedDuringPrimaryTimer=" + mPciChangedDuringPrimaryTimer);
         pw.println("mIsSecondaryTimerActive=" + mIsSecondaryTimerActive);
         pw.println("mIsTimerResetEnabledForLegacyStateRrcIdle="
                 + mIsTimerResetEnabledForLegacyStateRrcIdle);

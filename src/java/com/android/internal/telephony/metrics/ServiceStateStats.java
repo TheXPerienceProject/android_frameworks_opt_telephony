@@ -141,8 +141,13 @@ public class ServiceStateStats extends DataNetworkControllerCallback {
             newState.overrideVoiceService = mOverrideVoiceService.get();
             newState.isDataEnabled = mPhone.getDataSettingsManager().isDataEnabled();
             newState.isIwlanCrossSim = isCrossSimCallingRegistered(mPhone);
-            newState.isNtn = satelliteController != null
-                    && satelliteController.isInSatelliteModeForCarrierRoaming(mPhone);
+            if (satelliteController != null) {
+                newState.isNtn = satelliteController.isInSatelliteModeForCarrierRoaming(mPhone);
+                newState.isNbIotNtn = satelliteController.isInCarrierRoamingNbIotNtn(mPhone);
+            } else {
+                newState.isNtn = false;
+                newState.isNbIotNtn = false;
+            }
             TimestampedServiceState prevState =
                     mLastState.getAndSet(new TimestampedServiceState(newState, now));
             addServiceStateAndSwitch(
@@ -317,6 +322,7 @@ public class ServiceStateStats extends DataNetworkControllerCallback {
         copy.isDataEnabled = state.isDataEnabled;
         copy.isIwlanCrossSim = state.isIwlanCrossSim;
         copy.isNtn = state.isNtn;
+        copy.isNbIotNtn = state.isNbIotNtn;
         return copy;
     }
 

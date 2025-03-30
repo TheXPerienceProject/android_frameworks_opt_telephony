@@ -71,3 +71,14 @@ flag {
         purpose: PURPOSE_BUGFIX
     }
 }
+
+# OWNER=hwangoo TARGET=25Q2
+flag {
+    name: "perform_cross_stack_redial_check_for_emergency_call"
+    namespace: "telephony"
+    description: "This flag performs a quick cross stack redial if the subscription is being invalid and an exception occurs, while an emergency call is in progress."
+    bug:"389190613"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}

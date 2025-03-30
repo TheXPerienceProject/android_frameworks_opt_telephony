@@ -652,7 +652,12 @@ public class AutoDataSwitchController extends Handler {
             int currentScore = mPhonesSignalStatus[preferredPhoneId].getRatSignalScore();
             for (int phoneId = 0; phoneId < mPhonesSignalStatus.length; phoneId++) {
                 if (phoneId == preferredPhoneId) continue;
-                int candidateScore = mPhonesSignalStatus[phoneId].getRatSignalScore();
+                PhoneSignalStatus candidateStatus = mPhonesSignalStatus[phoneId];
+                // Ignore non-home phone.
+                if (candidateStatus.getUsableState() != PhoneSignalStatus.UsableState.HOME) {
+                    continue;
+                }
+                int candidateScore = candidateStatus.getRatSignalScore();
                 if ((candidateScore - currentScore) > mScoreTolerance
                         // Also reevaluate if DDS has the same score as the current phone.
                         || (candidateScore >= currentScore && phoneId == ddsPhoneId)) {
@@ -728,6 +733,7 @@ public class AutoDataSwitchController extends Handler {
                 mSelectedTargetPhoneId = INVALID_PHONE_INDEX;
                 mPhoneSwitcherCallback.onRequireImmediatelySwitchToPhone(DEFAULT_PHONE_INDEX,
                         EVALUATION_REASON_DATA_SETTINGS_CHANGED);
+                cancelAnyPendingSwitch();
                 log(debugMessage.append(
                         ", immediately back to default as user turns off default").toString());
                 return;
@@ -736,6 +742,7 @@ public class AutoDataSwitchController extends Handler {
                 mSelectedTargetPhoneId = INVALID_PHONE_INDEX;
                 mPhoneSwitcherCallback.onRequireImmediatelySwitchToPhone(
                         DEFAULT_PHONE_INDEX, EVALUATION_REASON_DATA_SETTINGS_CHANGED);
+                cancelAnyPendingSwitch();
                 log(debugMessage.append(
                                 ", immediately back to default because backup ")
                         .append(internetEvaluation).toString());
@@ -775,7 +782,9 @@ public class AutoDataSwitchController extends Handler {
 
                     if (isCurrentUsable) {
                         // Both phones are usable.
-                        if (isRatSignalStrengthBasedSwitchEnabled()) {
+                        if (isRatSignalStrengthBasedSwitchEnabled()
+                                && currentUsableState == PhoneSignalStatus.UsableState.HOME
+                                && defaultUsableState == PhoneSignalStatus.UsableState.HOME) {
                             int defaultScore = mPhonesSignalStatus[defaultDataPhoneId]
                                     .getRatSignalScore();
                             int currentScore = mPhonesSignalStatus[preferredPhoneId]
@@ -867,8 +876,9 @@ public class AutoDataSwitchController extends Handler {
             if (candidateUsableState.mScore > currentUsableState.mScore) {
                 secondaryDataPhone = PhoneFactory.getPhone(phoneId);
             } else if (isRatSignalStrengthBasedSwitchEnabled()
-                    && currentUsableState.mScore == candidateUsableState.mScore) {
-                // Both phones are home or both roaming enabled, so compare RAT/signal score.
+                    && currentUsableState == PhoneSignalStatus.UsableState.HOME
+                    && candidateUsableState == PhoneSignalStatus.UsableState.HOME) {
+                // Both phones are home, so compare RAT/signal score.
 
                 int defaultScore = defaultPhoneStatus.getRatSignalScore();
                 int candidateScore = candidatePhoneStatus.getRatSignalScore();

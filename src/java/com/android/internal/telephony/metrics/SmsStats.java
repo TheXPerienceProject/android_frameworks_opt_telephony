@@ -60,6 +60,7 @@ import com.android.internal.telephony.ServiceStateTracker;
 import com.android.internal.telephony.nano.PersistAtomsProto.IncomingSms;
 import com.android.internal.telephony.nano.PersistAtomsProto.OutgoingShortCodeSms;
 import com.android.internal.telephony.nano.PersistAtomsProto.OutgoingSms;
+import com.android.internal.telephony.satellite.SatelliteController;
 import com.android.internal.telephony.satellite.metrics.CarrierRoamingSatelliteSessionStats;
 import com.android.telephony.Rlog;
 
@@ -242,6 +243,7 @@ public class SmsStats {
         proto.isManagedProfile = mPhone.isManagedProfile();
         proto.isNtn = isNonTerrestrialNetwork();
         proto.isEmergency = isEmergency;
+        proto.isNbIotNtn = isNbIotNtn(mPhone);
         return proto;
     }
 
@@ -272,6 +274,7 @@ public class SmsStats {
         proto.isEmergency = isEmergency;
         proto.isNtn = isNonTerrestrialNetwork();
         proto.isMtSmsPolling = isMtSmsPolling;
+        proto.isNbIotNtn = isNbIotNtn(mPhone);
         return proto;
     }
 
@@ -344,8 +347,8 @@ public class SmsStats {
      */
     static int getSmsHashCode(OutgoingSms sms) {
         return Objects.hash(sms.smsFormat, sms.smsTech, sms.rat, sms.sendResult, sms.errorCode,
-                    sms.isRoaming, sms.isFromDefaultApp, sms.simSlotIndex, sms.isMultiSim,
-                    sms.isEsim, sms.carrierId);
+                sms.isRoaming, sms.isFromDefaultApp, sms.simSlotIndex, sms.isMultiSim, sms.isEsim,
+                sms.carrierId, sms.isEmergency, sms.isNtn, sms.isMtSmsPolling, sms.isNbIotNtn);
     }
 
     /**
@@ -355,7 +358,8 @@ public class SmsStats {
     static int getSmsHashCode(IncomingSms sms) {
         return Objects.hash(sms.smsFormat, sms.smsTech, sms.rat, sms.smsType,
             sms.totalParts, sms.receivedParts, sms.blocked, sms.error,
-            sms.isRoaming, sms.simSlotIndex, sms.isMultiSim, sms.isEsim, sms.carrierId);
+                sms.isRoaming, sms.simSlotIndex, sms.isMultiSim, sms.isEsim, sms.carrierId,
+                sms.isNtn, sms.isNbIotNtn);
     }
 
     private int getPhoneId() {
@@ -422,6 +426,10 @@ public class SmsStats {
             Rlog.e(TAG, "isNonTerrestrialNetwork(), ServiceState is null");
             return false;
         }
+    }
+
+    private boolean isNbIotNtn(Phone phone) {
+        return SatelliteController.getInstance().isInCarrierRoamingNbIotNtn(phone);
     }
 
     private void loge(String format, Object... args) {

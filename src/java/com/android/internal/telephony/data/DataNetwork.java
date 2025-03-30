@@ -3962,11 +3962,6 @@ public class DataNetwork extends StateMachine {
      */
     private void updateValidationStatus(
             @PreciseDataConnectionState.NetworkValidationStatus int networkValidationStatus) {
-        if (!mFlags.networkValidation()) {
-            // Do nothing, if network validation feature is disabled
-            return;
-        }
-
         // if network validation status is changed, notify preciseDataConnectionState.
         if (mNetworkValidationStatus != networkValidationStatus) {
             log("updateValidationStatus:"

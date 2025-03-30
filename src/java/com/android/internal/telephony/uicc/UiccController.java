@@ -287,11 +287,6 @@ public class UiccController extends Handler {
         if (DBG) {
             logWithLocalLog("config_num_physical_slots = " + numPhysicalSlots);
         }
-        // Minimum number of physical slot count should be equals to or greater than phone count,
-        // if it is less than phone count use phone count as physical slot count.
-        if (numPhysicalSlots < mCis.length) {
-            numPhysicalSlots = mCis.length;
-        }
 
         mTelephonyManager = mContext.getSystemService(TelephonyManager.class);
 
