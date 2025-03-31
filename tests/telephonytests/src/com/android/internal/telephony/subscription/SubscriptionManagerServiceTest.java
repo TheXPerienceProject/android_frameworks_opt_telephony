@@ -107,7 +107,6 @@ import android.testing.AndroidTestingRunner;
 import android.testing.TestableLooper;
 import android.util.ArraySet;
 import android.util.Base64;
-import android.util.Log;
 
 import com.android.internal.R;
 import com.android.internal.telephony.ContextFixture;
@@ -2579,7 +2578,7 @@ public class SubscriptionManagerServiceTest extends TelephonyTest {
         // If getLine1Number is empty, then the number should be from the sub info.
         assertThat(mSubscriptionManagerServiceUT.getPhoneNumber(1,
                 SubscriptionManager.PHONE_NUMBER_SOURCE_UICC, CALLING_PACKAGE, CALLING_FEATURE))
-                .isEqualTo(FAKE_PHONE_NUMBER2);
+                .isEqualTo("");
     }
 
     @Test

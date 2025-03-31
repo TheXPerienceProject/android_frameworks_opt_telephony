@@ -1064,7 +1064,8 @@ public class MetricsCollector implements StatsManager.StatsPullAtomCallback {
                 serviceSwitch.simSlotIndex,
                 serviceSwitch.isMultiSim,
                 serviceSwitch.carrierId,
-                serviceSwitch.switchCount);
+                serviceSwitch.switchCount,
+                serviceSwitch.isOpportunistic);
     }
 
     private static StatsEvent buildStatsEvent(CellularServiceState state) {
@@ -1086,7 +1087,9 @@ public class MetricsCollector implements StatsManager.StatsPullAtomCallback {
                 state.overrideVoiceService,
                 state.isDataEnabled,
                 state.isIwlanCrossSim,
-                state.isNtn);
+                state.isNtn,
+                state.isNbIotNtn,
+                state.isOpportunistic);
     }
 
     private static StatsEvent buildStatsEvent(VoiceCallRatUsage usage) {
@@ -1172,7 +1175,8 @@ public class MetricsCollector implements StatsManager.StatsPullAtomCallback {
                 sms.count,
                 sms.isManagedProfile,
                 sms.isNtn,
-                sms.isEmergency);
+                sms.isEmergency,
+                sms.isNbIotNtn);
     }
 
     private static StatsEvent buildStatsEvent(OutgoingSms sms) {
@@ -1198,7 +1202,8 @@ public class MetricsCollector implements StatsManager.StatsPullAtomCallback {
                 sms.isManagedProfile,
                 sms.isEmergency,
                 sms.isNtn,
-                sms.isMtSmsPolling);
+                sms.isMtSmsPolling,
+                sms.isNbIotNtn);
     }
 
     private static StatsEvent buildStatsEvent(DataCallSession dataCallSession) {
@@ -1230,7 +1235,8 @@ public class MetricsCollector implements StatsManager.StatsPullAtomCallback {
                 dataCallSession.isIwlanCrossSim,
                 dataCallSession.isNtn,
                 dataCallSession.isSatelliteTransport,
-                dataCallSession.isProvisioningProfile);
+                dataCallSession.isProvisioningProfile,
+                dataCallSession.isNbIotNtn);
     }
 
     private static StatsEvent buildStatsEvent(ImsRegistrationStats stats) {
@@ -1485,7 +1491,13 @@ public class MetricsCollector implements StatsManager.StatsPullAtomCallback {
                 satelliteController.countOfP2PSmsAvailableNotificationShown,
                 satelliteController.countOfP2PSmsAvailableNotificationRemoved,
                 satelliteController.isNtnOnlyCarrier,
-                satelliteController.versionOfSatelliteAccessConfig);
+                satelliteController.versionOfSatelliteAccessConfig,
+                satelliteController.countOfIncomingDatagramTypeSosSmsSuccess,
+                satelliteController.countOfIncomingDatagramTypeSosSmsFail,
+                satelliteController.countOfOutgoingDatagramTypeSmsSuccess,
+                satelliteController.countOfOutgoingDatagramTypeSmsFail,
+                satelliteController.countOfIncomingDatagramTypeSmsSuccess,
+                satelliteController.countOfIncomingDatagramTypeSmsFail);
     }
 
     private static StatsEvent buildStatsEvent(SatelliteSession satelliteSession) {
@@ -1597,7 +1609,8 @@ public class MetricsCollector implements StatsManager.StatsPullAtomCallback {
                 stats.supportedSatelliteServices,
                 stats.serviceDataPolicy,
                 stats.satelliteDataConsumedBytes,
-                stats.isMultiSim);
+                stats.isMultiSim,
+                stats.isNbIotNtn);
     }
 
     private static StatsEvent buildStatsEvent(CarrierRoamingSatelliteControllerStats stats) {
@@ -1613,7 +1626,8 @@ public class MetricsCollector implements StatsManager.StatsPullAtomCallback {
                 stats.carrierId,
                 stats.isDeviceEntitled,
                 stats.isMultiSim,
-                stats.countOfSatelliteSessions);
+                stats.countOfSatelliteSessions,
+                stats.isNbIotNtn);
     }
 
     private static StatsEvent buildStatsEvent(SatelliteEntitlement stats) {

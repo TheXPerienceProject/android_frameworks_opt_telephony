@@ -46,18 +46,6 @@ flag {
   bug: "325045841"
 }
 
-# OWNER=songferngwang TARGET=24Q3
-flag {
-  name: "reset_primary_sim_default_values"
-  namespace: "telephony"
-  description: "Reset the default values to the remaining sim"
-  bug: "339394518"
-
-  metadata {
-    purpose: PURPOSE_BUGFIX
-  }
-}
-
 # OWNER=jmattis TARGET=25Q2
 flag {
   name: "subscription_plan_allow_status_and_end_date"

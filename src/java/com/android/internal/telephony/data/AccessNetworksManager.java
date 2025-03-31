@@ -71,7 +71,6 @@ import com.android.internal.telephony.RIL;
 // QTI_END: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
 import com.android.internal.telephony.SlidingWindowEventCounter;
 import com.android.internal.telephony.flags.FeatureFlags;
-import com.android.internal.util.FunctionalUtils;
 import com.android.telephony.Rlog;
 
 import java.io.FileDescriptor;
@@ -375,12 +374,6 @@ public class AccessNetworksManager extends Handler {
         public void onNetworkValidationRequested(@NetCapability int networkCapability,
                 @NonNull IIntegerConsumer resultCodeCallback) {
             DataNetworkController dnc = mPhone.getDataNetworkController();
-            if (!mFeatureFlags.networkValidation()) {
-                FunctionalUtils.ignoreRemoteException(resultCodeCallback::accept)
-                        .accept(DataServiceCallback.RESULT_ERROR_UNSUPPORTED);
-                return;
-            }
-
             log("onNetworkValidationRequested: networkCapability = ["
                     + DataUtils.networkCapabilityToString(networkCapability) + "]");
 

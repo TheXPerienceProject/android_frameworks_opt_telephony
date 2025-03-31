@@ -31,9 +31,9 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.util.Log;
 
 import com.android.internal.telephony.PackageChangeReceiver;
-import com.android.telephony.Rlog;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -247,10 +247,10 @@ public class SatelliteOptimizedApplicationsTracker {
     }
 
     private void log(String str) {
-        Rlog.i(TAG, str);
+        Log.i(TAG, str);
     }
 
     private void loge(String str) {
-        Rlog.e(TAG, str);
+        Log.e(TAG, str);
     }
 }

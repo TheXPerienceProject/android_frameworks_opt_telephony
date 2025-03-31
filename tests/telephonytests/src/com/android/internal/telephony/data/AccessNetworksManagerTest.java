@@ -45,7 +45,6 @@ import android.telephony.AccessNetworkConstants;
 import android.telephony.AccessNetworkConstants.AccessNetworkType;
 import android.telephony.NetworkService;
 import android.telephony.data.ApnSetting;
-import android.telephony.data.DataServiceCallback;
 import android.telephony.data.IQualifiedNetworksService;
 import android.telephony.data.IQualifiedNetworksServiceCallback;
 import android.testing.AndroidTestingRunner;
@@ -328,30 +327,11 @@ public class AccessNetworksManagerTest extends TelephonyTest {
     }
 
     @Test
-    public void testRequestNetworkValidation_WithFlagEnabled()  throws Exception {
-        when(mFeatureFlags.networkValidation()).thenReturn(true);
-
+    public void testRequestNetworkValidation()  throws Exception {
         mQnsCallback.onNetworkValidationRequested(NetworkCapabilities.NET_CAPABILITY_IMS,
                 mIIntegerConsumer);
         processAllMessages();
         assertThat(waitForIIntegerConsumerResult(1 /*numOfEvents*/)).isFalse();
-    }
-
-    @Test
-    public void testRequestNetworkValidation_WithFlagDisabled() throws Exception {
-        mIIntegerConsumerResults.clear();
-        when(mFeatureFlags.networkValidation()).thenReturn(false);
-
-        mQnsCallback.onNetworkValidationRequested(NetworkCapabilities.NET_CAPABILITY_IMS,
-                mIIntegerConsumer);
-        processAllMessages();
-
-        assertThat(waitForIIntegerConsumerResult(1 /*numOfEvents*/)).isTrue();
-        assertThat((long) mIIntegerConsumerResults.get(0))
-                .isEqualTo(DataServiceCallback.RESULT_ERROR_UNSUPPORTED);
-        verify(mDataNetworkController, never()).requestNetworkValidation(
-                NetworkCapabilities.NET_CAPABILITY_IMS,
-                mIntegerConsumer);
     }
 
     @Test

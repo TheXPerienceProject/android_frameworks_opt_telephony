@@ -25,7 +25,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
-import static org.mockito.Matchers.argThat;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
@@ -34,7 +34,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import android.net.ConnectivityManager;
 import android.net.InetAddresses;
@@ -2294,8 +2293,7 @@ public class DataNetworkTest extends TelephonyTest {
     }
 
     @Test
-    public void testValidationStatusOnPreciseDataConnectionState_FlagEnabled() throws Exception {
-        when(mFeatureFlags.networkValidation()).thenReturn(true);
+    public void testValidationStatusOnPreciseDataConnectionState() throws Exception {
         setupIwlanDataNetwork();
 
         ArgumentCaptor<PreciseDataConnectionState> pdcsCaptor =
@@ -2344,37 +2342,7 @@ public class DataNetworkTest extends TelephonyTest {
     }
 
     @Test
-    public void testValidationStatus_FlagDisabled() throws Exception {
-        // network validation flag disabled
-        when(mFeatureFlags.networkValidation()).thenReturn(false);
-        setupIwlanDataNetwork();
-
-        // precise data connection state posted for setup data call response
-        ArgumentCaptor<PreciseDataConnectionState> pdcsCaptor =
-                ArgumentCaptor.forClass(PreciseDataConnectionState.class);
-        verify(mPhone, times(2)).notifyDataConnection(pdcsCaptor.capture());
-
-        // data state updated with network validation status
-        DataCallResponse response = createDataCallResponse(123,
-                DataCallResponse.LINK_STATUS_ACTIVE, Collections.emptyList(), null,
-                PreciseDataConnectionState.NETWORK_VALIDATION_SUCCESS);
-        mDataNetworkUT.sendMessage(8 /*EVENT_DATA_STATE_CHANGED*/, new AsyncResult(
-                AccessNetworkConstants.TRANSPORT_TYPE_WLAN, List.of(response), null));
-        processAllMessages();
-
-        // Verify updated validation status at precise data connection state not posted due to flag
-        // disabled
-        pdcsCaptor = ArgumentCaptor.forClass(PreciseDataConnectionState.class);
-        verify(mPhone, times(2)).notifyDataConnection(pdcsCaptor.capture());
-        List<PreciseDataConnectionState> pdcsList = pdcsCaptor.getAllValues();
-        assertThat(pdcsList.get(1).getNetworkValidationStatus())
-                .isEqualTo(PreciseDataConnectionState.NETWORK_VALIDATION_UNSUPPORTED);
-    }
-
-    @Test
-    public void testHandoverWithSuccessNetworkValidation_FlagEnabled() throws Exception {
-        when(mFeatureFlags.networkValidation()).thenReturn(true);
-
+    public void testHandoverWithSuccessNetworkValidation() throws Exception {
         setupDataNetwork();
 
         setSuccessfulSetupDataResponse(

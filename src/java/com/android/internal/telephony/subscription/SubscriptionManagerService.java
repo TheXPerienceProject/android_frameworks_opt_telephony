@@ -3987,12 +3987,10 @@ public class SubscriptionManagerService extends ISub.Stub {
             case SubscriptionManager.PHONE_NUMBER_SOURCE_UICC:
                 final Phone phone = PhoneFactory.getPhone(getSlotIndex(subId));
                 if (phone != null) {
-                    String number = phone.getLine1Number();
-                    if (!TextUtils.isEmpty(number)) {
-                        return number;
-                    }
+                    return TextUtils.emptyIfNull(phone.getLine1Number());
+                } else {
+                    return subInfo.getNumber();
                 }
-                return subInfo.getNumber();
             case SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER:
                 return subInfo.getNumberFromCarrier();
             case SubscriptionManager.PHONE_NUMBER_SOURCE_IMS:
@@ -4226,8 +4224,7 @@ public class SubscriptionManagerService extends ISub.Stub {
         }
 
         UserHandle myUserHandle = UserHandle.of(UserHandle.getCallingUserId());
-        return mFeatureFlags.subscriptionUserAssociationQuery()
-            && isSubscriptionAssociatedWithUserNoCheck(subscriptionId, myUserHandle);
+        return isSubscriptionAssociatedWithUserNoCheck(subscriptionId, myUserHandle);
     }
 
     /**

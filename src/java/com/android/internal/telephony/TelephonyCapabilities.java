@@ -219,4 +219,14 @@ public class TelephonyCapabilities {
         return context.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_TELEPHONY_CALLING);
     }
+
+    /**
+     * @return true if this device supports telephony messaging, false if it does not.
+     */
+    public static boolean supportsTelephonyMessaging(@NonNull FeatureFlags featureFlags,
+            Context context) {
+        if (!TelephonyCapabilities.minimalTelephonyCdmCheck(featureFlags)) return true;
+        return context.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_TELEPHONY_MESSAGING);
+    }
 }

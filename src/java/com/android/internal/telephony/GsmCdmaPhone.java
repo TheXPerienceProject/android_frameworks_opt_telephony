@@ -349,7 +349,6 @@ public class GsmCdmaPhone extends Phone {
         super(precisePhoneType == PhoneConstants.PHONE_TYPE_GSM ? "GSM" : "CDMA",
                 notifier, context, ci, unitTestMode, phoneId, telephonyComponentFactory,
                 featureFlags);
-
         // phone type needs to be set before other initialization as other objects rely on it
         mPrecisePhoneType = precisePhoneType;
         mVoiceCallSessionStats = new VoiceCallSessionStats(mPhoneId, this, featureFlags);
@@ -370,7 +369,7 @@ public class GsmCdmaPhone extends Phone {
                 SignalStrengthController.class.getName()).makeSignalStrengthController(this);
         mSST = mTelephonyComponentFactory.inject(ServiceStateTracker.class.getName())
                 .makeServiceStateTracker(this, this.mCi, featureFlags);
-        if (hasCalling()) {
+        if (hasCalling() || hasMessaging()) {
             mEmergencyNumberTracker = mTelephonyComponentFactory
                     .inject(EmergencyNumberTracker.class.getName()).makeEmergencyNumberTracker(
                             this, this.mCi, mFeatureFlags);

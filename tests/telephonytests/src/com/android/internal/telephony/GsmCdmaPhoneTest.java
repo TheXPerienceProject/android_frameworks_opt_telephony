@@ -37,8 +37,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.nullable;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyString;
@@ -640,16 +640,16 @@ public class GsmCdmaPhoneTest extends TelephonyTest {
         doReturn(true).when(mTelephonyManager).isEmergencyNumber(emergencyNumber);
 
         // Feature flag enabled
-        // Device does not have FEATURE_TELEPHONY_CALLING
+        // Device does not have FEATURE_TELEPHONY_MESSAGING
         doReturn(false).when(mPackageManager).hasSystemFeature(
-                eq(PackageManager.FEATURE_TELEPHONY_CALLING));
+                eq(PackageManager.FEATURE_TELEPHONY_MESSAGING));
         mPhoneUT.notifySmsSent(emergencyNumber);
         processAllMessages();
         assertFalse(mPhoneUT.isInEmergencySmsMode());
 
-        // Device has FEATURE_TELEPHONY_CALLING
+        // Device has FEATURE_TELEPHONY_MESSAGING
         doReturn(true).when(mPackageManager).hasSystemFeature(
-                eq(PackageManager.FEATURE_TELEPHONY_CALLING));
+                eq(PackageManager.FEATURE_TELEPHONY_MESSAGING));
         mPhoneUT.notifySmsSent(emergencyNumber);
         processAllMessages();
         assertTrue(mPhoneUT.isInEmergencySmsMode());

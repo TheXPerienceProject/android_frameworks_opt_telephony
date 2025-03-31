@@ -21,6 +21,7 @@ import android.app.usage.NetworkStats;
 import android.app.usage.NetworkStatsManager;
 import android.content.Context;
 import android.net.NetworkTemplate;
+import android.os.SystemClock;
 import android.telephony.CellInfo;
 import android.telephony.CellSignalStrength;
 import android.telephony.CellSignalStrengthLte;
@@ -36,6 +37,7 @@ import com.android.internal.telephony.MccTable;
 import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.metrics.SatelliteStats;
 import com.android.internal.telephony.satellite.SatelliteConstants;
+import com.android.internal.telephony.satellite.SatelliteServiceUtils;
 import com.android.internal.telephony.subscription.SubscriptionInfoInternal;
 import com.android.internal.telephony.subscription.SubscriptionManagerService;
 
@@ -43,6 +45,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.OptionalDouble;
 import java.util.Set;
 
 public class CarrierRoamingSatelliteSessionStats {
@@ -58,8 +61,8 @@ public class CarrierRoamingSatelliteSessionStats {
     private int mCountOfOutgoingMms;
     private long mIncomingMessageId;
     private int mSessionStartTimeSec;
-    private List<Long> mConnectionStartTimeList;
-    private List<Long> mConnectionEndTimeList;
+    private SatelliteConnectionTimes mSatelliteConnectionTimes;
+    private List<SatelliteConnectionTimes> mSatelliteConnectionTimesList;
     private List<Integer> mRsrpList;
     private List<Integer> mRssnrList;
     private int[] mSupportedSatelliteServices;
@@ -94,7 +97,7 @@ public class CarrierRoamingSatelliteSessionStats {
         mCarrierId = carrierId;
         mSupportedSatelliteServices = supportedServices;
         mServiceDataPolicy = serviceDataPolicy;
-        mSessionStartTimeSec = getCurrentTimeInSec();
+        mSessionStartTimeSec = getElapsedRealtimeInSec();
         mIsNtnRoamingInHomeCountry = false;
         onConnectionStart(mPhone);
         mDataUsageOnSessionStartBytes = getDataUsage();
@@ -103,7 +106,7 @@ public class CarrierRoamingSatelliteSessionStats {
 
     /** Log carrier roaming satellite connection start */
     public void onConnectionStart(Phone phone) {
-        mConnectionStartTimeList.add(getCurrentTime());
+        mSatelliteConnectionTimes = new SatelliteConnectionTimes(getElapsedRealtime());
         updateNtnRoamingInHomeCountry(phone);
     }
 
@@ -136,7 +139,7 @@ public class CarrierRoamingSatelliteSessionStats {
     }
 
     /** Log carrier roaming satellite session end */
-    public void onSessionEnd() {
+    public void onSessionEnd(int subId) {
         onConnectionEnd();
         long dataUsageOnSessionEndBytes = getDataUsage();
         logd("update data consumed: " + dataUsageOnSessionEndBytes);
@@ -146,7 +149,7 @@ public class CarrierRoamingSatelliteSessionStats {
                     dataUsageOnSessionEndBytes - mDataUsageOnSessionStartBytes;
         }
         logd("satellite data consumed at session: " + mSatelliteDataConsumedBytes);
-        reportMetrics();
+        reportMetrics(subId);
         mIsNtnRoamingInHomeCountry = false;
         mSupportedSatelliteServices = new int[0];
         mServiceDataPolicy = SatelliteConstants.SATELLITE_ENTITLEMENT_SERVICE_POLICY_UNKNOWN;
@@ -156,7 +159,13 @@ public class CarrierRoamingSatelliteSessionStats {
 
     /** Log carrier roaming satellite connection end */
     public void onConnectionEnd() {
-        mConnectionEndTimeList.add(getCurrentTime());
+        if (mSatelliteConnectionTimes != null) {
+            mSatelliteConnectionTimes.setEndTime(getElapsedRealtime());
+            mSatelliteConnectionTimesList.add(mSatelliteConnectionTimes);
+            mSatelliteConnectionTimes = null;
+        } else {
+            loge("onConnectionEnd: mSatelliteConnectionTimes is null");
+        }
     }
 
     /** Log rsrp and rssnr when occurred the service state change with NTN is connected. */
@@ -215,12 +224,10 @@ public class CarrierRoamingSatelliteSessionStats {
         }
     }
 
-    private void reportMetrics() {
+    private void reportMetrics(int subId) {
         int totalSatelliteModeTimeSec = mSessionStartTimeSec > 0
-                ? getCurrentTimeInSec() - mSessionStartTimeSec : 0;
+                ? getElapsedRealtimeInSec() - mSessionStartTimeSec : 0;
         int numberOfSatelliteConnections = getNumberOfSatelliteConnections();
-        int avgDurationOfSatelliteConnectionSec = getAvgDurationOfSatelliteConnection(
-                numberOfSatelliteConnections);
 
         List<Integer> connectionGapList = getSatelliteConnectionGapList(
                 numberOfSatelliteConnections);
@@ -238,7 +245,8 @@ public class CarrierRoamingSatelliteSessionStats {
                         .setIsNtnRoamingInHomeCountry(mIsNtnRoamingInHomeCountry)
                         .setTotalSatelliteModeTimeSec(totalSatelliteModeTimeSec)
                         .setNumberOfSatelliteConnections(numberOfSatelliteConnections)
-                        .setAvgDurationOfSatelliteConnectionSec(avgDurationOfSatelliteConnectionSec)
+                        .setAvgDurationOfSatelliteConnectionSec(
+                                getAvgDurationOfSatelliteConnection())
                         .setSatelliteConnectionGapMinSec(satelliteConnectionGapMinSec)
                         .setSatelliteConnectionGapAvgSec(getAvg(connectionGapList))
                         .setSatelliteConnectionGapMaxSec(satelliteConnectionGapMaxSec)
@@ -254,6 +262,7 @@ public class CarrierRoamingSatelliteSessionStats {
                         .setServiceDataPolicy(mServiceDataPolicy)
                         .setSatelliteDataConsumedBytes(mSatelliteDataConsumedBytes)
                         .setIsMultiSim(isMultiSim)
+                        .setIsNbIotNtn(SatelliteServiceUtils.isNbIotNtn(subId))
                         .build();
         SatelliteStats.getInstance().onCarrierRoamingSatelliteSessionMetrics(params);
         logd("Supported satellite services: " + Arrays.toString(mSupportedSatelliteServices));
@@ -271,8 +280,8 @@ public class CarrierRoamingSatelliteSessionStats {
         mIncomingMessageId = 0;
 
         mSessionStartTimeSec = 0;
-        mConnectionStartTimeList = new ArrayList<>();
-        mConnectionEndTimeList = new ArrayList<>();
+        mSatelliteConnectionTimes = null;
+        mSatelliteConnectionTimesList = new ArrayList<>();
         mRsrpList = new ArrayList<>();
         mRssnrList = new ArrayList<>();
         logd("initializeParams");
@@ -291,39 +300,39 @@ public class CarrierRoamingSatelliteSessionStats {
     }
 
     private int getNumberOfSatelliteConnections() {
-        return Math.min(mConnectionStartTimeList.size(), mConnectionEndTimeList.size());
+        return mSatelliteConnectionTimesList.size();
     }
 
-    private int getAvgDurationOfSatelliteConnection(int numberOfSatelliteConnections) {
-        if (numberOfSatelliteConnections == 0) {
+    private int getAvgDurationOfSatelliteConnection() {
+        if (mSatelliteConnectionTimesList.isEmpty()) {
             return 0;
         }
 
-        long totalConnectionsDuration = 0;
-        for (int i = 0; i < numberOfSatelliteConnections; i++) {
-            long endTime = mConnectionEndTimeList.get(i);
-            long startTime = mConnectionStartTimeList.get(i);
-            if (endTime >= startTime && startTime > 0) {
-                totalConnectionsDuration += endTime - startTime;
-            }
-        }
+        OptionalDouble averageDuration = mSatelliteConnectionTimesList.stream()
+                .filter(SatelliteConnectionTimes::isValid)
+                .mapToLong(SatelliteConnectionTimes::getDuration)
+                .average();
 
-        long avgConnectionDuration = totalConnectionsDuration / numberOfSatelliteConnections;
-        return (int) (avgConnectionDuration / 1000L);
+        return (int) (averageDuration.isPresent() ? averageDuration.getAsDouble() / 1000 : 0);
     }
 
     private List<Integer> getSatelliteConnectionGapList(int numberOfSatelliteConnections) {
-        if (numberOfSatelliteConnections == 0) {
+        if (mSatelliteConnectionTimesList.size() < 2) {
             return new ArrayList<>();
         }
 
         List<Integer> connectionGapList = new ArrayList<>();
-        for (int i = 1; i < numberOfSatelliteConnections; i++) {
-            long prevConnectionEndTime = mConnectionEndTimeList.get(i - 1);
-            long currentConnectionStartTime = mConnectionStartTimeList.get(i);
-            if (currentConnectionStartTime > prevConnectionEndTime && prevConnectionEndTime > 0) {
-                connectionGapList.add((int) (
-                        (currentConnectionStartTime - prevConnectionEndTime) / 1000));
+        for (int i = 1; i < mSatelliteConnectionTimesList.size(); i++) {
+            SatelliteConnectionTimes prevConnection =
+                    mSatelliteConnectionTimesList.get(i - 1);
+            SatelliteConnectionTimes currentConnection =
+                    mSatelliteConnectionTimesList.get(i);
+
+            if (prevConnection.getEndTime() > 0
+                    && currentConnection.getStartTime() > prevConnection.getEndTime()) {
+                int gap = (int) ((currentConnection.getStartTime() - prevConnection.getEndTime())
+                        / 1000);
+                connectionGapList.add(gap);
             }
         }
         return connectionGapList;
@@ -356,12 +365,12 @@ public class CarrierRoamingSatelliteSessionStats {
                 : list.get(size / 2);
     }
 
-    private int getCurrentTimeInSec() {
-        return (int) (System.currentTimeMillis() / 1000);
+    private int getElapsedRealtimeInSec() {
+        return (int) (getElapsedRealtime() / 1000);
     }
 
-    private long getCurrentTime() {
-        return System.currentTimeMillis();
+    private long getElapsedRealtime() {
+        return SystemClock.elapsedRealtime();
     }
 
     private boolean isNtnConnected() {
@@ -406,6 +415,39 @@ public class CarrierRoamingSatelliteSessionStats {
         }
         logd("updateNtnRoamingInHomeCountry: mIsNtnRoamingInHomeCountry="
                 + mIsNtnRoamingInHomeCountry);
+    }
+
+    private static class SatelliteConnectionTimes {
+        private final long mStartTime;
+        private long mEndTime;
+
+        SatelliteConnectionTimes(long startTime) {
+            this.mStartTime = startTime;
+            this.mEndTime = 0;
+        }
+
+        public void setEndTime(long endTime) {
+            this.mEndTime = endTime;
+        }
+
+        public long getStartTime() {
+            return mStartTime;
+        }
+
+        public long getEndTime() {
+            return mEndTime;
+        }
+
+        public long getDuration() {
+            if (isValid()) {
+                return mEndTime - mStartTime;
+            }
+            return 0;
+        }
+
+        public boolean isValid() {
+            return mEndTime > mStartTime && mStartTime > 0;
+        }
     }
 
     private void logd(@NonNull String log) {

@@ -33,7 +33,6 @@ import android.telephony.CellIdentity;
 import android.telephony.DropBoxManagerLoggerBackend;
 import android.telephony.NetworkRegistrationInfo;
 import android.telephony.PersistentLogger;
-import android.telephony.Rlog;
 import android.telephony.ServiceState;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
@@ -52,6 +51,7 @@ import android.telephony.satellite.stub.NTRadioTechnology;
 import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.android.internal.R;
 import com.android.internal.telephony.CommandException;
@@ -538,8 +538,17 @@ public class SatelliteServiceUtils {
             ServiceState serviceState = phone.getServiceState();
             if (serviceState != null) {
                 int state = serviceState.getState();
+                NetworkRegistrationInfo dataNri = serviceState.getNetworkRegistrationInfo(
+                        NetworkRegistrationInfo.DOMAIN_PS,
+                        AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
+                boolean isCellularDataInService = dataNri != null && dataNri.isInService();
+                logd("isCellularAvailable: phoneId=" + phone.getPhoneId() + " state=" + state
+                        + " isEmergencyOnly=" + serviceState.isEmergencyOnly()
+                        + " isCellularDataInService=" + isCellularDataInService);
+
                 if ((state == STATE_IN_SERVICE || state == STATE_EMERGENCY_ONLY
-                        || serviceState.isEmergencyOnly())
+                        || serviceState.isEmergencyOnly()
+                        || isCellularDataInService)
                         && !isSatellitePlmn(phone.getSubId(), serviceState)) {
                     logd("isCellularAvailable true");
                     return true;
@@ -716,15 +725,32 @@ public class SatelliteServiceUtils {
         return null;
     }
 
+    /** Determines whether the subscription is in carrier roaming NB-IoT NTN or not. */
+    public static boolean isNbIotNtn(int subId) {
+        Phone phone = PhoneFactory.getPhone(SubscriptionManager.getPhoneId(subId));
+        if (phone == null) {
+            logd("isNbIotNtn(): phone is null");
+            return false;
+        }
+
+        SatelliteController satelliteController = SatelliteController.getInstance();
+        if (satelliteController == null) {
+            logd("isNbIotNtn(): satelliteController is null");
+            return false;
+        }
+
+        return satelliteController.isInCarrierRoamingNbIotNtn(phone);
+    }
+
     private static void logd(@NonNull String log) {
-        Rlog.d(TAG, log);
+        Log.d(TAG, log);
     }
 
     private static void loge(@NonNull String log) {
-        Rlog.e(TAG, log);
+        Log.e(TAG, log);
     }
 
     private static void logv(@NonNull String log) {
-        Rlog.v(TAG, log);
+        Log.v(TAG, log);
     }
 }

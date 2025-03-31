@@ -175,6 +175,8 @@ public class SatelliteSOSMessageRecommenderTest extends TelephonyTest {
                 mTestSatelliteController, mTestImsManager);
         when(mServiceState.getState()).thenReturn(STATE_OUT_OF_SERVICE);
         when(mServiceState2.getState()).thenReturn(STATE_OUT_OF_SERVICE);
+        when(mServiceState.getNetworkRegistrationInfo(anyInt(), anyInt())).thenReturn(null);
+        when(mServiceState2.getNetworkRegistrationInfo(anyInt(), anyInt())).thenReturn(null);
         when(mPhone.isImsRegistered()).thenReturn(false);
         when(mPhone2.isImsRegistered()).thenReturn(false);
         replaceInstance(SatelliteStats.class, "sInstance", null,
@@ -322,6 +324,43 @@ public class SatelliteSOSMessageRecommenderTest extends TelephonyTest {
 
         // Wait for the timeout to expires
         mTestSOSMessageRecommender.isSatelliteAllowedCallback.onResult(true);
+        moveTimeForward(TEST_EMERGENCY_CALL_TO_SOS_MSG_HYSTERESIS_TIMEOUT_MILLIS);
+        processAllMessages();
+        assertFalse(mTestConnection.isEventSent(TelephonyManager.EVENT_DISPLAY_EMERGENCY_MESSAGE));
+        assertUnregisterForStateChangedEventsTriggered(mPhone, 1, 1);
+        assertUnregisterForStateChangedEventsTriggered(mPhone2, 1, 1);
+        verify(mMockSatelliteStats, times(1)).onSatelliteSosMessageRecommender(any());
+        assertFalse(mTestSOSMessageRecommender.isDialerNotified());
+    }
+
+    @Test
+    public void testTimeoutBeforeEmergencyCallEnd_EventDisplayEmergencyMessageNotSent_Test2() {
+        /*
+         * This test is to test the case where the device is provisioned, supports satellite
+         * via OEM, and is connected via carrier within the hysteresis time. However, satellite
+         * is not allowed at current location and emergency messaing via carrier is not supported.
+         * In this case, the EVENT_DISPLAY_EMERGENCY_MESSAGE should not be sent.
+         */
+        mTestSatelliteController.setSatelliteConnectedViaCarrierWithinHysteresisTime(true, SUB_ID1);
+        mTestSatelliteController.isSatelliteEmergencyMessagingSupportedViaCarrier = false;
+        mTestSatelliteController.isOemEnabledSatelliteSupported = true;
+        mTestSatelliteController.setDeviceProvisioned(true);
+        mTestSOSMessageRecommender.isSatelliteAllowedCallback = null;
+        mTestSOSMessageRecommender.onEmergencyCallStarted(mTestConnection, false);
+        processAllMessages();
+        assertEquals(1, mTestSOSMessageRecommender.getCountOfTimerStarted());
+        assertRegisterForStateChangedEventsTriggered(mPhone, 1, 1);
+        assertRegisterForStateChangedEventsTriggered(mPhone2, 1, 1);
+        assertNull(mTestSOSMessageRecommender.isSatelliteAllowedCallback);
+
+        // Move Location service to emergency mode
+        mTestSOSMessageRecommender.onEmergencyCallConnectionStateChanged(
+                mTestConnection.getTelecomCallId(), Connection.STATE_DIALING);
+        processAllMessages();
+        assertNotNull(mTestSOSMessageRecommender.isSatelliteAllowedCallback);
+
+        // Wait for the timeout to expires
+        mTestSOSMessageRecommender.isSatelliteAllowedCallback.onResult(false);
         moveTimeForward(TEST_EMERGENCY_CALL_TO_SOS_MSG_HYSTERESIS_TIMEOUT_MILLIS);
         processAllMessages();
         assertFalse(mTestConnection.isEventSent(TelephonyManager.EVENT_DISPLAY_EMERGENCY_MESSAGE));
@@ -684,6 +723,20 @@ public class SatelliteSOSMessageRecommenderTest extends TelephonyTest {
         processAllMessages();
         assertEquals(carrierTimeoutMillis, mTestSOSMessageRecommender.getTimeOutMillis());
         verify(mMockSatelliteStats, never()).onSatelliteSosMessageRecommender(any());
+
+        // OEM supports satellite, device is connected to carrier satellite within hysteresis time,
+        // but emergency messaging via carrier is not supported. Thus, OEM timer will be used.
+        mTestSatelliteController.isSatelliteEmergencyMessagingSupportedViaCarrier = false;
+        mTestSatelliteController.setSatelliteConnectedViaCarrierWithinHysteresisTime(true, SUB_ID1);
+        subscriptionInfo = new SubscriptionInfo.Builder()
+                .setId(SUB_ID1).setOnlyNonTerrestrialNetwork(true).build();
+        when(mMockSubscriptionManagerService.getSubscriptionInfo(eq(SUB_ID1)))
+            .thenReturn(subscriptionInfo);
+        mTestSOSMessageRecommender.onEmergencyCallStarted(mTestConnection, false);
+        processAllMessages();
+        assertEquals(TEST_EMERGENCY_CALL_TO_SOS_MSG_HYSTERESIS_TIMEOUT_MILLIS,
+                mTestSOSMessageRecommender.getTimeOutMillis());
+        verify(mMockSatelliteStats, never()).onSatelliteSosMessageRecommender(any());
     }
 
     @Test
@@ -710,6 +763,22 @@ public class SatelliteSOSMessageRecommenderTest extends TelephonyTest {
         mTestSatelliteController.mIsDeviceProvisionedForTest = false;
         mTestSOSMessageRecommender.onEmergencyCallStarted(mTestConnection, false);
         assertEquals(EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_T911,
+                mTestSOSMessageRecommender.getEmergencyCallToSatelliteHandoverType());
+        verify(mMockSatelliteStats, never()).onSatelliteSosMessageRecommender(any());
+
+        mSetFlagsRule.disableFlags(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN);
+    }
+
+    @Test
+    public void testGetEmergencyCallToSatelliteHandoverType_OnlySatelliteViaOemAvailable() {
+        mSetFlagsRule.enableFlags(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN);
+
+        mTestSatelliteController.setSatelliteConnectedViaCarrierWithinHysteresisTime(true, SUB_ID1);
+        mTestSatelliteController.isSatelliteEmergencyMessagingSupportedViaCarrier = false;
+        mTestSatelliteController.isOemEnabledSatelliteSupported = true;
+        mTestSatelliteController.setDeviceProvisioned(true);
+        mTestSOSMessageRecommender.onEmergencyCallStarted(mTestConnection, false);
+        assertEquals(EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_SOS,
                 mTestSOSMessageRecommender.getEmergencyCallToSatelliteHandoverType());
         verify(mMockSatelliteStats, never()).onSatelliteSosMessageRecommender(any());
 

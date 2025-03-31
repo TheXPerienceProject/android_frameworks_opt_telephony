@@ -99,7 +99,7 @@ public class EntitlementMetricsStats {
         logd("reportEntitlementMetrics: " + entitlementParams);
 
         CarrierRoamingSatelliteControllerStats.getOrCreateInstance()
-                .reportCountOfEntitlementStatusQueryRequest();
+                .reportCountOfEntitlementStatusQueryRequest(mSubId);
     }
 
     /** Returns the carrier ID of the given subscription id. */
