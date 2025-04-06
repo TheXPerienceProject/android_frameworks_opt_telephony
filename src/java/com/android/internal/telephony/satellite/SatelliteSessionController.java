@@ -176,6 +176,8 @@ public class SatelliteSessionController extends StateMachine {
     private long mSatelliteStayAtListeningFromReceivingMillis;
     private long mSatelliteNbIotInactivityTimeoutMillis;
     private boolean mIgnoreCellularServiceState = false;
+    private Boolean mIsConcurrentTnScanningSupportedForCtsTest = null;
+    private Boolean mIsTnScanningDuringSatelliteSessionAllowedForCtsTest = null;
     private final ConcurrentHashMap<IBinder, ISatelliteModemStateCallback> mListeners;
     @SatelliteManager.SatelliteModemState private int mCurrentState;
     @SatelliteManager.SatelliteModemState private int mPreviousState;
@@ -537,6 +539,37 @@ public class SatelliteSessionController extends StateMachine {
             }
             unbindService();
             bindService();
+        }
+        return true;
+    }
+
+    /**
+     * This API can be used by only CTS to override TN scanning support.
+     *
+     * @param concurrentTnScanningSupported Whether concurrent TN scanning is supported.
+     * @param tnScanningDuringSatelliteSessionAllowed Whether TN scanning is allowed during
+     * a satellite session.
+     * @return {@code true} if the TN scanning support is set successfully,
+     * {@code false} otherwise.
+     */
+    boolean setTnScanningSupport(boolean reset, boolean concurrentTnScanningSupported,
+        boolean tnScanningDuringSatelliteSessionAllowed) {
+        if (!isMockModemAllowed()) {
+            ploge("setTnScanningSupport: modifying TN scanning support is not allowed");
+            return false;
+        }
+
+        plogd("setTnScanningSupport: reset=" + reset
+                  + ", concurrentTnScanningSupported=" + concurrentTnScanningSupported
+                  + ", tnScanningDuringSatelliteSessionAllowed="
+                  + tnScanningDuringSatelliteSessionAllowed);
+        if (reset) {
+            mIsConcurrentTnScanningSupportedForCtsTest = null;
+            mIsTnScanningDuringSatelliteSessionAllowedForCtsTest = null;
+        } else {
+            mIsConcurrentTnScanningSupportedForCtsTest = concurrentTnScanningSupported;
+            mIsTnScanningDuringSatelliteSessionAllowedForCtsTest =
+                    tnScanningDuringSatelliteSessionAllowed;
         }
         return true;
     }
@@ -2023,6 +2056,11 @@ public class SatelliteSessionController extends StateMachine {
     }
 
     private boolean isConcurrentTnScanningSupported() {
+        if (mIsConcurrentTnScanningSupportedForCtsTest != null) {
+            plogd("isConcurrentTnScanningSupported: mIsConcurrentTnScanningSupportedForCtsTest="
+                    + mIsConcurrentTnScanningSupportedForCtsTest);
+            return mIsConcurrentTnScanningSupportedForCtsTest;
+        }
         try {
             return mContext.getResources().getBoolean(
                 R.bool.config_satellite_modem_support_concurrent_tn_scanning);
@@ -2033,6 +2071,12 @@ public class SatelliteSessionController extends StateMachine {
     }
 
     private boolean isTnScanningAllowedDuringSatelliteSession() {
+        if (mIsTnScanningDuringSatelliteSessionAllowedForCtsTest != null) {
+            plogd("isTnScanningAllowedDuringSatelliteSession: "
+                    + "mIsTnScanningDuringSatelliteSessionAllowedForCtsTest="
+                    + mIsTnScanningDuringSatelliteSessionAllowedForCtsTest);
+            return mIsTnScanningDuringSatelliteSessionAllowedForCtsTest;
+        }
         try {
             return mContext.getResources().getBoolean(
                     R.bool.config_satellite_allow_tn_scanning_during_satellite_session);

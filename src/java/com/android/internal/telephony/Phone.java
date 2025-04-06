@@ -119,6 +119,7 @@ import com.android.internal.telephony.imsphone.ImsPhone;
 import com.android.internal.telephony.imsphone.ImsPhoneCall;
 import com.android.internal.telephony.metrics.SmsStats;
 import com.android.internal.telephony.metrics.VoiceCallSessionStats;
+import com.android.internal.telephony.satellite.metrics.ControllerMetricsStats;
 import com.android.internal.telephony.subscription.SubscriptionInfoInternal;
 import com.android.internal.telephony.subscription.SubscriptionManagerService;
 import com.android.internal.telephony.test.SimulatedRadioControl;
@@ -430,6 +431,7 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
     private int mPreferredUsageSetting = SubscriptionManager.USAGE_SETTING_UNKNOWN;
     private int mUsageSettingFromModem = SubscriptionManager.USAGE_SETTING_UNKNOWN;
     private boolean mIsUsageSettingSupported = true;
+    private boolean mIsNetworkScanStarted = false;
 
     //IMS
     /**
@@ -1105,26 +1107,20 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
     }
 
     /**
-     * Notify the phone that an SMS has been sent. This will be used determine if the SMS was sent
-     * to an emergency address.
+     * Notify the phone that an SMS has been sent. This will be used to determine if the SMS was
+     * sent to an emergency address.
+     *
      * @param destinationAddress the address that the SMS was sent to.
      */
     public void notifySmsSent(String destinationAddress) {
-        TelephonyManager m = (TelephonyManager) getContext().getSystemService(
-                Context.TELEPHONY_SERVICE);
-        if (!mFeatureFlags.enforceTelephonyFeatureMappingForPublicApis()) {
+        TelephonyManager m =
+                (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
+        if (mContext.getPackageManager() != null
+                && mContext.getPackageManager()
+                                .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)) {
             if (m != null && m.isEmergencyNumber(destinationAddress)) {
                 mLocalLog.log("Emergency SMS detected, recording time.");
                 mTimeLastEmergencySmsSentMs = SystemClock.elapsedRealtime();
-            }
-        } else {
-            if (mContext.getPackageManager() != null
-                    && mContext.getPackageManager().hasSystemFeature(
-                            PackageManager.FEATURE_TELEPHONY_CALLING)) {
-                if (m != null && m.isEmergencyNumber(destinationAddress)) {
-                    mLocalLog.log("Emergency SMS detected, recording time.");
-                    mTimeLastEmergencySmsSentMs = SystemClock.elapsedRealtime();
-                }
             }
         }
     }
@@ -2043,6 +2039,13 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
      */
     public boolean hasCalling() {
         return TelephonyCapabilities.supportsTelephonyCalling(mFeatureFlags, mContext);
+    }
+
+    /**
+     * @return true if this device supports messaging, false otherwise.
+     */
+    public boolean hasMessaging() {
+        return TelephonyCapabilities.supportsTelephonyMessaging(mFeatureFlags, mContext);
     }
 
     /**
@@ -4334,6 +4337,24 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
     }
 
     /**
+     * Sets the network scan started status.
+     *
+     * @param started {@code true} if the network scan has started, {@code false} otherwise.
+     */
+    public void setNetworkScanStarted(boolean started) {
+        mIsNetworkScanStarted = started;
+    }
+
+    /**
+     * Gets the network scan started status.
+     *
+     * @return {@code true} if the network scan has started, {@code false} otherwise.
+     */
+    public boolean getNetworkScanStarted() {
+        return mIsNetworkScanStarted;
+    }
+
+    /**
      * Override the roaming indicator for the current ICCID.
      */
     public boolean setRoamingOverride(List<String> gsmRoamingList,
@@ -5619,6 +5640,7 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
     public void notifyCarrierRoamingNtnEligibleStateChanged(boolean eligible) {
         logd("notifyCarrierRoamingNtnEligibleStateChanged eligible:" + eligible);
         mNotifier.notifyCarrierRoamingNtnEligibleStateChanged(this, eligible);
+        ControllerMetricsStats.getInstance().reportP2PSmsEligibilityNotificationsCount(eligible);
     }
 
     /**
@@ -5659,6 +5681,9 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
     public void setSatellitePlmn(int simSlot,
             @NonNull List<String> carrierPlmnList, @NonNull List<String> allSatellitePlmnList,
             Message result) {
+        logd("setSatellitePlmn: simSlot=" + simSlot
+                + " carrierPlmnList=" + carrierPlmnList.toString()
+                + " allSatellitePlmnList=" + allSatellitePlmnList.toString());
         mCi.setSatellitePlmn(simSlot, carrierPlmnList, allSatellitePlmnList, result);
     }
 
@@ -5672,6 +5697,8 @@ public abstract class Phone extends Handler implements PhoneInternalInterface {
      */
     public void setSatelliteEnabledForCarrier(int simSlot, boolean satelliteEnabled,
             Message result) {
+        logd("setSatelliteEnabledForCarrier: simSlot=" + simSlot
+                + " satelliteEnabled=" + satelliteEnabled);
         mCi.setSatelliteEnabledForCarrier(simSlot, satelliteEnabled, result);
     }
 

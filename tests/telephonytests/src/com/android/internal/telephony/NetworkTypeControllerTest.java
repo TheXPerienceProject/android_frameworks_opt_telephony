@@ -1373,6 +1373,60 @@ public class NetworkTypeControllerTest extends TelephonyTest {
     }
 
     @Test
+    public void testSecondaryPciTimerExpire() throws Exception {
+        testTransitionToCurrentStateNrConnectedMmwave();
+        assertEquals(TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED,
+                mNetworkTypeController.getOverrideNetworkType());
+
+        mBundle.putString(CarrierConfigManager.KEY_5G_ICON_DISPLAY_GRACE_PERIOD_STRING,
+                "connected_mmwave,any,10;connected,any,10;not_restricted_rrc_con,any,10");
+        mBundle.putInt(CarrierConfigManager.KEY_NR_ADVANCED_PCI_CHANGE_SECONDARY_TIMER_SECONDS_INT,
+                30);
+        sendCarrierConfigChanged();
+
+        // should trigger 10 second primary timer
+        doReturn(NetworkRegistrationInfo.NR_STATE_NONE).when(mServiceState).getNrState();
+        mNetworkTypeController.sendMessage(3 /* EVENT_SERVICE_STATE_CHANGED */);
+        processAllMessages();
+
+        assertEquals("legacy", getCurrentState().getName());
+        assertEquals(TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED,
+                mNetworkTypeController.getOverrideNetworkType());
+        assertTrue(mNetworkTypeController.areAnyTimersActive());
+
+        // Before primary timer expires, PCI changed, indicating 5G UW might soon recover
+        moveTimeForward(5 * 1000);
+        mNetworkTypeController.sendMessage(11 /* EVENT_PHYSICAL_CHANNEL_CONFIGS_CHANGED */,
+                new AsyncResult(null,
+                        List.of(new PhysicalChannelConfig.Builder()
+                                .setPhysicalCellId(2)
+                                .setNetworkType(TelephonyManager.NETWORK_TYPE_NR)
+                                .setCellConnectionStatus(CellInfo.CONNECTION_PRIMARY_SERVING)
+                        .build()),
+                        null));
+        processAllMessages();
+
+        // primary timer expires
+        moveTimeForward(5 * 1000);
+        processAllMessages();
+
+        // should trigger 30 second secondary timer
+        assertEquals("legacy", getCurrentState().getName());
+        assertEquals(TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED,
+                mNetworkTypeController.getOverrideNetworkType());
+        assertTrue(mNetworkTypeController.areAnyTimersActive());
+
+        // secondary timer expires
+        moveTimeForward(30 * 1000);
+        processAllMessages();
+
+        assertEquals("legacy", getCurrentState().getName());
+        assertEquals(TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NONE,
+                mNetworkTypeController.getOverrideNetworkType());
+        assertFalse(mNetworkTypeController.areAnyTimersActive());
+    }
+
+    @Test
     public void testSecondaryTimerReset() throws Exception {
         doReturn(NetworkRegistrationInfo.NR_STATE_CONNECTED).when(mServiceState).getNrState();
         mBundle.putString(CarrierConfigManager.KEY_5G_ICON_DISPLAY_GRACE_PERIOD_STRING,

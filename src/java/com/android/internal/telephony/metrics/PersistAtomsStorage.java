@@ -786,6 +786,18 @@ public class PersistAtomsStorage {
                     += stats.countOfP2PSmsAvailableNotificationRemoved;
             // Does not update isNtnOnlyCarrier due to it is a dimension field.
             existingStats.versionOfSatelliteAccessConfig = stats.versionOfSatelliteAccessConfig;
+            existingStats.countOfIncomingDatagramTypeSosSmsSuccess
+                    += stats.countOfIncomingDatagramTypeSosSmsSuccess;
+            existingStats.countOfIncomingDatagramTypeSosSmsFail
+                    += stats.countOfIncomingDatagramTypeSosSmsFail;
+            existingStats.countOfOutgoingDatagramTypeSmsSuccess
+                    += stats.countOfOutgoingDatagramTypeSmsSuccess;
+            existingStats.countOfOutgoingDatagramTypeSmsFail
+                    += stats.countOfOutgoingDatagramTypeSmsFail;
+            existingStats.countOfIncomingDatagramTypeSmsSuccess
+                    += stats.countOfIncomingDatagramTypeSmsSuccess;
+            existingStats.countOfIncomingDatagramTypeSmsFail
+                    += stats.countOfIncomingDatagramTypeSmsFail;
         } else {
             mAtoms.satelliteController = insertAtRandomPlace(mAtoms.satelliteController, stats,
                     mMaxNumSatelliteStats);
@@ -885,6 +897,9 @@ public class PersistAtomsStorage {
             // Does not update configDataSource, carrierId, isDeviceEntitled, due to  they are
             // dimension fields.
             existingStats.isDeviceEntitled = stats.isDeviceEntitled;
+            existingStats.isMultiSim = stats.isMultiSim;
+            existingStats.countOfSatelliteSessions += stats.countOfSatelliteSessions;
+            existingStats.isNbIotNtn = stats.isNbIotNtn;
         } else {
             mAtoms.carrierRoamingSatelliteControllerStats = insertAtRandomPlace(
                     mAtoms.carrierRoamingSatelliteControllerStats, stats, mMaxNumSatelliteStats);
@@ -1634,6 +1649,7 @@ public class PersistAtomsStorage {
                     mAtoms.carrierRoamingSatelliteControllerStats;
             mAtoms.carrierRoamingSatelliteControllerStats =
                     new CarrierRoamingSatelliteControllerStats[0];
+            SatelliteStats.getInstance().resetCarrierRoamingSatelliteControllerStats();
             saveAtomsToFile(SAVE_TO_FILE_DELAY_FOR_GET_MILLIS);
             return statsArray;
         } else {
@@ -1996,7 +2012,9 @@ public class PersistAtomsStorage {
                     && state.overrideVoiceService == key.overrideVoiceService
                     && state.isDataEnabled == key.isDataEnabled
                     && state.isIwlanCrossSim == key.isIwlanCrossSim
-                    && state.isNtn == key.isNtn) {
+                    && state.isNtn == key.isNtn
+                    && state.isNbIotNtn == key.isNbIotNtn
+                    && state.isOpportunistic == key.isOpportunistic) {
                 return state;
             }
         }
@@ -2013,7 +2031,8 @@ public class PersistAtomsStorage {
                     && serviceSwitch.ratTo == key.ratTo
                     && serviceSwitch.simSlotIndex == key.simSlotIndex
                     && serviceSwitch.isMultiSim == key.isMultiSim
-                    && serviceSwitch.carrierId == key.carrierId) {
+                    && serviceSwitch.carrierId == key.carrierId
+                    && serviceSwitch.isOpportunistic == key.isOpportunistic) {
                 return serviceSwitch;
             }
         }
@@ -2427,9 +2446,7 @@ public class PersistAtomsStorage {
             CarrierRoamingSatelliteControllerStats key) {
         for (CarrierRoamingSatelliteControllerStats stats :
                 mAtoms.carrierRoamingSatelliteControllerStats) {
-            if (stats.carrierId == key.carrierId
-                    && stats.configDataSource == key.configDataSource
-                    && stats.isDeviceEntitled == key.isDeviceEntitled) {
+            if (stats.carrierId == key.carrierId) {
                 return stats;
             }
         }

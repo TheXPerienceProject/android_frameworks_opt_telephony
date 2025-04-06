@@ -91,3 +91,15 @@ flag {
   bug: "393966687"
   is_exported: true
 }
+
+# OWNER=amallampati TARGET=25Q3
+flag {
+    name: "satellite_exit_p2p_session_outside_geofence"
+    is_exported: true
+    namespace: "telephony"
+    description: "Exit P2P satellite session outside geofence"
+    bug:"391926447"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}

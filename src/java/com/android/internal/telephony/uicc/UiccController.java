@@ -64,6 +64,7 @@ import android.util.LocalLog;
 import android.util.Log;
 
 import com.android.internal.annotations.VisibleForTesting;
+import com.android.internal.hidden_from_bootclasspath.com.android.internal.telephony.flags.Flags;
 import com.android.internal.telephony.CarrierServiceBindHelper;
 import com.android.internal.telephony.CommandException;
 import com.android.internal.telephony.CommandsInterface;
@@ -285,11 +286,6 @@ public class UiccController extends Handler {
         numPhysicalSlots = TelephonyProperties.sim_slots_count().orElse(numPhysicalSlots);
         if (DBG) {
             logWithLocalLog("config_num_physical_slots = " + numPhysicalSlots);
-        }
-        // Minimum number of physical slot count should be equals to or greater than phone count,
-        // if it is less than phone count use phone count as physical slot count.
-        if (numPhysicalSlots < mCis.length) {
-            numPhysicalSlots = mCis.length;
         }
 
         mTelephonyManager = mContext.getSystemService(TelephonyManager.class);
@@ -1685,6 +1681,7 @@ public class UiccController extends Handler {
      * @return true if CDMA is supported by the device
      */
     public static boolean isCdmaSupported(Context context) {
+        if (Flags.phoneTypeCleanup()) return false;
         PackageManager packageManager = context.getPackageManager();
         boolean isCdmaSupported =
                 packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CDMA);

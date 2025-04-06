@@ -49,6 +49,7 @@ import android.test.mock.MockContentResolver;
 import android.testing.AndroidTestingRunner;
 import android.testing.TestableLooper;
 
+import com.android.internal.telephony.IccCardConstants;
 import com.android.internal.telephony.TelephonyTest;
 import com.android.internal.telephony.data.DataConfigManager.DataConfigManagerCallback;
 import com.android.internal.telephony.data.DataNetworkController.DataNetworkControllerCallback;
@@ -1353,7 +1354,7 @@ public class DataProfileManagerTest extends TelephonyTest {
     }
 
     @Test
-    public void testSimInsertedAgain() throws Exception {
+    public void testSimInsertedAgain() {
         testSimRemoval();
         Mockito.clearInvocations(mDataProfileManagerCallback);
         Mockito.clearInvocations(mMockedWwanDataServiceManager);
@@ -1955,7 +1956,7 @@ public class DataProfileManagerTest extends TelephonyTest {
 
     private void changeSimStateTo(@TelephonyManager.SimState int simState) {
         mSimInserted = simState == TelephonyManager.SIM_STATE_LOADED;
-        mDataNetworkControllerCallback.onSimStateChanged(simState);
+        doReturn(IccCardConstants.State.intToState(simState)).when(mIccCard).getState();
     }
 
     @Test

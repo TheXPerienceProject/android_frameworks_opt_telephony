@@ -739,7 +739,8 @@ public class ServiceStateTracker extends Handler {
         mCdnr = new CarrierDisplayNameResolver(mPhone);
 
         // Create EriManager only if phone supports CDMA
-        if (UiccController.isCdmaSupported(mPhone.getContext())) {
+        if (!mFeatureFlags.phoneTypeCleanup()
+                && UiccController.isCdmaSupported(mPhone.getContext())) {
             mEriManager = TelephonyComponentFactory.getInstance().inject(EriManager.class.getName())
                     .makeEriManager(mPhone, EriManager.ERI_FROM_XML);
         } else {
@@ -930,19 +931,24 @@ public class ServiceStateTracker extends Handler {
                 mCdmaSSM.dispose(this);
             }
 
-            mCi.unregisterForCdmaPrlChanged(this);
-            mCi.unregisterForCdmaOtaProvision(this);
+            if (!mFeatureFlags.phoneTypeCleanup()) {
+                mCi.unregisterForCdmaPrlChanged(this);
+                mCi.unregisterForCdmaOtaProvision(this);
+            }
             mPhone.unregisterForSimRecordsLoaded(this);
 
         } else {
             mPhone.registerForSimRecordsLoaded(this, EVENT_SIM_RECORDS_LOADED, null);
-            mCdmaSSM = CdmaSubscriptionSourceManager.getInstance(mPhone.getContext(), mCi, this,
-                    EVENT_CDMA_SUBSCRIPTION_SOURCE_CHANGED, null);
-            mIsSubscriptionFromRuim = (mCdmaSSM.getCdmaSubscriptionSource() ==
-                    CdmaSubscriptionSourceManager.SUBSCRIPTION_FROM_RUIM);
+            if (!mFeatureFlags.phoneTypeCleanup()) {
+                mCdmaSSM = CdmaSubscriptionSourceManager.getInstance(mPhone.getContext(), mCi, this,
+                        EVENT_CDMA_SUBSCRIPTION_SOURCE_CHANGED, null);
 
-            mCi.registerForCdmaPrlChanged(this, EVENT_CDMA_PRL_VERSION_CHANGED, null);
-            mCi.registerForCdmaOtaProvision(this, EVENT_OTA_PROVISION_STATUS_CHANGE, null);
+                mIsSubscriptionFromRuim = mCdmaSSM.getCdmaSubscriptionSource()
+                        == CdmaSubscriptionSourceManager.SUBSCRIPTION_FROM_RUIM;
+
+                mCi.registerForCdmaPrlChanged(this, EVENT_CDMA_PRL_VERSION_CHANGED, null);
+                mCi.registerForCdmaOtaProvision(this, EVENT_OTA_PROVISION_STATUS_CHANGE, null);
+            }
 
             mHbpcdUtils = new HbpcdUtils(mPhone.getContext());
             // update OTASP state in case previously set by another service
@@ -1352,7 +1358,9 @@ public class ServiceStateTracker extends Handler {
                     mIsMinInfoReady = false;
 
                     // Remove the EF records that come from UICC.
-                    mCdnr.updateEfFromRuim(null /* ruim */);
+                    if (!mFeatureFlags.phoneTypeCleanup()) {
+                        mCdnr.updateEfFromRuim(null /* ruim */);
+                    }
                     mCdnr.updateEfFromUsim(null /* Usim */);
                 }
                 onUpdateIccAvailability();
@@ -2049,6 +2057,7 @@ public class ServiceStateTracker extends Handler {
 
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
     protected void updateOtaspState() {
+        if (mFeatureFlags.phoneTypeCleanup()) return;
         int otaspMode = getOtasp();
         int oldOtaspMode = mCurrentOtaspMode;
         mCurrentOtaspMode = otaspMode;
@@ -3899,7 +3908,11 @@ public class ServiceStateTracker extends Handler {
 // QTI_END: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
 
         mCellIdentity = primaryCellIdentity;
-        if (mSS.getState() == ServiceState.STATE_IN_SERVICE && primaryCellIdentity != null) {
+        boolean isCsRegistered = mSS.getNetworkRegistrationInfo(NetworkRegistrationInfo.DOMAIN_CS,
+                AccessNetworkConstants.TRANSPORT_TYPE_WWAN).isNetworkRegistered();
+        boolean isPsRegistered = mSS.getNetworkRegistrationInfo(NetworkRegistrationInfo.DOMAIN_PS,
+                AccessNetworkConstants.TRANSPORT_TYPE_WWAN).isNetworkRegistered();
+        if (isCsRegistered || isPsRegistered) {
             mLastKnownCellIdentity = mCellIdentity;
             removeMessages(EVENT_RESET_LAST_KNOWN_CELL_IDENTITY);
         }
@@ -5472,6 +5485,7 @@ public class ServiceStateTracker extends Handler {
     }
 
     private void handleCdmaSubscriptionSource(int newSubscriptionSource) {
+        if (mFeatureFlags.phoneTypeCleanup()) return;
         log("Subscription Source : " + newSubscriptionSource);
         mIsSubscriptionFromRuim =
                 (newSubscriptionSource == CdmaSubscriptionSourceManager.SUBSCRIPTION_FROM_RUIM);

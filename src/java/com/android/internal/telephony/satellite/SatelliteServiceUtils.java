@@ -33,7 +33,6 @@ import android.telephony.CellIdentity;
 import android.telephony.DropBoxManagerLoggerBackend;
 import android.telephony.NetworkRegistrationInfo;
 import android.telephony.PersistentLogger;
-import android.telephony.Rlog;
 import android.telephony.ServiceState;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
@@ -52,8 +51,10 @@ import android.telephony.satellite.stub.NTRadioTechnology;
 import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.android.internal.R;
+import com.android.internal.telephony.CommandException;
 import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.PhoneFactory;
 // QTI_BEGIN: 2023-11-10: Telephony: Remove legacy subscription code
@@ -321,12 +322,37 @@ public class SatelliteServiceUtils {
             if (ar.exception instanceof SatelliteManager.SatelliteException) {
                 errorCode = ((SatelliteManager.SatelliteException) ar.exception).getErrorCode();
                 loge(caller + " SatelliteException: " + ar.exception);
+            } else if (ar.exception instanceof CommandException) {
+                errorCode = convertCommandExceptionErrorToSatelliteError(
+                        ((CommandException) ar.exception).getCommandError());
+                loge(caller + " CommandException: "  + ar.exception);
             } else {
                 loge(caller + " unknown exception: " + ar.exception);
             }
         }
         logd(caller + " error: " + errorCode);
         return errorCode;
+    }
+
+    private static int convertCommandExceptionErrorToSatelliteError(
+            CommandException.Error commandExceptionError) {
+        logd("convertCommandExceptionErrorToSatelliteError: commandExceptionError="
+                + commandExceptionError.toString());
+
+        switch(commandExceptionError) {
+            case REQUEST_NOT_SUPPORTED:
+                return SatelliteManager.SATELLITE_RESULT_REQUEST_NOT_SUPPORTED;
+            case RADIO_NOT_AVAILABLE:
+                return SatelliteManager.SATELLITE_RESULT_RADIO_NOT_AVAILABLE;
+            case INTERNAL_ERR:
+            case INVALID_STATE:
+            case INVALID_MODEM_STATE:
+                return SatelliteManager.SATELLITE_RESULT_INVALID_MODEM_STATE;
+            case MODEM_ERR:
+                return SatelliteManager.SATELLITE_RESULT_MODEM_ERROR;
+            default:
+                return SatelliteManager.SATELLITE_RESULT_ERROR;
+        }
     }
 
     /**
@@ -512,8 +538,17 @@ public class SatelliteServiceUtils {
             ServiceState serviceState = phone.getServiceState();
             if (serviceState != null) {
                 int state = serviceState.getState();
+                NetworkRegistrationInfo dataNri = serviceState.getNetworkRegistrationInfo(
+                        NetworkRegistrationInfo.DOMAIN_PS,
+                        AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
+                boolean isCellularDataInService = dataNri != null && dataNri.isInService();
+                logd("isCellularAvailable: phoneId=" + phone.getPhoneId() + " state=" + state
+                        + " isEmergencyOnly=" + serviceState.isEmergencyOnly()
+                        + " isCellularDataInService=" + isCellularDataInService);
+
                 if ((state == STATE_IN_SERVICE || state == STATE_EMERGENCY_ONLY
-                        || serviceState.isEmergencyOnly())
+                        || serviceState.isEmergencyOnly()
+                        || isCellularDataInService)
                         && !isSatellitePlmn(phone.getSubId(), serviceState)) {
                     logd("isCellularAvailable true");
                     return true;
@@ -690,15 +725,32 @@ public class SatelliteServiceUtils {
         return null;
     }
 
+    /** Determines whether the subscription is in carrier roaming NB-IoT NTN or not. */
+    public static boolean isNbIotNtn(int subId) {
+        Phone phone = PhoneFactory.getPhone(SubscriptionManager.getPhoneId(subId));
+        if (phone == null) {
+            logd("isNbIotNtn(): phone is null");
+            return false;
+        }
+
+        SatelliteController satelliteController = SatelliteController.getInstance();
+        if (satelliteController == null) {
+            logd("isNbIotNtn(): satelliteController is null");
+            return false;
+        }
+
+        return satelliteController.isInCarrierRoamingNbIotNtn(phone);
+    }
+
     private static void logd(@NonNull String log) {
-        Rlog.d(TAG, log);
+        Log.d(TAG, log);
     }
 
     private static void loge(@NonNull String log) {
-        Rlog.e(TAG, log);
+        Log.e(TAG, log);
     }
 
     private static void logv(@NonNull String log) {
-        Rlog.v(TAG, log);
+        Log.v(TAG, log);
     }
 }

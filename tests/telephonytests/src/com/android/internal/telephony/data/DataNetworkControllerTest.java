@@ -186,7 +186,7 @@ public class DataNetworkControllerTest extends TelephonyTest {
     private LinkBandwidthEstimatorCallback mLinkBandwidthEstimatorCallback;
 
     private boolean mIsNonTerrestrialNetwork = false;
-    private ArrayList<Integer> mCarrierSupportedSatelliteServices = new ArrayList<>();
+    private ArrayList<Integer> mCarrierSupportedServices = new ArrayList<>();
 
     private final DataProfile mGeneralPurposeDataProfile = new DataProfile.Builder()
             .setApnSetting(new ApnSetting.Builder()
@@ -692,7 +692,7 @@ public class DataNetworkControllerTest extends TelephonyTest {
                 .setDomain(NetworkRegistrationInfo.DOMAIN_PS)
                 .setDataSpecificInfo(dsri)
                 .setIsNonTerrestrialNetwork(mIsNonTerrestrialNetwork)
-                .setAvailableServices(mCarrierSupportedSatelliteServices)
+                .setAvailableServices(mCarrierSupportedServices)
                 .setEmergencyOnly(isEmergencyOnly)
                 .build());
 
@@ -702,7 +702,7 @@ public class DataNetworkControllerTest extends TelephonyTest {
                 .setRegistrationState(iwlanRegState)
                 .setDomain(NetworkRegistrationInfo.DOMAIN_PS)
                 .setIsNonTerrestrialNetwork(mIsNonTerrestrialNetwork)
-                .setAvailableServices(mCarrierSupportedSatelliteServices)
+                .setAvailableServices(mCarrierSupportedServices)
                 .setEmergencyOnly(isEmergencyOnly)
                 .build());
 
@@ -1124,7 +1124,7 @@ public class DataNetworkControllerTest extends TelephonyTest {
         doReturn(CarrierConfigManager.SATELLITE_DATA_SUPPORT_ONLY_RESTRICTED)
                 .when(mSatelliteController)
                 .getSatelliteDataServicePolicyForPlmn(anyInt(), any());
-        mCarrierSupportedSatelliteServices.add(NetworkRegistrationInfo.SERVICE_TYPE_DATA);
+        mCarrierSupportedServices.add(NetworkRegistrationInfo.SERVICE_TYPE_DATA);
         serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
                 NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
         logd("DataNetworkControllerTest -Setup!");
@@ -1538,15 +1538,144 @@ public class DataNetworkControllerTest extends TelephonyTest {
     public void testMovingFromInServiceToNoService() throws Exception {
         testSetupDataNetwork();
 
-        serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
-                NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_OR_SEARCHING);
-        // Verify we don't tear down the data network.
-        verifyInternetConnected();
+        // clear available services at no service
+        mCarrierSupportedServices.clear();
 
         serviceStateChanged(TelephonyManager.NETWORK_TYPE_UNKNOWN,
                 NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_OR_SEARCHING);
         // Verify we don't tear down the data network.
         verifyInternetConnected();
+    }
+
+    @Test
+    public void testInServiceAvailableServicesChanged() throws Exception {
+        testSetupDataNetwork();
+
+        List<DataDisallowedReason> reasons = mDataNetworkControllerUT
+                .getInternetDataDisallowedReasons();
+        assertThat(reasons).isEmpty();
+
+        // Add available services sms to existing available services with data
+        mCarrierSupportedServices.add(NetworkRegistrationInfo.SERVICE_TYPE_SMS);
+
+        serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
+                NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
+
+        // Verify we don't tear down the data network.
+        verifyInternetConnected();
+
+
+        mCarrierSupportedServices.clear();
+        // Add available services data and mms
+        mCarrierSupportedServices.add(NetworkRegistrationInfo.SERVICE_TYPE_DATA);
+        mCarrierSupportedServices.add(NetworkRegistrationInfo.SERVICE_TYPE_MMS);
+
+        serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
+                NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
+
+        // Verify we don't tear down the data network.
+        verifyInternetConnected();
+
+        // clear all available services
+        mCarrierSupportedServices.clear();
+        serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
+                NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
+
+        // Verify internet is not connected
+        verifyNoConnectedNetworkHasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+
+        reasons = mDataNetworkControllerUT.getInternetDataDisallowedReasons();
+        assertThat(reasons).contains(DataDisallowedReason.SERVICE_OPTION_NOT_SUPPORTED);
+
+    }
+
+    @Test
+    public void testHomeToRoamingAvailableServicesChangedWithDataRoamingDisabled()
+            throws Exception {
+        testSetupDataNetwork();
+
+        List<DataDisallowedReason> reasons = mDataNetworkControllerUT
+                .getInternetDataDisallowedReasons();
+        assertThat(reasons).isEmpty();
+
+        // Disable data roaming setting
+        mDataNetworkControllerUT.getDataSettingsManager().setDataRoamingEnabled(false);
+
+        // Home to roaming with same available services
+        serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
+                NetworkRegistrationInfo.REGISTRATION_STATE_ROAMING);
+
+        // Verify internet is not connected due to roaming disabled
+        verifyNoConnectedNetworkHasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+
+        reasons = mDataNetworkControllerUT.getInternetDataDisallowedReasons();
+        assertThat(reasons).contains(DataDisallowedReason.ROAMING_DISABLED);
+    }
+
+    @Test
+    public void testHomeToRoamingAvailableServicesChangedWithDataRoamingEnabled()
+            throws Exception {
+        testSetupDataNetwork();
+
+        List<DataDisallowedReason> reasons = mDataNetworkControllerUT
+                .getInternetDataDisallowedReasons();
+        assertThat(reasons).isEmpty();
+
+        // Enable data roaming setting
+        mDataNetworkControllerUT.getDataSettingsManager().setDataRoamingEnabled(true);
+
+        // Home to roaming with same available services
+        serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
+                NetworkRegistrationInfo.REGISTRATION_STATE_ROAMING);
+
+        // Verify we don't tear down the data network since available services as still data
+        // with data roaming enabled
+        verifyInternetConnected();
+
+        // clear all available services
+        mCarrierSupportedServices.clear();
+        // At roaming
+        serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
+                NetworkRegistrationInfo.REGISTRATION_STATE_ROAMING);
+
+        // Verify internet is not connected
+        verifyNoConnectedNetworkHasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+
+        reasons = mDataNetworkControllerUT.getInternetDataDisallowedReasons();
+        assertThat(reasons).contains(DataDisallowedReason.SERVICE_OPTION_NOT_SUPPORTED);
+    }
+
+    @Test
+    public void testOnAvailableServiceChanged_WithReevaluateNetworkRequest()
+            throws Exception {
+        // clear available services at no service
+        mCarrierSupportedServices.clear();
+
+        serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
+                NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
+
+        // Set network request transport with Internet capability
+        mDataNetworkControllerUT.addNetworkRequest(
+                createNetworkRequest(NetworkCapabilities.NET_CAPABILITY_INTERNET));
+        processAllMessages();
+
+        // Verify internet is not connected due to roaming disabled
+        verifyNoConnectedNetworkHasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+
+        List<DataDisallowedReason> reasons = mDataNetworkControllerUT
+                .getInternetDataDisallowedReasons();
+        assertThat(reasons).contains(DataDisallowedReason.SERVICE_OPTION_NOT_SUPPORTED);
+
+        // add available services with data, re-evaluate network request
+        mCarrierSupportedServices.add(NetworkRegistrationInfo.SERVICE_TYPE_DATA);
+        serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
+                NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
+
+        // Verify now internet was connected
+        verifyInternetConnected();
+
+        reasons = mDataNetworkControllerUT.getInternetDataDisallowedReasons();
+        assertThat(reasons).isEmpty();
     }
 
     @Test
@@ -1571,7 +1700,6 @@ public class DataNetworkControllerTest extends TelephonyTest {
         processAllMessages();
         verifyNoConnectedNetworkHasCapability(NetworkCapabilities.NET_CAPABILITY_IMS);
         verifyConnectedNetworkHasCapabilities(NetworkCapabilities.NET_CAPABILITY_INTERNET);
-
 
         // PS unrestricted, new setup is allowed
         mDataNetworkControllerUT.obtainMessage(7/*EVENT_PS_RESTRICT_DISABLED*/).sendToTarget();
@@ -2129,7 +2257,7 @@ public class DataNetworkControllerTest extends TelephonyTest {
 
         // reset satellite network and roaming registration
         mIsNonTerrestrialNetwork = false;
-        mCarrierSupportedSatelliteServices.clear();
+        mCarrierSupportedServices.clear();
         serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
                 NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
     }
@@ -3915,6 +4043,13 @@ public class DataNetworkControllerTest extends TelephonyTest {
         processAllMessages();
 
         verify(mMockedDataNetworkControllerCallback).onNrAdvancedCapableByPcoChanged(eq(true));
+
+        // Deactivate the data, verify notify PCO gone.
+        mDataNetworkControllerUT.tearDownAllDataNetworks(
+                DataNetwork.TEAR_DOWN_REASON_AIRPLANE_MODE_ON);
+        processAllFutureMessages();
+
+        verify(mMockedDataNetworkControllerCallback).onNrAdvancedCapableByPcoChanged(eq(false));
     }
 
     @Test
@@ -5844,8 +5979,8 @@ public class DataNetworkControllerTest extends TelephonyTest {
     @Test
     public void testNotRestrictedDataConnectionRequest_WithoutDataServiceSupport()
             throws Exception {
-        mCarrierSupportedSatelliteServices.clear();
-        mCarrierSupportedSatelliteServices.add(NetworkRegistrationInfo.SERVICE_TYPE_VOICE);
+        mCarrierSupportedServices.clear();
+        mCarrierSupportedServices.add(NetworkRegistrationInfo.SERVICE_TYPE_VOICE);
         serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
                 NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
 
@@ -5861,7 +5996,7 @@ public class DataNetworkControllerTest extends TelephonyTest {
         Mockito.clearInvocations(mMockedDataNetworkControllerCallback);
 
         // reset satellite network and roaming registration
-        mCarrierSupportedSatelliteServices.clear();
+        mCarrierSupportedServices.clear();
         serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
                 NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
     }
@@ -5870,8 +6005,8 @@ public class DataNetworkControllerTest extends TelephonyTest {
     public void testConnection_WithDataServiceCheckFlagDisabled_WithoutDataServiceSupport()
             throws Exception {
         doReturn(false).when(mFeatureFlags).dataServiceCheck();
-        mCarrierSupportedSatelliteServices.clear();
-        mCarrierSupportedSatelliteServices.add(NetworkRegistrationInfo.SERVICE_TYPE_VOICE);
+        mCarrierSupportedServices.clear();
+        mCarrierSupportedServices.add(NetworkRegistrationInfo.SERVICE_TYPE_VOICE);
         serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
                 NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
 
@@ -5887,7 +6022,7 @@ public class DataNetworkControllerTest extends TelephonyTest {
         Mockito.clearInvocations(mMockedDataNetworkControllerCallback);
 
         // reset satellite network and roaming registration
-        mCarrierSupportedSatelliteServices.clear();
+        mCarrierSupportedServices.clear();
         serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
                 NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
     }
@@ -5895,8 +6030,8 @@ public class DataNetworkControllerTest extends TelephonyTest {
     @Test
     public void testRestrictedDataConnectionRequest_WithoutDataServiceSupport()
             throws Exception {
-        mCarrierSupportedSatelliteServices.clear();
-        mCarrierSupportedSatelliteServices.add(NetworkRegistrationInfo.SERVICE_TYPE_VOICE);
+        mCarrierSupportedServices.clear();
+        mCarrierSupportedServices.add(NetworkRegistrationInfo.SERVICE_TYPE_VOICE);
         serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
                 NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
 
@@ -5916,7 +6051,7 @@ public class DataNetworkControllerTest extends TelephonyTest {
         Mockito.clearInvocations(mMockedDataNetworkControllerCallback);
 
         // reset satellite network and roaming registration
-        mCarrierSupportedSatelliteServices.clear();
+        mCarrierSupportedServices.clear();
         serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
                 NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
     }
@@ -5945,7 +6080,7 @@ public class DataNetworkControllerTest extends TelephonyTest {
 
         // reset satellite network and roaming registration
         mIsNonTerrestrialNetwork = false;
-        mCarrierSupportedSatelliteServices.clear();
+        mCarrierSupportedServices.clear();
         serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
                 NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
     }
@@ -5980,7 +6115,7 @@ public class DataNetworkControllerTest extends TelephonyTest {
 
         // reset satellite network and roaming registration
         mIsNonTerrestrialNetwork = false;
-        mCarrierSupportedSatelliteServices.clear();
+        mCarrierSupportedServices.clear();
         serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
                 NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
     }
@@ -6015,7 +6150,7 @@ public class DataNetworkControllerTest extends TelephonyTest {
 
         // reset satellite network and roaming registration
         mIsNonTerrestrialNetwork = false;
-        mCarrierSupportedSatelliteServices.clear();
+        mCarrierSupportedServices.clear();
         serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
                 NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
     }
@@ -6051,7 +6186,7 @@ public class DataNetworkControllerTest extends TelephonyTest {
 
         // reset satellite network and roaming registration
         mIsNonTerrestrialNetwork = false;
-        mCarrierSupportedSatelliteServices.clear();
+        mCarrierSupportedServices.clear();
         serviceStateChanged(TelephonyManager.NETWORK_TYPE_LTE,
                 NetworkRegistrationInfo.REGISTRATION_STATE_HOME);
     }

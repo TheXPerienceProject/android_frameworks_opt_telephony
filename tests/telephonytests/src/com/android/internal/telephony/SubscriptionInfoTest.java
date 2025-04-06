@@ -48,7 +48,6 @@ public class SubscriptionInfoTest {
 
     @Before
     public void setUp() throws Exception {
-        mSetFlagsRule.enableFlags(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG);
         mSubscriptionInfoUT = new SubscriptionInfo.Builder()
                 .setId(1)
                 .setIccId("890126042XXXXXXXXXXX")

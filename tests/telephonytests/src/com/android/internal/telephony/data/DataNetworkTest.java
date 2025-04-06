@@ -21,10 +21,11 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
-import static org.mockito.Matchers.argThat;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
@@ -33,7 +34,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import android.net.ConnectivityManager;
 import android.net.InetAddresses;
@@ -1551,6 +1551,78 @@ public class DataNetworkTest extends TelephonyTest {
     }
 
     @Test
+    public void testSetupDataCallOnRadioNotAvailable() throws Exception {
+        NetworkRequestList networkRequestList = new NetworkRequestList();
+        networkRequestList.add(new TelephonyNetworkRequest(new NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build(), mPhone, mFeatureFlags));
+
+        mDataNetworkUT = new DataNetwork(mPhone, mFeatureFlags, Looper.myLooper(),
+        mDataServiceManagers, mInternetDataProfile, networkRequestList,
+                AccessNetworkConstants.TRANSPORT_TYPE_WWAN,
+                DataAllowedReason.NORMAL, mDataNetworkCallback);
+        assertThat(mDataNetworkUT.isConnecting()).isTrue();
+
+        mDataNetworkUT.sendMessage(4/*EVENT_RADIO_NOT_AVAILABLE*/);
+        processAllMessages();
+
+        assertThat(mDataNetworkUT.isConnected()).isFalse();
+        verify(mDataNetworkCallback).onSetupDataFailed(eq(mDataNetworkUT), eq(
+                networkRequestList), eq(DataFailCause.RADIO_NOT_AVAILABLE), anyLong());
+    }
+
+    @Test
+    public void testHandoverToIwlanSuccessWithRadioNotAvailable() throws Exception {
+        setupDataNetwork();
+
+        setSuccessfulSetupDataResponse(mMockedWlanDataServiceManager, 456);
+        TelephonyNetworkAgent mockNetworkAgent = Mockito.mock(TelephonyNetworkAgent.class);
+        replaceInstance(DataNetwork.class, "mNetworkAgent",
+                mDataNetworkUT, mockNetworkAgent);
+        // Now handover to IWLAN
+        mDataNetworkUT.startHandover(AccessNetworkConstants.TRANSPORT_TYPE_WLAN, null);
+        mDataNetworkUT.sendMessage(4/*EVENT_RADIO_NOT_AVAILABLE*/);
+        processAllMessages();
+
+        assertThat(mDataNetworkUT.isConnected()).isTrue();
+        assertThat(mDataNetworkUT.getTransport()).isEqualTo(
+                AccessNetworkConstants.TRANSPORT_TYPE_WLAN);
+    }
+
+    @Test
+    public void testHandoverToIwlanFailedWithRadioNotAvailable() throws Exception {
+        setupDataNetwork();
+
+        setFailedSetupDataResponse(mMockedWlanDataServiceManager,
+                DataServiceCallback.RESULT_ERROR_TEMPORARILY_UNAVAILABLE);
+
+        TelephonyNetworkAgent mockNetworkAgent = Mockito.mock(TelephonyNetworkAgent.class);
+        replaceInstance(DataNetwork.class, "mNetworkAgent",
+                mDataNetworkUT, mockNetworkAgent);
+        // Now handover to IWLAN
+        mDataNetworkUT.startHandover(AccessNetworkConstants.TRANSPORT_TYPE_WLAN, null);
+        mDataNetworkUT.sendMessage(4/*EVENT_RADIO_NOT_AVAILABLE*/);
+        processAllMessages();
+
+        assertThat(mDataNetworkUT.isConnected()).isFalse();
+    }
+
+    @Test
+    public void testHandoverToCellularWithRadioNotAvailable() throws Exception {
+        testCreateDataNetworkOnIwlan();
+
+        TelephonyNetworkAgent mockNetworkAgent = Mockito.mock(TelephonyNetworkAgent.class);
+        replaceInstance(DataNetwork.class, "mNetworkAgent",
+                mDataNetworkUT, mockNetworkAgent);
+        // Now handover to IWLAN
+        mDataNetworkUT.startHandover(AccessNetworkConstants.TRANSPORT_TYPE_WWAN, null);
+        mDataNetworkUT.sendMessage(4/*EVENT_RADIO_NOT_AVAILABLE*/);
+        processAllMessages();
+
+        assertThat(mDataNetworkUT.isConnected()).isFalse();
+    }
+
+    @Test
     public void testNetworkAgentConfig() throws Exception {
         createImsDataNetwork(false/*IsMmtel*/);
 
@@ -2221,8 +2293,7 @@ public class DataNetworkTest extends TelephonyTest {
     }
 
     @Test
-    public void testValidationStatusOnPreciseDataConnectionState_FlagEnabled() throws Exception {
-        when(mFeatureFlags.networkValidation()).thenReturn(true);
+    public void testValidationStatusOnPreciseDataConnectionState() throws Exception {
         setupIwlanDataNetwork();
 
         ArgumentCaptor<PreciseDataConnectionState> pdcsCaptor =
@@ -2271,37 +2342,7 @@ public class DataNetworkTest extends TelephonyTest {
     }
 
     @Test
-    public void testValidationStatus_FlagDisabled() throws Exception {
-        // network validation flag disabled
-        when(mFeatureFlags.networkValidation()).thenReturn(false);
-        setupIwlanDataNetwork();
-
-        // precise data connection state posted for setup data call response
-        ArgumentCaptor<PreciseDataConnectionState> pdcsCaptor =
-                ArgumentCaptor.forClass(PreciseDataConnectionState.class);
-        verify(mPhone, times(2)).notifyDataConnection(pdcsCaptor.capture());
-
-        // data state updated with network validation status
-        DataCallResponse response = createDataCallResponse(123,
-                DataCallResponse.LINK_STATUS_ACTIVE, Collections.emptyList(), null,
-                PreciseDataConnectionState.NETWORK_VALIDATION_SUCCESS);
-        mDataNetworkUT.sendMessage(8 /*EVENT_DATA_STATE_CHANGED*/, new AsyncResult(
-                AccessNetworkConstants.TRANSPORT_TYPE_WLAN, List.of(response), null));
-        processAllMessages();
-
-        // Verify updated validation status at precise data connection state not posted due to flag
-        // disabled
-        pdcsCaptor = ArgumentCaptor.forClass(PreciseDataConnectionState.class);
-        verify(mPhone, times(2)).notifyDataConnection(pdcsCaptor.capture());
-        List<PreciseDataConnectionState> pdcsList = pdcsCaptor.getAllValues();
-        assertThat(pdcsList.get(1).getNetworkValidationStatus())
-                .isEqualTo(PreciseDataConnectionState.NETWORK_VALIDATION_UNSUPPORTED);
-    }
-
-    @Test
-    public void testHandoverWithSuccessNetworkValidation_FlagEnabled() throws Exception {
-        when(mFeatureFlags.networkValidation()).thenReturn(true);
-
+    public void testHandoverWithSuccessNetworkValidation() throws Exception {
         setupDataNetwork();
 
         setSuccessfulSetupDataResponse(

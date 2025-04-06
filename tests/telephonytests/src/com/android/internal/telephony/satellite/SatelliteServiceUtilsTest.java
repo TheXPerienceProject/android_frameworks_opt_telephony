@@ -19,6 +19,7 @@ package com.android.internal.telephony.satellite;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
@@ -144,6 +145,8 @@ public class SatelliteServiceUtilsTest extends TelephonyTest {
     public void testIsCellularAvailable() {
         when(mServiceState.getState()).thenReturn(ServiceState.STATE_OUT_OF_SERVICE);
         when(mServiceState2.getState()).thenReturn(ServiceState.STATE_OUT_OF_SERVICE);
+        when(mServiceState.getNetworkRegistrationInfo(anyInt(), anyInt())).thenReturn(null);
+        when(mServiceState2.getNetworkRegistrationInfo(anyInt(), anyInt())).thenReturn(null);
         assertFalse(SatelliteServiceUtils.isCellularAvailable());
 
         when(mServiceState.getState()).thenReturn(ServiceState.STATE_EMERGENCY_ONLY);
@@ -157,6 +160,22 @@ public class SatelliteServiceUtilsTest extends TelephonyTest {
         when(mServiceState2.getState()).thenReturn(ServiceState.STATE_OUT_OF_SERVICE);
         when(mServiceState2.isEmergencyOnly()).thenReturn(true);
         assertTrue(SatelliteServiceUtils.isCellularAvailable());
+
+        NetworkRegistrationInfo dataNri = new NetworkRegistrationInfo.Builder()
+                .setRegistrationState(NetworkRegistrationInfo.REGISTRATION_STATE_HOME)
+                .build();
+        when(mServiceState.getNetworkRegistrationInfo(anyInt(), anyInt())).thenReturn(dataNri);
+        when(mServiceState.getState()).thenReturn(ServiceState.STATE_OUT_OF_SERVICE);
+        when(mServiceState2.isEmergencyOnly()).thenReturn(false);
+        assertTrue(SatelliteServiceUtils.isCellularAvailable());
+
+        dataNri = new NetworkRegistrationInfo.Builder()
+                .setRegistrationState(NetworkRegistrationInfo.REGISTRATION_STATE_EMERGENCY)
+                .build();
+        when(mServiceState.getNetworkRegistrationInfo(anyInt(), anyInt())).thenReturn(dataNri);
+        when(mServiceState.getState()).thenReturn(ServiceState.STATE_OUT_OF_SERVICE);
+        when(mServiceState2.isEmergencyOnly()).thenReturn(false);
+        assertFalse(SatelliteServiceUtils.isCellularAvailable());
     }
 
     @Test

@@ -3,17 +3,6 @@ container: "system"
 
 # OWNER=linggm TARGET=25Q2
 flag {
-  name: "keep_ping_request"
-  namespace: "telephony"
-  description: "If ping test is not required to pass, keep the ping request to avoid deactivate followed by reactivate"
-  bug: "366318732"
-  metadata {
-    purpose: PURPOSE_BUGFIX
-  }
-}
-
-# OWNER=linggm TARGET=25Q2
-flag {
   name: "auto_data_switch_enhanced"
   namespace: "telephony"
   description: "Ramp up RAT signal strength based auto data switch"

@@ -19,6 +19,7 @@ package com.android.internal.telephony.satellite;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.content.Context;
+import android.os.FileUtils;
 import android.util.ArraySet;
 import android.util.Log;
 
@@ -285,6 +286,33 @@ public class SatelliteConfig {
                 "targetSatelliteFilePath's path: "
                         + targetSatelliteFilePath.toAbsolutePath().toString());
         return targetSatelliteFilePath.toFile();
+    }
+
+    /**
+     * This method cleans the Satellite Config OTA resources and it should be used only in CTS/Unit
+     * tests
+     */
+    @VisibleForTesting(visibility = VisibleForTesting.Visibility.PRIVATE)
+    public void cleanOtaResources(@Nullable Context context) {
+        if (context == null) {
+            Log.d(TAG, "cleanOtaResources : context is null");
+            return;
+        }
+        try {
+            File satelliteFileDir = context.getDir(SATELLITE_DIR_NAME, Context.MODE_PRIVATE);
+            if (!satelliteFileDir.exists()) {
+                Log.d(
+                        TAG,
+                        "cleanOtaResources: "
+                                + SATELLITE_DIR_NAME
+                                + " does not exist. No need to clean.");
+                return;
+            }
+            Log.d(TAG, "cleanOtaResources: Deleting contents under " + SATELLITE_DIR_NAME);
+            FileUtils.deleteContents(satelliteFileDir);
+        } catch (Exception e) {
+            Log.e(TAG, "cleanOtaResources error : " + e);
+        }
     }
 
     /**

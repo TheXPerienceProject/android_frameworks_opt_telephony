@@ -134,7 +134,7 @@ public class ApduSender {
             return;
         }
 
-        boolean euiccSession = EuiccSession.get().hasSession();
+        boolean euiccSession = EuiccSession.get(mContext).hasSession();
         // Case 1, channel was already opened AND EuiccSession is ongoing.
         // sendCommand directly. Do not immediately close channel after sendCommand.
         // Case 2, channel was already opened AND EuiccSession is not ongoing. This means
@@ -147,7 +147,7 @@ public class ApduSender {
         // before sendCommand. Close channel immediately after sendCommand.
         if (mChannelOpened) {  // Case 1 or 2
             if (euiccSession) {
-                EuiccSession.get().noteChannelOpen(this);
+                EuiccSession.get(mContext).noteChannelOpen(this);
             }
             RequestBuilder builder = getRequestBuilderWithOpenedChannel(requestProvider,
                     !euiccSession /* closeChannelImmediately */, resultCallback, handler);
@@ -158,7 +158,7 @@ public class ApduSender {
                     !euiccSession /* closeChannelImmediately */, resultCallback, handler);
         } else {  // Case 3 or 4
             if (euiccSession) {
-                EuiccSession.get().noteChannelOpen(this);
+                EuiccSession.get(mContext).noteChannelOpen(this);
             }
             openChannel(requestProvider,
                     !euiccSession /* closeChannelImmediately */, resultCallback, handler);

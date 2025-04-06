@@ -265,6 +265,8 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
     private Optional<Integer> mCurrentlyConnectedSubId = Optional.empty();
 
     private final MmTelFeatureListener mMmTelFeatureListener = new MmTelFeatureListener();
+    private com.android.server.telecom.flags.FeatureFlags mTelecomFlags =
+            new com.android.server.telecom.flags.FeatureFlagsImpl();
     private class MmTelFeatureListener extends MmTelFeature.Listener {
 
         private IImsCallSessionListener processIncomingCall(@NonNull IImsCallSession c,
@@ -322,11 +324,8 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
                         // activeCall could be null if the foreground call is in a disconnected
                         // state.  If either of the calls is null there is no need to check if
                         // one will be disconnected on answer.
-                        // Use VideoProfile.STATE_BIDIRECTIONAL to not affect existing
-                        // implementation. Video state of user response is handled in acceptCall().
                         boolean answeringWillDisconnect =
-                                shouldDisconnectActiveCallOnAnswer(activeCall, imsCall,
-                                        VideoProfile.STATE_BIDIRECTIONAL);
+                                shouldDisconnectActiveCallOnAnswer(activeCall, imsCall);
                         conn.setActiveCallDisconnectedOnAnswer(answeringWillDisconnect);
                     }
                 }
@@ -2465,7 +2464,7 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
             ImsCall ringingCall = mRingingCall.getImsCall();
             if (mForegroundCall.hasConnections() && mRingingCall.hasConnections()) {
                 answeringWillDisconnect =
-                        shouldDisconnectActiveCallOnAnswer(activeCall, ringingCall, videoState);
+                        shouldDisconnectActiveCallOnAnswer(activeCall, ringingCall);
             }
 
             // Cache video state for pending MT call.
@@ -3409,6 +3408,14 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
             return;
         }
 
+        // For CRBT/UVS call, video state is arriving earlier to call object than the extra,
+        // that is setVideoState and onVideoStateChanged are invoked earlier than putExtras
+        // in Call.java, it will lead that call audio manager enables the speaker for CRBT/UVS
+        // call since the onVideoStateChanged comes but the CRBT/UVS extra is not arrived yet.
+        // So exchange the execution order for media capabilities and extras.
+        if (ignoreState) {
+            conn.updateExtras(imsCall);
+        }
         // processCallStateChange is triggered for onCallUpdated as well.
         // onCallUpdated should not modify the state of the call
         // It should modify only other capabilities of call through updateMediaCapabilities
@@ -3417,7 +3424,6 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
         conn.updateMediaCapabilities(imsCall);
         if (ignoreState) {
             conn.updateAddressDisplay(imsCall);
-            conn.updateExtras(imsCall);
             // Some devices will change the audio direction between major call state changes, so we
             // need to check whether to start or stop ringback
             conn.maybeChangeRingbackState();
@@ -4627,6 +4633,13 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
                 }
                 mForegroundCall.switchWith(mBackgroundCall);
 // QTI_END: 2021-04-06: Telephony: IMS: Restore proper FG, BG calls after resume failure.
+            }
+            ImsPhoneConnection conn = findConnection(imsCall);
+            // Send connection event so that Telecom can unhold the call the bg call that was held
+            // for calls across phone accounts.
+            if (mTelecomFlags.enableCallSequencing() && conn != null
+                    && conn.getState() != ImsPhoneCall.State.DISCONNECTED) {
+                conn.onConnectionEvent(android.telecom.Connection.EVENT_CALL_RESUME_FAILED, null);
             }
             mPhone.notifySuppServiceFailed(Phone.SuppService.RESUME);
             mMetrics.writeOnImsCallResumeFailed(mPhone.getPhoneId(), imsCall.getCallSession(),
@@ -6216,13 +6229,11 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
      *
      * @param activeCall The active call.
      * @param incomingCall The incoming call.
-     * @param incomingCallVideoState The media type of incoming call acceptance.
-     *                              {@link VideoProfile.VideoState}
      * @return {@code true} if answering the incoming call will cause the active call to be
      *      disconnected, {@code false} otherwise.
      */
     private boolean shouldDisconnectActiveCallOnAnswer(ImsCall activeCall,
-            ImsCall incomingCall, int incomingCallVideoState) {
+            ImsCall incomingCall) {
 
         if (activeCall == null || incomingCall == null) {
             return false;
@@ -6237,14 +6248,7 @@ public class ImsPhoneCallTracker extends CallTracker implements ImsPullCall {
         boolean isActiveCallOnWifi = activeCall.isWifiCall();
         boolean isVoWifiEnabled = mImsManager.isWfcEnabledByPlatform()
                 && mImsManager.isWfcEnabledByUser();
-        boolean isIncomingCallAudio = true;
-        if (!mFeatureFlags.terminateActiveVideoCallWhenAcceptingSecondVideoCallAsAudioOnly()) {
-            isIncomingCallAudio = !incomingCall.isVideoCall();
-        } else {
-            isIncomingCallAudio = !incomingCall.isVideoCall()
-                    || incomingCallVideoState == VideoProfile.STATE_AUDIO_ONLY;
-        }
-
+        boolean isIncomingCallAudio = !incomingCall.isVideoCall();
         log("shouldDisconnectActiveCallOnAnswer : isActiveCallVideo=" + isActiveCallVideo +
                 " isActiveCallOnWifi=" + isActiveCallOnWifi + " isIncomingCallAudio=" +
                 isIncomingCallAudio + " isVowifiEnabled=" + isVoWifiEnabled);

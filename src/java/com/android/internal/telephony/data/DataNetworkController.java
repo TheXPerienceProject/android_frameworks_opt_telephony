@@ -713,13 +713,6 @@ public class DataNetworkController extends Handler {
         public void onDataServiceBound(@TransportType int transport) {}
 
         /**
-         * Called when SIM load state changed.
-         *
-         * @param simState The current SIM state
-         */
-        public void onSimStateChanged(@SimState int simState) {}
-
-        /**
          * Called when QosBearerSessions changed.
          *
          * @param qosBearerSessions The latest QOS bearer sessions.
@@ -1744,8 +1737,14 @@ public class DataNetworkController extends Handler {
             evaluation.addDataDisallowedReason(DataDisallowedReason.DATA_CONFIG_NOT_READY);
         }
 
-        if (mFeatureFlags.dataServiceCheck() && !isDataServiceSupported(transport)) {
-            evaluation.addDataDisallowedReason(DataDisallowedReason.SERVICE_OPTION_NOT_SUPPORTED);
+        if (mFeatureFlags.dataServiceCheck()) {
+            NetworkRegistrationInfo nri = mServiceState.getNetworkRegistrationInfo(
+                    NetworkRegistrationInfo.DOMAIN_PS, transport);
+            if (nri != null && !nri.getAvailableServices().contains(
+                    NetworkRegistrationInfo.SERVICE_TYPE_DATA)) {
+                evaluation.addDataDisallowedReason(
+                        DataDisallowedReason.SERVICE_OPTION_NOT_SUPPORTED);
+            }
         }
 
         // Check CS call state and see if concurrent voice/data is allowed.
@@ -2138,9 +2137,14 @@ public class DataNetworkController extends Handler {
             evaluation.addDataDisallowedReason(DataDisallowedReason.CDMA_EMERGENCY_CALLBACK_MODE);
         }
 
-        if (mFeatureFlags.dataServiceCheck()
-                && !isDataServiceSupported(dataNetwork.getTransport())) {
-            evaluation.addDataDisallowedReason(DataDisallowedReason.SERVICE_OPTION_NOT_SUPPORTED);
+        if (mFeatureFlags.dataServiceCheck()) {
+            NetworkRegistrationInfo nri = mServiceState.getNetworkRegistrationInfo(
+                    NetworkRegistrationInfo.DOMAIN_PS, dataNetwork.getTransport());
+            if (nri != null && nri.isInService() && !nri.getAvailableServices().contains(
+                    NetworkRegistrationInfo.SERVICE_TYPE_DATA)) {
+                evaluation.addDataDisallowedReason(
+                        DataDisallowedReason.SERVICE_OPTION_NOT_SUPPORTED);
+            }
         }
 
         // If the network is satellite, then the network must be restricted.
@@ -2335,21 +2339,6 @@ public class DataNetworkController extends Handler {
 
         log("Evaluated " + dataNetwork + ", " + evaluation);
         return evaluation;
-    }
-
-    /**
-     * Check if the available services support data service.
-     * {@link NetworkRegistrationInfo#SERVICE_TYPE_DATA} service or not.
-     *
-     * @param transport The preferred transport type for the request. The transport here is
-     * WWAN/WLAN.
-     * @return {@code true} if data services is supported, otherwise {@code false}.
-     */
-    private boolean isDataServiceSupported(@TransportType int transport) {
-        NetworkRegistrationInfo nri = mServiceState.getNetworkRegistrationInfo(
-                    NetworkRegistrationInfo.DOMAIN_PS, transport);
-        return nri != null && nri.getAvailableServices().contains(
-                    NetworkRegistrationInfo.SERVICE_TYPE_DATA);
     }
 
     /**
@@ -3572,6 +3561,7 @@ public class DataNetworkController extends Handler {
         mPendingImsDeregDataNetworks.remove(dataNetwork);
         mDataRetryManager.cancelPendingHandoverRetry(dataNetwork);
         if (dataNetwork.isInternetSupported()) updateOverallInternetDataState();
+        onPcoDataChanged(dataNetwork);
 
         if (dataNetwork.getNetworkCapabilities().hasCapability(
                 NetworkCapabilities.NET_CAPABILITY_IMS)) {
@@ -3781,8 +3771,6 @@ public class DataNetworkController extends Handler {
                 sendMessage(obtainMessage(EVENT_REEVALUATE_UNSATISFIED_NETWORK_REQUESTS,
                         DataEvaluationReason.SIM_LOADED));
             }
-            mDataNetworkControllerCallbacks.forEach(callback -> callback.invokeFromExecutor(
-                    () -> callback.onSimStateChanged(mSimState)));
         }
     }
 
@@ -3987,6 +3975,22 @@ public class DataNetworkController extends Handler {
     }
 
     /**
+     * Check if network available services list is changed
+     *
+     * @param oldNri Previous network registration info.
+     * @param newNri Current network registration info.
+     * @return {@code true} if available services list is changed else return false
+     */
+    private boolean areNetworkAvailableServicesChanged(@NonNull NetworkRegistrationInfo oldNri,
+            @NonNull NetworkRegistrationInfo newNri) {
+        List<Integer> oldAvailableServicesList = oldNri.getAvailableServices();
+        List<Integer> newAvailableServicesList = newNri.getAvailableServices();
+
+        return !(oldAvailableServicesList.size() == newAvailableServicesList.size()
+                && oldAvailableServicesList.stream().allMatch(newAvailableServicesList::contains));
+    }
+
+    /**
      * Check if needed to re-evaluate the existing data networks.
      *
      * @param oldNri Previous network registration info.
@@ -4000,6 +4004,10 @@ public class DataNetworkController extends Handler {
             // Sometimes devices temporarily lose signal and RAT becomes unknown. We don't tear
             // down data network in this case.
             return false;
+        }
+
+        if (areNetworkAvailableServicesChanged(oldNri, newNri)) {
+            return true;
         }
 
         if (oldNri.getAccessNetworkTechnology() != newNri.getAccessNetworkTechnology()
@@ -4045,6 +4053,10 @@ public class DataNetworkController extends Handler {
             // Sometimes devices temporarily lose signal and RAT becomes unknown. We don't setup
             // data in this case.
             return false;
+        }
+
+        if (areNetworkAvailableServicesChanged(oldPsNri, newPsNri)) {
+            return true;
         }
 
         if (oldPsNri == null
