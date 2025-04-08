@@ -1689,7 +1689,7 @@ public class UiccController extends Handler {
     }
 
     private boolean isValidPhoneIndex(int index) {
-        return (index >= 0 && index < TelephonyManager.getDefault().getPhoneCount());
+        return (index >= 0 && index < mTelephonyManager.getActiveModemCount());
     }
 
     private boolean isValidSlotIndex(int index) {
@@ -1697,7 +1697,7 @@ public class UiccController extends Handler {
     }
 
     private boolean isShuttingDown() {
-        for (int i = 0; i < TelephonyManager.getDefault().getActiveModemCount(); i++) {
+        for (int i = 0; i < mTelephonyManager.getActiveModemCount(); i++) {
             if (PhoneFactory.getPhone(i) != null &&
                     PhoneFactory.getPhone(i).isShuttingDown()) {
                 return true;
