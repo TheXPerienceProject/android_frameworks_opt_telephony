@@ -1382,8 +1382,6 @@ public class DatagramDispatcher extends Handler {
     }
 
     private boolean allowMtSmsPolling() {
-        if (!mFeatureFlags.carrierRoamingNbIotNtn()) return false;
-
         SatelliteController satelliteController = SatelliteController.getInstance();
         int subId = satelliteController.getSelectedSatelliteSubId();
         boolean isP2PSmsDisallowed =
@@ -1394,20 +1392,33 @@ public class DatagramDispatcher extends Handler {
         }
 
         boolean isModemStateConnectedOrTransferring;
+        boolean isAligned;
+        boolean isMtSmsPollingThrottled;
         synchronized (mLock) {
-            if (!mIsAligned) return false;
-
+            isMtSmsPollingThrottled = mIsMtSmsPollingThrottled;
+            isAligned = mIsAligned;
             isModemStateConnectedOrTransferring =
                     mModemState == SATELLITE_MODEM_STATE_CONNECTED
                             || mModemState == SATELLITE_MODEM_STATE_DATAGRAM_TRANSFERRING;
         }
 
-        if (!isModemStateConnectedOrTransferring && !allowCheckMessageInNotConnected()) {
-            plogd("EVENT_MT_SMS_POLLING_THROTTLE_TIMED_OUT:"
-                    + " allow_check_message_in_not_connected is disabled");
+        if (isMtSmsPollingThrottled) {
+            plogd("allowMtSmsPolling: polling is throttled");
             return false;
         }
 
+        if (!isAligned) {
+            plogd("allowMtSmsPolling: not aligned");
+            return false;
+        }
+
+        if (!isModemStateConnectedOrTransferring && !allowCheckMessageInNotConnected()) {
+            plogd("allowMtSmsPolling: not in service and "
+                    + "allow_check_message_in_not_connected is disabled");
+            return false;
+        }
+
+        plogd("allowMtSmsPolling: return true");
         return true;
     }
 

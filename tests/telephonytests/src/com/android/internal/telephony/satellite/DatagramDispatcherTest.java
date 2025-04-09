@@ -1145,13 +1145,11 @@ public class DatagramDispatcherTest extends TelephonyTest {
    public void testHandleMessage_eventMtSmsPollingThrottleTimedOut_sendsMtSmsPollInNotConnected() {
         setShouldPollMtSmsTrue();
         mDatagramDispatcherUT.setDeviceAlignedWithSatellite(true);
-        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
         mContextFixture.putBooleanResource(
                 R.bool.config_satellite_allow_check_message_in_not_connected, true);
 
-        mDatagramDispatcherUT.handleMessage(
-                mDatagramDispatcherUT.obtainMessage(10 /*EVENT_MT_SMS_POLLING_THROTTLE_TIMED_OUT*/,
-                        new AsyncResult(null, null, null)));
+        mDatagramDispatcherUT.obtainMessage(10 /*EVENT_MT_SMS_POLLING_THROTTLE_TIMED_OUT*/,
+                new AsyncResult(null, null, null)).sendToTarget();
         processAllMessages();
 
         verify(mMockSmsDispatchersController, times(1)).sendMtSmsPollingMessage();
@@ -1162,14 +1160,13 @@ public class DatagramDispatcherTest extends TelephonyTest {
             testHandleMessage_eventMtSmsPollingThrottleTimedOut_configDisabled_doesNotSendMtSmsPoll() {
         setShouldPollMtSmsTrue();
         mDatagramDispatcherUT.setDeviceAlignedWithSatellite(true);
-        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
         // Set config_satellite_allow_check_message_in_not_connected to false
         mContextFixture.putBooleanResource(
                 R.bool.config_satellite_allow_check_message_in_not_connected, false);
 
-        mDatagramDispatcherUT.handleMessage(
-                mDatagramDispatcherUT.obtainMessage(10 /*EVENT_MT_SMS_POLLING_THROTTLE_TIMED_OUT*/,
-                        new AsyncResult(null, null, null)));
+        mDatagramDispatcherUT.obtainMessage(10 /*EVENT_MT_SMS_POLLING_THROTTLE_TIMED_OUT*/,
+                new AsyncResult(null, null, null)).sendToTarget();
+        processAllMessages();
 
         verifyNoMoreInteractions(mMockSmsDispatchersController);
    }
@@ -1179,16 +1176,14 @@ public class DatagramDispatcherTest extends TelephonyTest {
             testHandleMessage_eventMtSmsPollingThrottleTimedOut_flagDisabled_doesNotSendMtSmsPoll() {
         setShouldPollMtSmsTrue();
         mDatagramDispatcherUT.setDeviceAlignedWithSatellite(true);
-        // Set flag to false
-        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(false);
         mContextFixture.putBooleanResource(
                 R.bool.config_satellite_allow_check_message_in_not_connected, true);
 
-        mDatagramDispatcherUT.handleMessage(
-                mDatagramDispatcherUT.obtainMessage(10 /*EVENT_MT_SMS_POLLING_THROTTLE_TIMED_OUT*/,
-                        new AsyncResult(null, null, null)));
+        mDatagramDispatcherUT.obtainMessage(10 /*EVENT_MT_SMS_POLLING_THROTTLE_TIMED_OUT*/,
+                new AsyncResult(null, null, null)).sendToTarget();
+        processAllMessages();
 
-        verifyNoMoreInteractions(mMockSmsDispatchersController);
+        verify(mMockSmsDispatchersController, times(1)).sendMtSmsPollingMessage();
    }
 
 
@@ -1196,7 +1191,6 @@ public class DatagramDispatcherTest extends TelephonyTest {
     @Test
     public void testSetDeviceAlignedWithSatellite_isAligned_notConnected_sendsMtSmsPoll() {
         setShouldPollMtSmsTrue();
-        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
         mContextFixture.putBooleanResource(
                 R.bool.config_satellite_allow_check_message_in_not_connected, true);
 
@@ -1209,11 +1203,11 @@ public class DatagramDispatcherTest extends TelephonyTest {
     @Test
     public void testSetDeviceAlignedWithSatellite_notAligned_doesNotSendsMtSmsPoll() {
         setShouldPollMtSmsTrue();
-        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
         mContextFixture.putBooleanResource(
                 R.bool.config_satellite_allow_check_message_in_not_connected, true);
 
         mDatagramDispatcherUT.setDeviceAlignedWithSatellite(false);
+        processAllMessages();
 
         verifyNoMoreInteractions(mMockSmsDispatchersController);
     }
@@ -1222,7 +1216,6 @@ public class DatagramDispatcherTest extends TelephonyTest {
     public void testOnSatelliteModemStateChanged_notConnected_sendsMtSmsPoll() {
         setShouldPollMtSmsTrue();
         mDatagramDispatcherUT.setDeviceAlignedWithSatellite(true);
-        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
         mContextFixture.putBooleanResource(
                 R.bool.config_satellite_allow_check_message_in_not_connected, true);
 
@@ -1237,7 +1230,6 @@ public class DatagramDispatcherTest extends TelephonyTest {
     public void testOnSatelliteModemStateChanged_connected_sendsMtSmsPoll() {
         setShouldPollMtSmsTrue();
         mDatagramDispatcherUT.setDeviceAlignedWithSatellite(true);
-        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
 
         mDatagramDispatcherUT.onSatelliteModemStateChanged(
                 SatelliteManager.SATELLITE_MODEM_STATE_CONNECTED);
@@ -1250,7 +1242,6 @@ public class DatagramDispatcherTest extends TelephonyTest {
     public void testOnSatelliteModemStateChanged_transferring_sendsMtSmsPoll() {
         setShouldPollMtSmsTrue();
         mDatagramDispatcherUT.setDeviceAlignedWithSatellite(true);
-        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
 
         mDatagramDispatcherUT.onSatelliteModemStateChanged(
                 SatelliteManager.SATELLITE_MODEM_STATE_DATAGRAM_TRANSFERRING);
@@ -1264,9 +1255,11 @@ public class DatagramDispatcherTest extends TelephonyTest {
         startMtSmsPollingThrottle();
         setShouldPollMtSmsTrue();
         mDatagramDispatcherUT.setDeviceAlignedWithSatellite(true);
-        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
         mContextFixture.putBooleanResource(
                 R.bool.config_satellite_allow_check_message_in_not_connected, true);
+        mDatagramDispatcherUT.onSatelliteModemStateChanged(
+                SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED);
+        processAllMessages();
 
         verify(mMockSmsDispatchersController, times(0)).sendMtSmsPollingMessage();
     }
@@ -1274,7 +1267,6 @@ public class DatagramDispatcherTest extends TelephonyTest {
     @Test
     public void testOnSatelliteModemStateChanged_onFirstConnected_sendsMtSmsPoll() {
         mDatagramDispatcherUT.setDeviceAlignedWithSatellite(true);
-        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
         // Set the following so shouldPollMtSms returns true
         mContextFixture.putBooleanResource(R.bool.config_enabled_mt_sms_polling, true);
         when(mMockSatelliteController.shouldSendSmsToDatagramDispatcher(any(Phone.class)))
@@ -1290,7 +1282,6 @@ public class DatagramDispatcherTest extends TelephonyTest {
     @Test
     public void testSendsMtSmsPoll_P2PSmsAllowed() {
         mDatagramDispatcherUT.setDeviceAlignedWithSatellite(true);
-        when(mFeatureFlags.carrierRoamingNbIotNtn()).thenReturn(true);
         mContextFixture.putBooleanResource(R.bool.config_enabled_mt_sms_polling, true);
         when(mMockSatelliteController.shouldSendSmsToDatagramDispatcher(any(Phone.class)))
                 .thenReturn(true);
@@ -1344,8 +1335,7 @@ public class DatagramDispatcherTest extends TelephonyTest {
         args.arg2 = pendingRequest.uniqueMessageId;
         args.arg3 = true;
         // EVENT_SEND_SMS_DONE to trigger handleEventSendSmsDone which will start the throttle
-        mDatagramDispatcherUT.handleMessage(
-                mDatagramDispatcherUT.obtainMessage(9 /*EVENT_SEND_SMS_DONE*/, args));
+        mDatagramDispatcherUT.obtainMessage(9 /*EVENT_SEND_SMS_DONE*/, args).sendToTarget();
     }
 
     private boolean waitForIntegerConsumerResult(int expectedNumberOfEvents) {
