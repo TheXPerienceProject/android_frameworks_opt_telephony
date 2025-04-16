@@ -1160,13 +1160,9 @@ public class SatelliteModemInterface {
                         }, new IBooleanConsumer.Stub() {
                             @Override
                             public void accept(boolean result) {
-                                // Convert for compatibility with SatelliteResponse
-                                // TODO: This should just report result instead.
-                                int[] enabled = new int[] {result ? 1 : 0};
-                                plogd("requestIsSatelliteEnabledForCarrier: "
-                                        + Arrays.toString(enabled));
+                                plogd("requestIsSatelliteEnabledForCarrier: " + result);
                                 Binder.withCleanCallingIdentity(() -> sendMessageWithResult(
-                                        message, enabled,
+                                        message, result,
                                         SatelliteManager.SATELLITE_RESULT_SUCCESS));
                             }
                         });
