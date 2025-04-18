@@ -4055,15 +4055,15 @@ public class DataNetworkController extends Handler {
             return false;
         }
 
-        if (areNetworkAvailableServicesChanged(oldPsNri, newPsNri)) {
-            return true;
-        }
-
         if (oldPsNri == null
                 || oldPsNri.getAccessNetworkTechnology() != newPsNri.getAccessNetworkTechnology()
                 || (!oldPsNri.isInService() && newPsNri.isInService())
                 // Some CarrierConfig allows vops in nonVops area for specified home/roaming.
                 || (oldPsNri.isRoaming() != newPsNri.isRoaming())) {
+            return true;
+        }
+
+        if (areNetworkAvailableServicesChanged(oldPsNri, newPsNri)) {
             return true;
         }
 
