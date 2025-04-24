@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/*
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
 package com.android.internal.telephony;
 
 import static android.telephony.NetworkRegistrationInfo.DOMAIN_PS;
@@ -417,7 +423,7 @@ public class GsmCdmaPhone extends Phone {
         mCallWaitingController = new CallWaitingController(this);
 
         if (hasCalling()) {
-            loadTtyMode();
+            post(() -> loadTtyMode());
 
             CallManager.getInstance().registerPhone(this);
         }
