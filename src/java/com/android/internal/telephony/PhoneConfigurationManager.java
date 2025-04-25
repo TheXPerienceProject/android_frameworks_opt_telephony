@@ -466,7 +466,14 @@ public class PhoneConfigurationManager {
                             TelephonyManager.MultiSimVoiceCapability.UNSUPPORTED) !=
 // QTI_END: 2025-02-19: Telephony: Don't use multi_sim_voice_capability when unset
 // QTI_BEGIN: 2025-01-28: Telephony: Use MultiSimVoiceCapability to support simultaneous calling
-                            TelephonyManager.MultiSimVoiceCapability.UNSUPPORTED;
+                            TelephonyManager.MultiSimVoiceCapability.UNSUPPORTED &&
+                            // To support mockmodem tests, bypass multi_sim_voice_capability
+                            // property and use the values from the radioconfig hal if RadioConfig
+                            // hal version is 2.3 or later. Mockmodem sets the hal version as the
+                            // current latest version.
+                            (mRadioConfig != null && mRadioConfig.getRadioConfigProxy(null)
+                            .getVersion().less(RIL.RADIO_HAL_VERSION_2_3));
+
                     if ((ar != null && ar.exception == null) ||
                             generateSimultaneousCallingSupport) {
                         List<Integer> returnedArrayList = generateSimultaneousCallingSupport ?
