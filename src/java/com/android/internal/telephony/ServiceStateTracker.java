@@ -2916,9 +2916,7 @@ public class ServiceStateTracker extends Handler {
         }
     }
 
-// QTI_BEGIN: 2025-01-21: Telephony: Change access specifiers of some methods and variables
-    protected void notifyCarrierDisplayNameDataChanged() {
-// QTI_END: 2025-01-21: Telephony: Change access specifiers of some methods and variables
+    private void notifyCarrierDisplayNameDataChanged() {
         final String log = String.format("notifyCarrierDisplayNameDataChanged: "
                         + "changed sending intent, "
                         + "rule=%d, CarrierDisplayNameData=%s, subId=%d",
@@ -2940,9 +2938,7 @@ public class ServiceStateTracker extends Handler {
     }
 
     @NonNull
-// QTI_BEGIN: 2025-01-21: Telephony: Change access specifiers of some methods and variables
-    protected String getCarrierName(CarrierDisplayNameData cdnd) {
-// QTI_END: 2025-01-21: Telephony: Change access specifiers of some methods and variables
+    private String getCarrierName(CarrierDisplayNameData cdnd) {
         boolean showPlmn = cdnd.shouldShowPlmn();
         boolean showSpn = cdnd.shouldShowSpn();
         String plmn = cdnd.getPlmn();
