@@ -147,8 +147,7 @@ public class ControllerMetricsStats {
             } else if (datagramType == SatelliteManager.DATAGRAM_TYPE_KEEP_ALIVE) {
                 builder.setCountOfDatagramTypeKeepAliveSuccess(ADD_COUNT).build();
             } else if (datagramType == SatelliteManager.DATAGRAM_TYPE_SMS) {
-                builder.setCountOfDatagramTypeSosSmsSuccess(ADD_COUNT)
-                        .setCountOfOutgoingDatagramTypeSmsSuccess(ADD_COUNT);
+                builder.setCountOfOutgoingDatagramTypeSmsSuccess(ADD_COUNT);
             }
         }
 
@@ -174,8 +173,7 @@ public class ControllerMetricsStats {
             } else if (datagramType == SatelliteManager.DATAGRAM_TYPE_KEEP_ALIVE) {
                 builder.setCountOfDatagramTypeKeepAliveFail(ADD_COUNT);
             } else if (datagramType == SatelliteManager.DATAGRAM_TYPE_SMS) {
-                builder.setCountOfDatagramTypeSosSmsFail(ADD_COUNT)
-                        .setCountOfOutgoingDatagramTypeSmsFail(ADD_COUNT);
+                builder.setCountOfOutgoingDatagramTypeSmsFail(ADD_COUNT);
             }
         }
 
@@ -216,11 +214,9 @@ public class ControllerMetricsStats {
         SatelliteStats.SatelliteControllerParams.Builder builder =
                 new SatelliteStats.SatelliteControllerParams.Builder();
         if (result == SatelliteManager.SATELLITE_RESULT_SUCCESS) {
-            builder.setCountOfIncomingDatagramTypeSosSmsSuccess(ADD_COUNT)
-                    .setCountOfIncomingDatagramTypeSmsSuccess(ADD_COUNT);
+            builder.setCountOfIncomingDatagramTypeSmsSuccess(ADD_COUNT);
         } else {
-            builder.setCountOfIncomingDatagramTypeSosSmsFail(ADD_COUNT)
-                    .setCountOfIncomingDatagramTypeSmsFail(ADD_COUNT);
+            builder.setCountOfIncomingDatagramTypeSmsFail(ADD_COUNT);
         }
         SatelliteStats.SatelliteControllerParams  controllerParam = builder.build();
         logd("reportIncomingNtnSmsCount(): " + controllerParam);
