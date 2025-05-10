@@ -63,6 +63,7 @@ import com.android.internal.telephony.RILUtils;
 import com.android.internal.telephony.subscription.SubscriptionManagerService;
 import com.android.internal.telephony.util.TelephonyUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -561,8 +562,8 @@ public class SatelliteServiceUtils {
 
     /** Check whether device is connected to satellite PLMN */
     public static boolean isSatellitePlmn(int subId, @NonNull ServiceState serviceState) {
-        List<String> satellitePlmnList =
-                SatelliteController.getInstance().getSatellitePlmnsForCarrier(subId);
+        List<String> satellitePlmnList = new ArrayList<>(
+                SatelliteController.getInstance().getAllPlmnSet());
         if (satellitePlmnList.isEmpty()) {
             logd("isSatellitePlmn: satellitePlmnList is empty");
             return false;
@@ -572,12 +573,12 @@ public class SatelliteServiceUtils {
                 serviceState.getNetworkRegistrationInfoListForTransportType(
                         AccessNetworkConstants.TRANSPORT_TYPE_WWAN)) {
             String registeredPlmn = nri.getRegisteredPlmn();
-            if (TextUtils.isEmpty(registeredPlmn)) {
-                logd("isSatellitePlmn: registeredPlmn is empty");
+            String mccmnc = getMccMnc(nri);
+            if (TextUtils.isEmpty(registeredPlmn) && TextUtils.isEmpty(mccmnc)) {
+                logd("isSatellitePlmn: registeredPlmn and cell plmn are empty");
                 continue;
             }
 
-            String mccmnc = getMccMnc(nri);
             for (String satellitePlmn : satellitePlmnList) {
                 if (TextUtils.equals(satellitePlmn, registeredPlmn)
                         || TextUtils.equals(satellitePlmn, mccmnc)) {

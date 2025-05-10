@@ -248,6 +248,8 @@ public class SatelliteControllerTest extends TelephonyTest {
             (int) TimeUnit.SECONDS.toMillis(60);
     private static final int TEST_WAIT_FOR_CELLULAR_MODEM_OFF_TIMEOUT_MILLIS =
             (int) TimeUnit.SECONDS.toMillis(60);
+    private static final Set<String> TEST_ALL_SATELLITE_PLMN_SET = new HashSet<>(
+            Arrays.asList("310830", "313210"));
 
 
     private static final String SATELLITE_PLMN = "00103";
@@ -262,7 +264,7 @@ public class SatelliteControllerTest extends TelephonyTest {
     private SubscriptionInfo testSubscriptionInfo;
     private SubscriptionInfo testSubscriptionInfo2;
 
-    @Mock private SatelliteController mMockSatelliteController;
+    @Mock private TestSatelliteController mMockSatelliteController;
     @Mock private DatagramController mMockDatagramController;
     @Mock private SatelliteModemInterface mMockSatelliteModemInterface;
     @Mock private SatelliteSessionController mMockSatelliteSessionController;
@@ -729,6 +731,7 @@ public class SatelliteControllerTest extends TelephonyTest {
         doReturn(mSubscriptionInfo).when(mMockSubscriptionManagerService).getSubscriptionInfo(
                 anyInt());
         doReturn("").when(mSubscriptionInfo).getIccId();
+        doReturn(TEST_ALL_SATELLITE_PLMN_SET).when(mMockSatelliteController).getAllPlmnSet();
     }
 
     @After
@@ -5914,7 +5917,7 @@ public class SatelliteControllerTest extends TelephonyTest {
         }
     }
 
-    private class TestSatelliteController extends SatelliteController {
+    public class TestSatelliteController extends SatelliteController {
         public boolean setSettingsKeyForSatelliteModeCalled = false;
         public boolean allRadiosDisabled = true;
         public long elapsedRealtime = 0;
@@ -5933,7 +5936,7 @@ public class SatelliteControllerTest extends TelephonyTest {
 
         private boolean mLocationServiceEnabled = true;
 
-        TestSatelliteController(
+        public TestSatelliteController(
                 Context context, Looper looper, @NonNull FeatureFlags featureFlags) {
             super(context, looper, featureFlags);
             logd("Constructing TestSatelliteController");
@@ -6074,6 +6077,11 @@ public class SatelliteControllerTest extends TelephonyTest {
             synchronized (mIsSatelliteSupportedLock) {
                 mIsSatelliteSupported = isSatelliteSupported;
             }
+        }
+
+        @Override
+        protected Set<String> getAllPlmnSet() {
+            return super.getAllPlmnSet();
         }
 
         public boolean isRadioOn() {
