@@ -344,6 +344,13 @@ public class DataStallRecoveryManager extends Handler {
                                     : "All InternetDataNetwork Disconnected");
                         }
                     }
+                    @Override
+                    public void onSimStateChanged(int simState) {
+                        if (simState == TelephonyManager.SIM_STATE_ABSENT) {
+                            log("SIM state is ABSENT, reset DSRM.");
+                            reset(true);
+                        }
+                    }
                 });
         mPhone.mCi.registerForRadioStateChanged(this, EVENT_RADIO_STATE_CHANGED, null);
 
@@ -549,8 +556,13 @@ public class DataStallRecoveryManager extends Handler {
     /**
      * Called when internet validation status passed. We will initialize all parameters.
      */
-    private void reset() {
-        mIsValidNetwork = true;
+    private void reset(boolean isSimAbsent) {
+        if (isSimAbsent) {
+            // state set to never passed due to SIM absent
+            mIsValidNetwork = false;
+        } else {
+            mIsValidNetwork = true;
+        }
         mRecoveryTriggered = false;
         mIsAttemptedAllSteps = false;
         mRadioStateChangedDuringDataStall = false;
@@ -578,7 +590,7 @@ public class DataStallRecoveryManager extends Handler {
         if (isValid) {
             // Broadcast intent that data stall recovered.
             broadcastDataStallDetected(mLastAction);
-            reset();
+            reset(false);
         } else if (isRecoveryNeeded(true)) {
             // Set the network as invalid, because recovery is needed
             mIsValidNetwork = false;
@@ -616,6 +628,12 @@ public class DataStallRecoveryManager extends Handler {
      */
     @VisibleForTesting
     public void setRecoveryAction(@RecoveryAction int action) {
+        if (!mIsValidNetwork && !isRecoveryAlreadyStarted()) {
+            log(
+                    "Skip set recovery action because the network still remains invalid and"
+                    + " recovery was not started yet.");
+            return;
+        }
         // Reset the validation count for action change
         if (mRecoveryAction != action) {
             mActionValidationCount = 0;

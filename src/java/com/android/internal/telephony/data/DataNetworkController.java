@@ -718,6 +718,13 @@ public class DataNetworkController extends Handler {
          * @param qosBearerSessions The latest QOS bearer sessions.
          */
         public void onQosSessionsChanged(@NonNull List<QosBearerSession> qosBearerSessions) {}
+
+        /**
+         * Called when the SIM state changed.
+         *
+         * @param simState The SIM state.
+         */
+        public void onSimStateChanged(@SimState int simState) {}
     }
 
     /**
@@ -3767,6 +3774,8 @@ public class DataNetworkController extends Handler {
             mSimState = simState;
             if (simState == TelephonyManager.SIM_STATE_ABSENT) {
                 onSimAbsent();
+                mDataNetworkControllerCallbacks.forEach(callback -> callback.invokeFromExecutor(
+                    () -> callback.onSimStateChanged(simState)));
             } else if (simState == TelephonyManager.SIM_STATE_LOADED) {
                 sendMessage(obtainMessage(EVENT_REEVALUATE_UNSATISFIED_NETWORK_REQUESTS,
                         DataEvaluationReason.SIM_LOADED));
