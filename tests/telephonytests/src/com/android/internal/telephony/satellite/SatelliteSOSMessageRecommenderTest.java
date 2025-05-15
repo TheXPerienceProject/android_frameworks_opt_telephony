@@ -31,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -88,6 +89,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -122,6 +124,8 @@ public class SatelliteSOSMessageRecommenderTest extends TelephonyTest {
     private static final String DEFAULT_SATELLITE_SOS_HANDOVER_CLASS =
             "android.com.vendor.message.SosHandoverApp";
     private static final String DEFAULT_T911_HANDOVER_INTENT_ACTION = Intent.ACTION_SENDTO;
+    private static final Set<String> TEST_ALL_SATELLITE_PLMN_SET = new HashSet<>(
+            Arrays.asList("310830", "313210"));
     private TestSatelliteController mTestSatelliteController;
     private TestImsManager mTestImsManager;
     @Mock
@@ -139,6 +143,7 @@ public class SatelliteSOSMessageRecommenderTest extends TelephonyTest {
     @Mock
     private SatelliteStats mMockSatelliteStats;
     @Mock private SubscriptionManagerService mMockSubscriptionManagerService;
+    @Mock private SatelliteControllerTest.TestSatelliteController mMockSatelliteController;
 
     @Before
     public void setUp() throws Exception {
@@ -183,6 +188,8 @@ public class SatelliteSOSMessageRecommenderTest extends TelephonyTest {
                 mMockSatelliteStats);
         replaceInstance(SubscriptionManagerService.class, "sInstance", null,
                 mMockSubscriptionManagerService);
+        replaceInstance(SatelliteController.class, "sInstance", null,
+                mMockSatelliteController);
         doNothing().when(mMockSatelliteStats).onSatelliteSosMessageRecommender(
                 any(SatelliteStats.SatelliteSosMessageRecommenderParams.class));
         mTestSatelliteController.setSatelliteConnectedViaCarrierWithinHysteresisTime(
@@ -194,6 +201,7 @@ public class SatelliteSOSMessageRecommenderTest extends TelephonyTest {
                 .setId(SUB_ID1).setOnlyNonTerrestrialNetwork(true).build();
         when(mMockSubscriptionManagerService.getSubscriptionInfo(eq(SUB_ID1)))
             .thenReturn(subscriptionInfo);
+        doReturn(TEST_ALL_SATELLITE_PLMN_SET).when(mMockSatelliteController).getAllPlmnSet();
     }
 
     @After

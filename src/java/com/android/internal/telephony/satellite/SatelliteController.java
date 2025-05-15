@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/*
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
 package com.android.internal.telephony.satellite;
 
 import static android.hardware.devicestate.DeviceState.PROPERTY_FOLDABLE_DISPLAY_CONFIGURATION_INNER_PRIMARY;
@@ -365,6 +371,7 @@ public class SatelliteController extends Handler {
     private boolean mDisableNFCOnSatelliteEnabled = false;
     private boolean mDisableUWBOnSatelliteEnabled = false;
     private boolean mDisableWifiOnSatelliteEnabled = false;
+    private AtomicBoolean mIgnorePlmnListFromStorage = new AtomicBoolean(false);
 
     private final Object mSatelliteEnabledRequestLock = new Object();
     /* This variable is used to store the first enable request that framework has received in the
@@ -5421,7 +5428,8 @@ public class SatelliteController extends Handler {
                 obtainMessage(EVENT_SET_SATELLITE_PLMN_INFO_DONE));
     }
 
-    private Set<String> getAllPlmnSet() {
+    @VisibleForTesting(visibility = VisibleForTesting.Visibility.PACKAGE)
+    protected Set<String> getAllPlmnSet() {
         Set<String> allPlmnSetFromSubInfo = new HashSet<>();
         int[] activeSubIdArray = mSubscriptionManagerService.getActiveSubIdList(true);
         for (int activeSubId : activeSubIdArray) {
@@ -5429,6 +5437,12 @@ public class SatelliteController extends Handler {
             allPlmnSetFromSubInfo.addAll(getBarredPlmnList(activeSubId));
         }
         allPlmnSetFromSubInfo.addAll(mSatellitePlmnListFromOverlayConfig);
+
+        if (mIgnorePlmnListFromStorage.get()) {
+            // Do not use PLMN list from storage
+            plogd("getAllPlmnList: allPlmnSetFromSubInfo=" + allPlmnSetFromSubInfo);
+            return allPlmnSetFromSubInfo;
+        }
 
         Set<String> allPlmnListFromStorage = getCarrierRoamingNtnAllSatellitePlmnSetFromStorage();
         if (!allPlmnListFromStorage.containsAll(allPlmnSetFromSubInfo)) {
@@ -5681,6 +5695,11 @@ public class SatelliteController extends Handler {
                 + subId + "), carrierId(" + carrierId + "), specificCarrierId("
                 + specificCarrierId + ")");
         if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            //Reset NTN mode when SIM is removed
+            synchronized (mSatelliteConnectedLock) {
+                mInitialized.put(slotIndex, false);
+                mLastNotifiedNtnMode.put(slotIndex, false);
+            }
             return;
         }
 
@@ -6358,18 +6377,19 @@ public class SatelliteController extends Handler {
             return;
         }
 
-        int subId = phone.getSubId();
+        int phoneId = phone.getPhoneId();
         synchronized (mSatelliteConnectedLock) {
-            boolean initialized = mInitialized.get(subId);
-            boolean lastNotifiedNtnMode = mLastNotifiedNtnMode.get(subId);
+            boolean initialized = mInitialized.get(phoneId);
+            boolean lastNotifiedNtnMode = mLastNotifiedNtnMode.get(phoneId);
             boolean currNtnMode = isInSatelliteModeForCarrierRoaming(phone);
-            plogd("updateLastNotifiedNtnModeAndNotify: subId=" + subId
+            plogd("updateLastNotifiedNtnModeAndNotify: phone=" + phoneId
+                    + " subId=" + phone.getSubId()
                     + " initialized=" + initialized
                     + " lastNotifiedNtnMode=" + lastNotifiedNtnMode
                     + " currNtnMode=" + currNtnMode);
             if (!initialized || lastNotifiedNtnMode != currNtnMode) {
-                if (!initialized) mInitialized.put(subId, true);
-                mLastNotifiedNtnMode.put(subId, currNtnMode);
+                if (!initialized) mInitialized.put(phoneId, true);
+                mLastNotifiedNtnMode.put(phoneId, currNtnMode);
                 phone.notifyCarrierRoamingNtnModeChanged(currNtnMode);
                 updateLastNotifiedCarrierRoamingNtnSignalStrengthAndNotify(phone);
                 logCarrierRoamingSatelliteSessionStats(phone, lastNotifiedNtnMode, currNtnMode);
@@ -9317,5 +9337,18 @@ public class SatelliteController extends Handler {
         }
 
         return getSatelliteDataServicePolicyForPlmn(subId, "");
+    }
+
+    /**
+     * This API can be used by only CTS to make the function {@link #getAllPlmnSet()} to exclude the
+     * PLMN list from storage from the returned result.
+     *
+     * @param enabled Whether to enable boolean config.
+     * @return {@code true} if the value is set successfully, {@code false} otherwise.
+     */
+    public boolean setSatelliteIgnorePlmnListFromStorage(boolean enabled) {
+        plogd("setSatelliteIgnorePlmnListFromStorage - " + enabled);
+        mIgnorePlmnListFromStorage.set(enabled);
+        return true;
     }
 }

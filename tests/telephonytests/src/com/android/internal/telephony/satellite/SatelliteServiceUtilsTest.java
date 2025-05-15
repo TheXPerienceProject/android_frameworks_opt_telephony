@@ -43,6 +43,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -54,6 +55,8 @@ public class SatelliteServiceUtilsTest extends TelephonyTest {
     private static final int SUB_ID = 0;
     private static final int SUB_ID1 = 1;
     @Mock private ServiceState mServiceState2;
+
+    @Mock SatelliteControllerTest.TestSatelliteController mMockSatelliteController;
 
     @Before
     public void setUp() throws Exception {
@@ -68,6 +71,8 @@ public class SatelliteServiceUtilsTest extends TelephonyTest {
         when(mPhone2.getServiceState()).thenReturn(mServiceState2);
         when(mPhone2.getSubId()).thenReturn(SUB_ID1);
         when(mPhone2.getPhoneId()).thenReturn(1);
+        replaceInstance(SatelliteController.class, "sInstance", null,
+                mMockSatelliteController);
     }
 
     @After
@@ -182,8 +187,8 @@ public class SatelliteServiceUtilsTest extends TelephonyTest {
     public void testIsSatellitePlmn() {
         int subId = 1;
 
-        when(mSatelliteController.getSatellitePlmnsForCarrier(eq(subId)))
-                .thenReturn(new ArrayList<>());
+        when(mMockSatelliteController.getAllPlmnSet())
+                .thenReturn(new HashSet<>(new ArrayList<>()));
         assertFalse(SatelliteServiceUtils.isSatellitePlmn(subId, mServiceState));
 
         // registered PLMN is null
@@ -196,8 +201,8 @@ public class SatelliteServiceUtilsTest extends TelephonyTest {
         assertFalse(SatelliteServiceUtils.isSatellitePlmn(subId, mServiceState));
 
         // cell identity is null
-        when(mSatelliteController.getSatellitePlmnsForCarrier(eq(subId))).thenReturn(
-                List.of("120260"));
+        when(mMockSatelliteController.getAllPlmnSet()).thenReturn(
+                new HashSet<>(List.of("120260")));
         nri = new NetworkRegistrationInfo.Builder()
                 .setRegisteredPlmn("123456")
                 .setCellIdentity(null)
