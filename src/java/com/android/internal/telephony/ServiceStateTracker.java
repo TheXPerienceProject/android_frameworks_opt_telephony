@@ -340,7 +340,7 @@ public class ServiceStateTracker extends Handler {
     private boolean mImsRegistrationOnOff = false;
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
     private boolean mDeviceShuttingDown = false;
-    private CarrierDisplayNameData mCarrierDisplayNameData =
+    protected CarrierDisplayNameData mCarrierDisplayNameData =
             new CarrierDisplayNameData.Builder().build();
     /** Keep track of SPN display rules, so we only broadcast intent if something changes. */
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
