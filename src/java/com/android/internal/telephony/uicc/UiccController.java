@@ -1084,6 +1084,11 @@ public class UiccController extends Handler {
             slotId = index;
         }
 
+        if (!isValidSlotIndex(slotId)) {
+            Rlog.e(LOG_TAG, "onGetIccCardStatusDone: invalid slotId: " + slotId);
+            return;
+        }
+
         mPhoneIdToSlotId[index] = slotId;
 
         if (VDBG) logPhoneIdToSlotIdMapping();
