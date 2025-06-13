@@ -1530,6 +1530,17 @@ public class DataNetworkController extends Handler {
 
     /**
      * @param ss The service state to be checked
+     *
+     * @return {@code true}  if voice is in service on legacy CS connections (2G/3G) on the non-DDS.
+     */
+    private boolean isPsAttachAllowedForLegacyNetwork(@NonNull ServiceState ss) {
+        return ss.getVoiceRegState() == ServiceState.STATE_IN_SERVICE
+                && mPhone.getPhoneId() != PhoneSwitcher.getInstance().getPreferredDataPhoneId()
+                && isLegacyCs(ss.getVoiceNetworkType());
+    }
+
+    /**
+     * @param ss The service state to be checked
      * @param transport The transport is used to determine the data registration state
      *
      * @return {@code true} if data is in service or if voice is in service on legacy CS
@@ -1546,9 +1557,7 @@ public class DataNetworkController extends Handler {
 
         // If data is OOS as this device slot is not modem preferred(i.e. not active for internet),
         // attempt to attach PS on 2G/3G if CS connection is available.
-        return ss.getVoiceRegState() == ServiceState.STATE_IN_SERVICE
-                && mPhone.getPhoneId() != PhoneSwitcher.getInstance().getPreferredDataPhoneId()
-                && isLegacyCs(ss.getVoiceNetworkType());
+        return isPsAttachAllowedForLegacyNetwork(ss);
     }
 
     /**
@@ -1745,12 +1754,14 @@ public class DataNetworkController extends Handler {
         }
 
         if (mFeatureFlags.dataServiceCheck()) {
-            NetworkRegistrationInfo nri = mServiceState.getNetworkRegistrationInfo(
-                    NetworkRegistrationInfo.DOMAIN_PS, transport);
-            if (nri != null && !nri.getAvailableServices().contains(
-                    NetworkRegistrationInfo.SERVICE_TYPE_DATA)) {
-                evaluation.addDataDisallowedReason(
-                        DataDisallowedReason.SERVICE_OPTION_NOT_SUPPORTED);
+            if (!isPsAttachAllowedForLegacyNetwork(mServiceState)) {
+                NetworkRegistrationInfo nri = mServiceState.getNetworkRegistrationInfo(
+                        NetworkRegistrationInfo.DOMAIN_PS, transport);
+                if (nri != null && !nri.getAvailableServices().contains(
+                        NetworkRegistrationInfo.SERVICE_TYPE_DATA)) {
+                    evaluation.addDataDisallowedReason(
+                            DataDisallowedReason.SERVICE_OPTION_NOT_SUPPORTED);
+                }
             }
         }
 
