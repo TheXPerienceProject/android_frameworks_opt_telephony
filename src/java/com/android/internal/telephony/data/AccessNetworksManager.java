@@ -201,6 +201,7 @@ public class AccessNetworksManager extends Handler {
             new ArraySet<>();
 
     private final FeatureFlags mFeatureFlags;
+    private AccessNetworksManagerDeathRecipient mDeathRecipient;
 
     /**
      * Represents qualified network types list on a specific APN type.
@@ -263,7 +264,20 @@ public class AccessNetworksManager extends Handler {
             }
             if (mServiceConnection != null) {
                 mPhone.getContext().unbindService(mServiceConnection);
+                mServiceConnection = null;
             }
+        }
+    }
+
+    private void handleDisconnectOrDied() {
+        if (mIQualifiedNetworksService != null && mDeathRecipient != null) {
+            try {
+                mIQualifiedNetworksService.asBinder().unlinkToDeath(mDeathRecipient, 0);
+            } catch (Exception e) {
+                loge("Exception. " + e);
+            }
+            mIQualifiedNetworksService = null;
+            mDeathRecipient = null;
         }
     }
 
@@ -276,6 +290,7 @@ public class AccessNetworksManager extends Handler {
             mApnTypeToQnsChangeNetworkCounter.clear();
             loge(message);
             AnomalyReporter.reportAnomaly(mAnomalyUUID, message, mPhone.getCarrierId());
+            handleDisconnectOrDied();
         }
     }
 
@@ -284,12 +299,11 @@ public class AccessNetworksManager extends Handler {
         public void onServiceConnected(ComponentName name, IBinder service) {
             if (DBG) log("onServiceConnected " + name);
             mIQualifiedNetworksService = IQualifiedNetworksService.Stub.asInterface(service);
-            AccessNetworksManagerDeathRecipient deathRecipient =
-                    new AccessNetworksManagerDeathRecipient();
+            mDeathRecipient = new AccessNetworksManagerDeathRecipient();
             mLastBoundPackageName = getQualifiedNetworksServicePackageName();
 
             try {
-                service.linkToDeath(deathRecipient, 0 /* flags */);
+                service.linkToDeath(mDeathRecipient, 0 /* flags */);
                 mIQualifiedNetworksService.createNetworkAvailabilityProvider(mPhone.getPhoneId(),
                         new QualifiedNetworksServiceCallback());
             } catch (RemoteException e) {
@@ -301,6 +315,7 @@ public class AccessNetworksManager extends Handler {
         public void onServiceDisconnected(ComponentName name) {
             if (DBG) log("onServiceDisconnected " + name);
             mTargetBindingPackageName = null;
+            handleDisconnectOrDied();
         }
 
     }
@@ -601,8 +616,9 @@ public class AccessNetworksManager extends Handler {
                 } catch (RemoteException e) {
                     loge("Cannot remove network availability updater. " + e);
                 }
-
-                mPhone.getContext().unbindService(mServiceConnection);
+                if (mServiceConnection != null) {
+                    mPhone.getContext().unbindService(mServiceConnection);
+                }
             }
 
             try {
