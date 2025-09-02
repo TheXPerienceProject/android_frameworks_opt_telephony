@@ -3321,9 +3321,6 @@ public class GsmCdmaPhone extends Phone {
         mCi.areUiccApplicationsEnabled(obtainMessage(EVENT_GET_UICC_APPS_ENABLEMENT_DONE));
 
         handleNullCipherEnabledChange();
-// QTI_BEGIN: 2019-07-11: Telephony: Don't unregister supplementary service notification.
-        mCi.setSuppServiceNotifications(true, null);
-// QTI_END: 2019-07-11: Telephony: Don't unregister supplementary service notification.
         handleIdentifierDisclosureNotificationPreferenceChange();
         handleNullCipherNotificationPreferenceChanged();
     }
