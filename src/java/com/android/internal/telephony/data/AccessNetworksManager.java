@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/*
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
 package com.android.internal.telephony.data;
 
 // QTI_BEGIN: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
@@ -52,6 +58,7 @@ import android.telephony.Annotation.ApnType;
 import android.telephony.Annotation.NetCapability;
 import android.telephony.AnomalyReporter;
 import android.telephony.CarrierConfigManager;
+import android.telephony.SubscriptionManager;
 import android.telephony.data.ApnSetting;
 import android.telephony.data.DataServiceCallback;
 import android.telephony.data.IQualifiedNetworksService;
@@ -66,6 +73,7 @@ import android.util.SparseArray;
 
 import com.android.internal.telephony.IIntegerConsumer;
 import com.android.internal.telephony.Phone;
+import com.android.internal.telephony.PhoneConfigurationManager;
 // QTI_BEGIN: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
 import com.android.internal.telephony.RIL;
 // QTI_END: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
@@ -100,6 +108,9 @@ public class AccessNetworksManager extends Handler {
 
     /** Event to guide a transport type for initial data connection of emergency data network. */
     private static final int EVENT_GUIDE_TRANSPORT_TYPE_FOR_EMERGENCY = 1;
+    /** Event to multi sim config changes. dsds-ss and ss-dsds. */
+    private static final int EVENT_MULTI_SIM_CONFIG_CHANGED       = 2;
+
 // QTI_BEGIN: 2023-06-13: Telephony: Revert "Removed IWLAN legacy mode support"
     public static final String SYSTEM_PROPERTIES_IWLAN_OPERATION_MODE =
             "ro.telephony.iwlan_operation_mode";
@@ -230,8 +241,29 @@ public class AccessNetworksManager extends Handler {
                 int transport = (int) ar.result;
                 onEmergencyDataNetworkPreferredTransportChanged(transport);
                 break;
+            case EVENT_MULTI_SIM_CONFIG_CHANGED:
+                unbindService();
+                break;
             default:
                 loge("Unexpected event " + msg.what);
+        }
+    }
+
+    private synchronized void unbindService() {
+        if (mIQualifiedNetworksService != null
+                && mIQualifiedNetworksService.asBinder().isBinderAlive()
+                && !SubscriptionManager.isValidPhoneId(mPhone.getPhoneId())) {
+            log("unbind the service as invalid phone or phoneId. " +mPhone.getPhoneId());
+            // Remove the network availability updater and then unbind the service.
+            try {
+                mIQualifiedNetworksService.removeNetworkAvailabilityProvider(
+                        mPhone.getPhoneId());
+            } catch (RemoteException e) {
+                loge("Cannot remove network availability updater. " + e);
+            }
+            if (mServiceConnection != null) {
+                mPhone.getContext().unbindService(mServiceConnection);
+            }
         }
     }
 
@@ -514,6 +546,9 @@ public class AccessNetworksManager extends Handler {
             mPhone.registerForEmergencyDomainSelected(
                     this, EVENT_GUIDE_TRANSPORT_TYPE_FOR_EMERGENCY, null);
         });
+        PhoneConfigurationManager.registerForMultiSimConfigChange(
+                this, EVENT_MULTI_SIM_CONFIG_CHANGED, null);
+
     }
 
     /**
