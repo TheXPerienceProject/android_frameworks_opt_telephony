@@ -350,7 +350,7 @@ public class ServiceStateTracker extends Handler {
 
     private boolean mImsRegistered = false;
 // QTI_BEGIN: 2019-02-13: Telephony: Fix non-roaming overlay not work issue.
-    private boolean mCarrierConfigLoaded = false;
+    protected boolean mCarrierConfigLoaded = false;
 // QTI_END: 2019-02-13: Telephony: Fix non-roaming overlay not work issue.
 
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
